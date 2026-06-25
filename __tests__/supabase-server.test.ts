@@ -1,32 +1,33 @@
+import { vi } from 'vitest'
 import { createClient } from '@/lib/supabase/server'
 
 // Mock Next.js cookies
 const mockCookies = {
-  getAll: jest.fn(),
-  set: jest.fn(),
+  getAll: vi.fn(),
+  set: vi.fn(),
 }
 
-jest.mock('next/headers', () => ({
-  cookies: jest.fn(() => Promise.resolve(mockCookies)),
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(() => Promise.resolve(mockCookies)),
 }))
 
 // Mock @supabase/ssr
-jest.mock('@supabase/ssr', () => ({
-  createServerClient: jest.fn(),
+vi.mock('@supabase/ssr', () => ({
+  createServerClient: vi.fn(),
 }))
 
-const { createServerClient } = require('@supabase/ssr')
-const { cookies } = require('next/headers')
+const { createServerClient } = await import('@supabase/ssr')
+const { cookies } = await import('next/headers')
 
 describe('Supabase Server Client', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockCookies.getAll.mockReturnValue([])
   })
 
   describe('Client Creation', () => {
     it('should create server client with correct environment variables', async () => {
-      const mockClient = { auth: {}, from: jest.fn() }
+      const mockClient = { auth: {}, from: vi.fn() }
       createServerClient.mockReturnValue(mockClient)
 
       await createClient()
@@ -66,8 +67,8 @@ describe('Supabase Server Client', () => {
 
     it('should return Supabase client instance', async () => {
       const mockClient = { 
-        auth: { getUser: jest.fn() }, 
-        from: jest.fn() 
+        auth: { getUser: vi.fn() }, 
+        from: vi.fn() 
       }
       createServerClient.mockReturnValue(mockClient)
 

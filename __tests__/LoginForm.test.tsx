@@ -1,12 +1,13 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { vi } from 'vitest'
 import LoginForm from '../components/LoginForm'
 
 // Mock the Supabase client
-const mockSignInWithOtp = jest.fn()
+const mockSignInWithOtp = vi.fn()
 
-jest.mock('@/lib/supabase/client', () => ({
-  createClient: jest.fn(() => ({
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: vi.fn(() => ({
     auth: {
       signInWithOtp: mockSignInWithOtp,
     },
@@ -15,7 +16,7 @@ jest.mock('@/lib/supabase/client', () => ({
 
 describe('LoginForm', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('Rendering', () => {
@@ -91,7 +92,7 @@ describe('LoginForm', () => {
       const { container } = render(<LoginForm />)
       const form = container.querySelector('form')!
       
-      const handleSubmit = jest.fn((e) => e.preventDefault())
+      const handleSubmit = vi.fn((e) => e.preventDefault())
       form.onsubmit = handleSubmit
       
       const emailInput = screen.getByLabelText(/email address/i)

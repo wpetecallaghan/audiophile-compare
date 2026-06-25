@@ -1,5 +1,6 @@
 // Learn more: https://github.com/testing-library/jest-dom
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom/vitest'
+import { vi } from 'vitest'
 
 // Mock environment variables for tests
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co'
@@ -9,7 +10,7 @@ process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key'
 // Use the Headers from jsdom if available
 if (typeof Headers === 'undefined') {
   global.Headers = class Headers {
-    constructor(init) {
+    constructor(init?: HeadersInit) {
       this._headers = new Map()
       if (init) {
         if (init instanceof Headers) {
@@ -21,19 +22,20 @@ if (typeof Headers === 'undefined') {
         }
       }
     }
-    get(name) {
+    private _headers: Map<string, string>
+    get(name: string) {
       return this._headers.get(name.toLowerCase()) || null
     }
-    set(name, value) {
+    set(name: string, value: string) {
       this._headers.set(name.toLowerCase(), String(value))
     }
-    has(name) {
+    has(name: string) {
       return this._headers.has(name.toLowerCase())
     }
-    delete(name) {
+    delete(name: string) {
       this._headers.delete(name.toLowerCase())
     }
-    forEach(callback, thisArg) {
+    forEach(callback: (value: string, key: string, parent: Headers) => void, thisArg?: any) {
       this._headers.forEach((value, key) => callback.call(thisArg, value, key, this))
     }
     *entries() {
@@ -48,17 +50,17 @@ if (typeof Headers === 'undefined') {
     [Symbol.iterator]() {
       return this.entries()
     }
-  }
+  } as any
 }
 
 // Mock Next.js router
-jest.mock('next/navigation', () => ({
+vi.mock('next/navigation', () => ({
   useRouter() {
     return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
+      push: vi.fn(),
+      replace: vi.fn(),
+      prefetch: vi.fn(),
+      back: vi.fn(),
       pathname: '/',
       query: {},
       asPath: '/',
@@ -73,8 +75,8 @@ jest.mock('next/navigation', () => ({
 }))
 
 // Mock window.location
-delete window.location
-window.location = {
+delete (window as any).location
+;(window as any).location = {
   href: 'http://localhost:3000',
   origin: 'http://localhost:3000',
   pathname: '/',

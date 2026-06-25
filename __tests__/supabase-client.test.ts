@@ -1,20 +1,21 @@
+import { vi } from 'vitest'
 import { createClient } from '@/lib/supabase/client'
 
 // Mock the @supabase/ssr module
-jest.mock('@supabase/ssr', () => ({
-  createBrowserClient: jest.fn(),
+vi.mock('@supabase/ssr', () => ({
+  createBrowserClient: vi.fn(),
 }))
 
-const { createBrowserClient } = require('@supabase/ssr')
+const { createBrowserClient } = await import('@supabase/ssr')
 
 describe('Supabase Browser Client', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('Client Creation', () => {
     it('should create browser client with correct environment variables', () => {
-      const mockClient = { auth: {}, from: jest.fn() }
+      const mockClient = { auth: {}, from: vi.fn() }
       createBrowserClient.mockReturnValue(mockClient)
 
       const client = createClient()
@@ -27,7 +28,7 @@ describe('Supabase Browser Client', () => {
     })
 
     it('should use createBrowserClient from @supabase/ssr', () => {
-      const mockClient = { auth: {}, from: jest.fn() }
+      const mockClient = { auth: {}, from: vi.fn() }
       createBrowserClient.mockReturnValue(mockClient)
 
       createClient()
@@ -37,8 +38,8 @@ describe('Supabase Browser Client', () => {
 
     it('should return client instance', () => {
       const mockClient = { 
-        auth: { signInWithOtp: jest.fn() }, 
-        from: jest.fn() 
+        auth: { signInWithOtp: vi.fn() }, 
+        from: vi.fn() 
       }
       createBrowserClient.mockReturnValue(mockClient)
 
@@ -50,7 +51,7 @@ describe('Supabase Browser Client', () => {
 
     it('should be callable at module level', () => {
       // This test verifies that createClient doesn't require request context
-      const mockClient = { auth: {}, from: jest.fn() }
+      const mockClient = { auth: {}, from: vi.fn() }
       createBrowserClient.mockReturnValue(mockClient)
 
       // Should not throw when called outside a request

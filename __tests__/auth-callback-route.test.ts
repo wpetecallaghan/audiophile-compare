@@ -1,15 +1,17 @@
-jest.mock('@/lib/supabase/server', () => ({
-  createClient: jest.fn(() =>
+import { vi } from 'vitest'
+
+vi.mock('@/lib/supabase/server', () => ({
+  createClient: vi.fn(() =>
     Promise.resolve({
       auth: {
-        exchangeCodeForSession: jest.fn(),
+        exchangeCodeForSession: vi.fn(),
       },
     })
   ),
 }))
 
-jest.mock('@/app/auth/callback/route', () => ({
-  GET: jest.fn(),
+vi.mock('@/app/auth/callback/route', () => ({
+  GET: vi.fn(),
 }))
 
 // These tests require proper Next.js route handler environment

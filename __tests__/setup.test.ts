@@ -1,10 +1,10 @@
-// Simple test to verify Jest setup is working
-describe('Jest Setup', () => {
+// Simple test to verify Vitest setup is working
+describe('Vitest Setup', () => {
   it('should run tests successfully', () => {
     expect(true).toBe(true)
   })
 
-  it('should have testing-library/jest-dom matchers', () => {
+  it('should have testing-library matchers', () => {
     const element = document.createElement('div')
     element.textContent = 'Hello'
     document.body.appendChild(element)

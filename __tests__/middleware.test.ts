@@ -1,11 +1,13 @@
+import { vi } from 'vitest'
+
 // Mock the Supabase SSR module
-jest.mock('@supabase/ssr', () => ({
-  createServerClient: jest.fn(),
+vi.mock('@supabase/ssr', () => ({
+  createServerClient: vi.fn(),
 }))
 
 // Mock the middleware module to avoid Next.js environment issues
-jest.mock('../middleware', () => ({
-  middleware: jest.fn(),
+vi.mock('../middleware', () => ({
+  middleware: vi.fn(),
   config: { matcher: [] },
 }))
 

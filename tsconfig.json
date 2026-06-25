@@ -27,8 +27,8 @@
       ]
     },
     "target": "ES2017",
-    // Add Jest types
-    "types": ["jest", "@testing-library/jest-dom"]
+    // Add Vitest types
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
   "include": [
     "next-env.d.ts",
