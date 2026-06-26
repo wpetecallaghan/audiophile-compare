@@ -65,6 +65,7 @@ app/
     tracks/route.ts
     techniques/route.ts
   auth/callback/route.ts    ← Magic link exchange
+  global-error.tsx          ← Root error boundary (required for Next.js 16 + Turbopack)
   login/page.tsx            ← Server component shell
   tests/[id]/page.tsx       ← Server component: fetches, passes props to client
   tests/new/page.tsx
@@ -579,9 +580,35 @@ const ownerId = Array.isArray(sys) ? sys[0]?.owner_id : sys?.owner_id
 
 ## 13. Error boundaries and loading states
 
-**Error handling (add when implementing error boundaries):**
-- `app/error.tsx` — catches errors in route segments
-- `app/not-found.tsx` — custom 404 page
+**Error handling:**
+
+- `app/global-error.tsx` — **Required for Next.js 16 + Turbopack**. Root-level error boundary that catches unhandled errors across the entire application. Must be a client component with its own `<html>` and `<body>` tags:
+
+```tsx
+'use client'
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string }
+  reset: () => void
+}) {
+  return (
+    <html>
+      <body>
+        <h2>Something went wrong!</h2>
+        <button onClick={() => reset()}>Try again</button>
+      </body>
+    </html>
+  )
+}
+```
+
+**Note:** This file resolves a known Next.js 16.2.x + Turbopack bundling bug where the bundler loses track of built-in error boundary components during development. Without it, you may see: `Error: Could not find the module "global-error.js#default" in the React Client Manifest.`
+
+- `app/error.tsx` — Route segment error boundaries (when needed for specific pages)
+- `app/not-found.tsx` — Custom 404 page (future implementation)
 - API routes return proper status codes (401, 403, 404, 500)
 
 **Loading states (add when implementing Suspense patterns):**
