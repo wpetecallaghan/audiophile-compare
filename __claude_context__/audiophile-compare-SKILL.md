@@ -200,6 +200,93 @@ const { data } = await supabase
   .select('id, title, status, created_at')  // Explicit allowlist
 ```
 
+**Standard response format:**
+```typescript
+// Success responses
+return NextResponse.json({ data: result }, { status: 200 })
+
+// Error responses (use consistent error shape)
+return NextResponse.json(
+  { error: 'Descriptive message', code: 'ERROR_CODE' },
+  { status: 400 | 401 | 403 | 404 | 500 }
+)
+```
+
+---
+
+## 5a. API-first architecture for programmatic access
+
+**Current state:** The API currently serves the Next.js web frontend exclusively,
+using session cookie authentication. All routes expect `supabase.auth.getUser()`
+to extract the user from the session cookie.
+
+**Future consideration:** To support programmatic/agentic access (AI agents,
+CLI tools, external integrations), the API would need:
+
+### Dual authentication strategy
+```typescript
+// lib/auth/get-user.ts — unified auth for both web and API clients
+export async function authenticateRequest(request: NextRequest) {
+  // 1. Check for Authorization header (programmatic access)
+  const authHeader = request.headers.get('authorization')
+  
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring(7)
+    // Validate API key or JWT token
+    // Return user object or null
+  }
+  
+  // 2. Fall back to session cookie (browser access)
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+}
+```
+
+### API versioning (when programmatic access is added)
+```
+app/api/
+  v1/                       ← Versioned public API for programmatic access
+    tests/route.ts
+    tests/[id]/route.ts
+    votes/route.ts
+  internal/                 ← Web app internal endpoints (not documented)
+    clips/verify/route.ts
+```
+
+**Pattern:** Public-facing endpoints go in `/api/v1/`. Internal endpoints used
+only by the Next.js frontend can remain at `/api/`. This separation allows:
+- Independent versioning of the public API
+- Breaking changes to internal endpoints without affecting external clients
+- Clear documentation boundary (only document `/api/v1/`)
+
+### API documentation (when exposing public API)
+- Use OpenAPI 3.x specification
+- Generate from TypeScript types where possible
+- Host Swagger UI at `/api/v1/docs`
+- Include authentication examples for both session and bearer token
+
+### CORS configuration (when supporting non-browser clients)
+```typescript
+// middleware.ts additions for programmatic access
+if (request.nextUrl.pathname.startsWith('/api/v1/')) {
+  const response = NextResponse.next()
+  response.headers.set('Access-Control-Allow-Origin', '*')  // Or specific domains
+  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
+  response.headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type')
+  return response
+}
+```
+
+### Rate limiting (future consideration)
+- Implement per-user or per-API-key rate limits
+- Different tiers for web vs programmatic access
+- Return `X-RateLimit-*` headers
+
+**Decision:** These patterns are NOT currently implemented. The API is
+web-frontend-focused for build phases 1-12. Add programmatic access support
+only when external integrations or agent access become a requirement.
+
 ---
 
 ## 6. Security rules — must be enforced in every relevant route
@@ -362,8 +449,8 @@ Per-file environment override (add as first line of test file):
 2. ✅ Auth (Supabase Auth, middleware, magic link, callback)
 3. ✅ Clip URL verification (`/api/clips/verify`)
 4. ✅ MediaPlayer component (all four cases, A/B coordination)
-5. ⬜ Test creation flow
-6. ⬜ Test detail page + blind playback
+5. ✅ Test creation flow
+6. ✅ Test detail page + blind playback
 7. ⬜ Voting
 8. ⬜ Reveal
 9. ⬜ Results by technique
