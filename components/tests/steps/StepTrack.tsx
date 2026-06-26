@@ -22,6 +22,8 @@ export default function StepTrack({ draft, onComplete }: Props) {
   const [passageNote, setPassageNote] = useState('')
   const [error, setError]             = useState<string | null>(null)
 
+  const isDisabled = selected === null
+
   // Search as the user types — debounced by 300ms
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -169,9 +171,10 @@ export default function StepTrack({ draft, onComplete }: Props) {
       )}
 
       <button
-        disabled={!selected}
+        disabled={isDisabled ? true : undefined}
         onClick={() => onComplete({ track: selected })}
         className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
+        suppressHydrationWarning
       >
         Continue
       </button>

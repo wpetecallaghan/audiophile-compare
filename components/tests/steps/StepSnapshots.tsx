@@ -69,6 +69,7 @@ export default function StepSnapshots({ draft, systems, onComplete }: Props) {
   const [snapshotB, setSnapshotB] = useState<Snapshot | null>(draft.snapshotB)
 
   const noSnapshots = systems.every(s => s.system_snapshots.length === 0)
+  const isDisabled = snapshotA === null || snapshotB === null
 
   return (
     <div className="space-y-6">
@@ -104,9 +105,10 @@ export default function StepSnapshots({ draft, systems, onComplete }: Props) {
       )}
 
       <button
-        disabled={!snapshotA || !snapshotB}
+        disabled={isDisabled ? true : undefined}
         onClick={() => onComplete({ snapshotA, snapshotB })}
         className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
+        suppressHydrationWarning
       >
         Continue
       </button>
