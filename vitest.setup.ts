@@ -74,12 +74,14 @@ vi.mock('next/navigation', () => ({
   },
 }))
 
-// Mock window.location
-delete (window as any).location
-;(window as any).location = {
-  href: 'http://localhost:3000',
-  origin: 'http://localhost:3000',
-  pathname: '/',
-  search: '',
-  hash: '',
+// Mock window.location (only in jsdom environment)
+if (typeof window !== 'undefined') {
+  delete (window as any).location
+  ;(window as any).location = {
+    href: 'http://localhost:3000',
+    origin: 'http://localhost:3000',
+    pathname: '/',
+    search: '',
+    hash: '',
+  }
 }

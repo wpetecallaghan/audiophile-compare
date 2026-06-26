@@ -5,7 +5,7 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: 'jsdom',
+    environment: 'jsdom',  // Default to jsdom for React component tests
     setupFiles: ['./vitest.setup.ts'],
     globals: true,
     coverage: {
