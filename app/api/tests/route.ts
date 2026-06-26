@@ -69,8 +69,9 @@ export async function POST(request: NextRequest) {
 
   const ownedIds = snapshots
     ?.filter(s => {
-      const systems = s.systems as { owner_id: string }[]
-      return systems.some(sys => sys.owner_id === user.id)
+      const sys = s.systems as { owner_id: string } | { owner_id: string }[]
+      const ownerId = Array.isArray(sys) ? sys[0]?.owner_id : sys?.owner_id
+      return ownerId === user.id
     })
     .map(s => s.id) ?? []
 
