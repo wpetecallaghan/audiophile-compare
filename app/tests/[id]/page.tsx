@@ -82,14 +82,14 @@ export default async function TestDetailPage({ params }: Props) {
   const creator = Array.isArray(test.creator) ? test.creator[0] : test.creator
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-10 space-y-8">
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
 
       {/* Header */}
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
           {isRevealed ? 'Revealed' : 'Blind test'}
         </p>
-        <h1 className="text-2xl font-semibold">{test.title}</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold">{test.title}</h1>
         <p className="text-sm text-gray-500">
           {track?.artist} — {track?.title}
           {track?.album && ` (${track.album})`}
@@ -113,14 +113,16 @@ export default async function TestDetailPage({ params }: Props) {
       )}
 
       {/* Player — login required to see */}
-      {user ? (
-        <ABPlayer clipA={clipA} clipB={clipB} />
-      ) : (
-        <div className="rounded border border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
-          <a href="/login" className="text-blue-600 underline">Sign in</a>
-          {' '}to listen to the clips.
-        </div>
-      )}
+      <div className="w-full max-w-full min-w-0">
+        {user ? (
+          <ABPlayer clipA={clipA} clipB={clipB} />
+        ) : (
+          <div className="rounded border border-gray-200 bg-gray-50 p-4 sm:p-6 text-center text-sm text-gray-500">
+            <a href="/login" className="text-blue-600 underline">Sign in</a>
+            {' '}to listen to the clips.
+          </div>
+        )}
+      </div>
 
       {/* Creator controls */}
       {isCreator && !isRevealed && (
@@ -129,14 +131,14 @@ export default async function TestDetailPage({ params }: Props) {
 
       {/* Tally placeholder — replaced in step 9 */}
       {canSeeTally && (
-        <div className="rounded border border-gray-200 p-4 text-sm text-gray-400">
+        <div className="rounded border border-gray-200 p-3 sm:p-4 text-sm text-gray-400">
           Vote tally will appear here (step 9).
         </div>
       )}
 
       {/* Vote form placeholder — replaced in step 7 */}
       {user && !isRevealed && (
-        <div className="rounded border border-gray-200 p-4 text-sm text-gray-400">
+        <div className="rounded border border-gray-200 p-3 sm:p-4 text-sm text-gray-400">
           Voting will appear here (step 7).
         </div>
       )}

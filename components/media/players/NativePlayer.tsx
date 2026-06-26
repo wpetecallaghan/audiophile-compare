@@ -36,7 +36,7 @@ const NativePlayer = forwardRef<PlayerHandle, Props>(function NativePlayer(
   const sharedProps = {
     src: url,
     controls: true,
-    className: 'w-full',
+    className: 'w-full max-w-full',
     onPlay,   // fires when the user presses play on this element
   }
 

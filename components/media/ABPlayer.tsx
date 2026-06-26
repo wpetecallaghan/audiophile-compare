@@ -25,8 +25,8 @@ export default function ABPlayer({ clipA, clipB }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6">
-      <div className="space-y-2">
+    <div className="grid grid-cols-1 gap-4 sm:gap-6 w-full max-w-full">
+      <div className="space-y-2 min-w-0">
         <h2 className="text-sm font-semibold uppercase tracking-wide">
           Clip A
         </h2>
@@ -36,7 +36,7 @@ export default function ABPlayer({ clipA, clipB }: Props) {
           onPlay={handleAPlay}
         />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2 min-w-0">
         <h2 className="text-sm font-semibold uppercase tracking-wide">
           Clip B
         </h2>

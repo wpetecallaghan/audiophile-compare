@@ -44,7 +44,7 @@ const VimeoPlayer = forwardRef<PlayerHandle, Props>(function VimeoPlayer(
   }, [videoId])
 
   return (
-    <div className="relative w-full aspect-video">
+    <div className="relative w-full max-w-full aspect-video overflow-hidden">
       <div ref={containerRef} className="absolute inset-0" />
     </div>
   )
