@@ -20,11 +20,11 @@ before writing any code. For the full database schema and RLS policies, read
 
 | Layer | Choice | Notes |
 |---|---|---|
-| Framework | Next.js 14, App Router | No Pages Router patterns |
-| Language | TypeScript | Strict mode; no `any` without justification |
+| Framework | Next.js 15+, App Router | No Pages Router patterns; use async params/searchParams |
+| Language | TypeScript | Strict mode; no `any` without justification; generate types from Supabase |
 | Database + Auth | Supabase (Postgres + Supabase Auth) | RLS enforced at DB layer |
 | Hosting | Vercel | Vercel Cron for background jobs |
-| Styling | Tailwind CSS | Mobile-first; no other CSS frameworks |
+| Styling | Tailwind CSS | Mobile-first; defensive overflow/width patterns required |
 | Testing | Vitest + Testing Library | `node` env for logic; `jsdom` for components |
 
 ---
@@ -75,6 +75,10 @@ lib/
     check-url.ts            ← HEAD request for direct URLs
   youtube-api.ts            ← Singleton YouTube iframe API loader
 
+types/
+  youtube.d.ts              ← YouTube IFrame API type definitions
+  database.types.ts         ← Supabase generated types (when added)
+
 middleware.ts               ← Session refresh + route protection (edge runtime)
 ```
 
@@ -94,6 +98,33 @@ middleware.ts               ← Session refresh + route protection (edge runtime
 
 A server component can render a client component. A client component cannot
 import server-only code (e.g. `lib/supabase/server.ts`).
+
+**Next.js 15+ async params/searchParams pattern:**
+```typescript
+// Dynamic route params are now Promises
+export default async function TestPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const { id } = await params
+  const search = await searchParams
+  // ...
+}
+```
+
+**API routes also require awaiting params:**
+```typescript
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  // ...
+}
+```
 
 ---
 
@@ -154,6 +185,19 @@ const { data: test } = await supabase
 if (!test || test.creator_id !== user.id) {
   return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
+```
+
+**Never leak sensitive IDs in API responses:**
+```typescript
+// NEVER return creator_id or other sensitive fields to non-creators
+const responseData = {
+  ...test,
+  creator_id: undefined,  // Strip sensitive fields
+}
+// OR use explicit field selection:
+const { data } = await supabase
+  .from('tests')
+  .select('id, title, status, created_at')  // Explicit allowlist
 ```
 
 ---
@@ -290,9 +334,24 @@ Play/vote auth is enforced in API routes, not in middleware.
 - Tests live in a `__tests__/` folder adjacent to the file under test
 - API routes are tested via integration tests against a Supabase test project (not yet set up — do not add unit tests that mock Supabase internals)
 
+**Test environment configuration:**
+```typescript
+// vitest.config.ts - use jsdom as default for convenience
+export default defineConfig({
+  test: {
+    environment: 'jsdom',  // Default works for components and most code
+    // When environmentMatchGlobs is available:
+    // environmentMatchGlobs: [
+    //   ['lib/**/*.test.ts', 'node'],  // Pure logic doesn't need DOM
+    //   ['**/*.test.tsx', 'jsdom'],    // Components need DOM
+    // ]
+  },
+})
+```
+
 Per-file environment override (add as first line of test file):
 ```typescript
-// @vitest-environment jsdom
+// @vitest-environment node  // For pure logic tests
 ```
 
 ---
@@ -316,7 +375,96 @@ Update the checkboxes above as steps are completed.
 
 ---
 
-## 11. Reference files
+## 11. Mobile responsiveness patterns
+
+All layouts must be mobile-first and prevent horizontal scroll on small screens.
+
+**Required defensive CSS patterns:**
+```typescript
+// Root layout (app/layout.tsx)
+<html className="overflow-x-hidden">
+<body className="overflow-x-hidden">
+
+// Page containers
+<main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+
+// Media embeds (YouTube, Vimeo iframes)
+<div className="relative w-full max-w-full aspect-video overflow-hidden">
+
+// Grid layouts that should stack on mobile
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+
+// Children in flex/grid containers
+<div className="min-w-0 w-full max-w-full">
+```
+
+**Responsive spacing:**
+- Use `sm:` and `lg:` breakpoints for padding, gaps, text sizes
+- Example: `py-6 sm:py-10`, `gap-4 sm:gap-6`, `text-xl sm:text-2xl`
+
+**Global styles (app/globals.css):**
+```css
+* {
+  box-sizing: border-box;
+}
+```
+
+---
+
+## 12. TypeScript type safety
+
+**Supabase type generation (recommended future improvement):**
+```bash
+npx supabase gen types typescript --project-id <id> > types/database.types.ts
+```
+Then import and use instead of manual type assertions.
+
+**YouTube IFrame API types:**
+Define in `types/youtube.d.ts` to extend Window interface:
+```typescript
+declare global {
+  interface Window {
+    YT: typeof YT
+    onYouTubeIframeAPIReady?: () => void
+  }
+}
+
+export namespace YT {
+  class Player {
+    constructor(elementId: string, options: PlayerOptions)
+    pauseVideo(): void
+    // ... other methods
+  }
+  // ... other types
+}
+```
+
+**Avoid fragile type assertions:**
+```typescript
+// BAD - fragile workaround for Supabase joined relations
+const sys = s.systems as { owner_id: string } | { owner_id: string }[]
+const ownerId = Array.isArray(sys) ? sys[0]?.owner_id : sys?.owner_id
+
+// BETTER - generate types from schema or create helper utilities
+```
+
+---
+
+## 13. Error boundaries and loading states
+
+**Error handling (add when implementing error boundaries):**
+- `app/error.tsx` — catches errors in route segments
+- `app/not-found.tsx` — custom 404 page
+- API routes return proper status codes (401, 403, 404, 500)
+
+**Loading states (add when implementing Suspense patterns):**
+- `app/loading.tsx` — route segment loading UI
+- `app/tests/[id]/loading.tsx` — test detail loading skeleton
+- Consider Suspense boundaries for data fetching
+
+---
+
+## 14. Reference files
 
 Read `references/schema.md` when working on:
 - Any new query involving `clip_mapping`, `votes`, or `system_snapshots`
