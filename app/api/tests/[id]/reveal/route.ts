@@ -4,8 +4,9 @@ import type { NextRequest } from 'next/server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -17,7 +18,7 @@ export async function POST(
   const { data: test } = await supabase
     .from('tests')
     .select('creator_id, status')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (!test) {
@@ -38,7 +39,7 @@ export async function POST(
       status:      'revealed',
       revealed_at: new Date().toISOString(),
     })
-    .eq('id', params.id)
+    .eq('id', id)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

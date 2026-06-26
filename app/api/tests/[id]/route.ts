@@ -4,8 +4,9 @@ import type { NextRequest } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -18,7 +19,7 @@ export async function GET(
       track:tracks(artist, title, album, passage_note),
       clips(id, label, source_url, provider, media_type, url_status)
     `)
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (error || !test) {
@@ -35,7 +36,7 @@ export async function GET(
     const { data } = await supabase
       .from('clip_mapping')
       .select('before_clip_id, after_clip_id')
-      .eq('test_id', params.id)
+      .eq('test_id', id)
       .single()
     mapping = data
   }
@@ -46,7 +47,7 @@ export async function GET(
     const { count } = await supabase
       .from('votes')
       .select('*', { count: 'exact', head: true })
-      .eq('test_id', params.id)
+      .eq('test_id', id)
       .eq('user_id', user.id)
     hasVoted = (count ?? 0) > 0
   }
