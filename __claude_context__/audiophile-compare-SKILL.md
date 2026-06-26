@@ -27,6 +27,25 @@ before writing any code. For the full database schema and RLS policies, read
 | Styling | Tailwind CSS | Mobile-first; defensive overflow/width patterns required |
 | Testing | Vitest + Testing Library | `node` env for logic; `jsdom` for components |
 
+**Next.js 16+ Turbopack Configuration:**
+
+If you have multiple `package-lock.json` files in parent directories (e.g., a monorepo
+or Playground folder structure), Next.js may infer the wrong workspace root. Configure
+`next.config.mjs` to explicitly set the project root:
+
+```javascript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  turbopack: {
+    root: process.cwd(), // Explicitly use current working directory
+  },
+};
+
+export default nextConfig;
+```
+
+Alternatively, remove unused lockfiles from parent directories.
+
 ---
 
 ## 2. Project file layout
@@ -400,7 +419,11 @@ const MyPlayer = forwardRef<PlayerHandle, Props>(function MyPlayer(props, ref) {
 
 ## 8. Middleware — protected routes
 
-`middleware.ts` redirects unauthenticated users from these paths:
+**Current implementation:** `middleware.ts` serves two purposes:
+1. **Session refresh** — Updates Supabase auth cookies on every request
+2. **Route protection** — Redirects unauthenticated users from protected paths
+
+Protected paths (require authentication):
 ```
 /systems, /tracks, /profile, /tests/new
 ```
@@ -411,6 +434,23 @@ Public paths (no login required to view, but login required to play/vote):
 ```
 
 Play/vote auth is enforced in API routes, not in middleware.
+
+**⚠️ Next.js 16+ Deprecation Warning:**
+
+Next.js 16 deprecates `middleware.ts` in favor of `proxy.ts`. However, Supabase's
+`@supabase/ssr` package (as of v0.12.0) requires middleware for session refresh.
+
+**Current status (2026-06):**
+- The deprecation warning can be **safely ignored** for now
+- `middleware.ts` continues to work in Next.js 16+
+- Supabase has not yet published a migration guide for Next.js 16's proxy pattern
+
+**Future migration path (when Supabase publishes guidance):**
+1. Session refresh logic will likely move to a new `@supabase/ssr` API compatible with `proxy.ts`
+2. Route protection may move to proxy configuration or remain in middleware
+3. Monitor Supabase changelog and Next.js 16 migration guides
+
+**Do NOT migrate to `proxy.ts` yet** — wait for official Supabase support.
 
 ---
 
@@ -553,7 +593,7 @@ const ownerId = Array.isArray(sys) ? sys[0]?.owner_id : sys?.owner_id
 
 ## 14. Reference files
 
-Read `references/schema.md` when working on:
+Read `audiophile-compare-schema.md` when working on:
 - Any new query involving `clip_mapping`, `votes`, or `system_snapshots`
 - Adding or modifying RLS policies
 - Writing migrations
