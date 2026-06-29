@@ -592,7 +592,7 @@ Per-file environment override (add as first line of test file):
 6. ✅ Test detail page + blind playback
 7. ✅ Voting
 8. ✅ Results by technique
-9. ✅ System catalogue views (tracks catalogue, track detail, systems list, system detail + win/loss)
+9. ✅ System catalogue views (tracks catalogue, track detail, systems list, system detail + win/loss, cross-check)
 10. ⬜ URL health check cron
 11. ⬜ Public feed + pagination
 
