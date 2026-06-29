@@ -12,7 +12,7 @@ description: >
 
 This skill keeps implementation consistent across conversations. Read it fully
 before writing any code. For the full database schema and RLS policies, read
-`references/schema.md` when working on anything data-related.
+`audiophile-compare-schema.md` when working on anything data-related.
 
 ---
 
