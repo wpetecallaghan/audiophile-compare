@@ -31,7 +31,7 @@ npm run test:coverage
 - `vitest.config.ts` - Vitest configuration
 - `vitest.setup.ts` - Global test setup (mocks, custom matchers)
 - `__tests__/` - Root-level test files
-- `lib/clips/__tests__/` - Clip utility tests
+- `lib/clips/__tests__/` - Clip utility tests (provider detection, data transformation, shared-clip finding)
 - `lib/votes/__tests__/` - Vote tally computation tests
 - `components/media/__tests__/` - Media component tests
 - `components/tests/__tests__/` - Test UI component tests (VoteForm)
@@ -144,6 +144,18 @@ Tests cover:
 - Snapshot on side B: win, loss
 - Equal votes returns `'draw'`
 
+#### ✅ Shared Clip Finder Tests
+**File:** `lib/clips/__tests__/find-shared-clips.test.ts` (9 tests)
+
+Tests cover:
+- Empty list A or B returns empty result
+- No shared tracks returns empty result
+- Snapshot recorded as side A: correct clip (label A) selected
+- Snapshot recorded as side B: correct clip (label B) selected
+- Mixed sides (A→A, B→B and A→B, B→A): correct clips selected
+- Multiple shared tracks all returned
+- Duplicate track in one list: first (most recent) entry used
+
 ### Pending Tests (Next.js Environment Required)
 
 The following tests are written but currently skipped pending proper Next.js test environment setup:
@@ -176,8 +188,8 @@ Would test:
 ### Test Coverage Summary
 
 ```
-Test Suites: 2 skipped, 10 passed, 12 total
-Tests:       2 skipped, 91 passed, 93 total
+Test Suites: 2 skipped, 11 passed, 13 total
+Tests:       2 skipped, 100 passed, 102 total
 ```
 
 **Passing Tests:**
@@ -187,6 +199,7 @@ Tests:       2 skipped, 91 passed, 93 total
 - ✅ Supabase server client (10 tests)
 - ✅ Clip provider detection (9 tests)
 - ✅ Clip data transformation (5 tests)
+- ✅ Shared clip finder (9 tests)
 - ✅ ABPlayer component (1 test)
 - ✅ VoteForm component (20 tests)
 - ✅ Vote tally computation (16 tests)
@@ -232,8 +245,8 @@ npm test
 
 You should see:
 ```
- Test Files  10 passed | 2 skipped (12)
-      Tests  91 passed | 2 skipped (93)
+ Test Files  11 passed | 2 skipped (13)
+      Tests  100 passed | 2 skipped (102)
 ```
 
 Run tests in watch mode during development:

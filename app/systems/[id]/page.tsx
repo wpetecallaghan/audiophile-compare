@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { computeOutcome } from '@/lib/votes/compute-outcome'
 import type { Outcome } from '@/lib/votes/compute-outcome'
+import CrossCheckSelector from '@/components/tests/CrossCheckSelector'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -276,6 +277,14 @@ export default async function SystemDetailPage({ params }: Props) {
             )
           })}
         </div>
+      )}
+
+      {/* Cross-check: compare any two snapshots using existing recordings */}
+      {snapshots.length >= 2 && (
+        <CrossCheckSelector
+          systemId={id}
+          snapshots={snapshots.map(s => ({ id: s.id, version: s.version, label: s.label }))}
+        />
       )}
     </main>
   )

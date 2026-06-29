@@ -280,6 +280,74 @@ group by t.id, t.status, t.snapshot_a_id, t.snapshot_b_id;
 
 ---
 
+## Step 9 — Cross-check view
+
+This step requires at least **two snapshots** and at least **one test** that
+uses each snapshot — so the app can find a shared track with recordings for
+both sides. Complete Steps 1–5 at least twice with different snapshot pairs
+before attempting this.
+
+**Access the cross-check section:**
+1. Navigate to `http://localhost:3000/systems/[id]`
+2. Scroll to the bottom of the page — the **Cross-check** section appears below
+   the per-snapshot history
+
+**Snapshot pickers:**
+- [ ] Two dropdowns are shown — "Snapshot A" and "Snapshot B"
+- [ ] Selecting the same snapshot in both dropdowns disables that option in the
+      other select (an option is greyed out / unselectable once chosen)
+- [ ] Selecting a second distinct snapshot triggers an automatic query (no
+      button click required)
+- [ ] "Finding shared tracks…" loading text appears briefly while the query runs
+
+**No shared tracks:**
+1. Select a snapshot pair that has never been tested on the same recording
+- [ ] "No shared tracks found — these snapshots haven't been tested on the same
+      recording yet." message appears
+
+**Shared tracks found:**
+1. Select a snapshot pair where both have been tested on the same track
+- [ ] A card appears for each shared track showing: artist — title, album, and
+      provider/media-type badges for both clips
+- [ ] A **Create test** button appears for tracks without an existing cross-check test
+
+**Create a cross-check test:**
+1. Click **Create test** on a shared track
+- [ ] Button shows "Creating…" while the request is in flight
+- [ ] On success you are redirected to `/tests/[newId]`
+- [ ] The new test is blind (status "open"), title includes "Cross-check"
+- [ ] The clips are playable on the test detail page
+
+**Existing test detection:**
+1. Return to `/systems/[id]` and select the same snapshot pair again
+- [ ] The card for the just-created test shows **Test exists →** link instead of
+      a "Create test" button
+- [ ] Clicking the link navigates to the existing test
+
+**Verify in SQL:**
+```sql
+-- Confirm the cross-check test was created correctly
+-- (replace the snapshot IDs with your values)
+select
+  t.id,
+  t.title,
+  t.status,
+  t.snapshot_a_id,
+  t.snapshot_b_id,
+  cm.before_clip_id,
+  cm.after_clip_id
+from public.tests t
+join public.clip_mapping cm on cm.test_id = t.id
+where t.title ilike '%cross-check%'
+order by t.created_at desc
+limit 5;
+```
+
+The `before_clip_id` should correspond to the lower-version snapshot, and
+`after_clip_id` to the higher-version snapshot.
+
+---
+
 ## Step 6 — Verify security rules in SQL
 
 Run these in the SQL editor to confirm the data is correct.
