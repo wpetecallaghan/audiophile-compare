@@ -63,6 +63,7 @@ app/
     votes/[id]/route.ts
     systems/route.ts
     systems/[id]/snapshots/route.ts     ← POST: add snapshot inline; auto-assigns version
+    systems/[id]/snapshots/[snapshotId]/route.ts  ← PATCH: edit label/notes/components
     systems/[id]/cross-check/route.ts  ← GET: shared tracks for two snapshots
     tracks/route.ts
     techniques/route.ts
@@ -86,6 +87,9 @@ components/
       YouTubePlayer.tsx     ← Client: YouTube iframe SDK
       VimeoPlayer.tsx       ← Client: Vimeo SDK
       UnknownPlayer.tsx     ← Client: fallback link
+  systems/
+    AddSnapshotForm.tsx     ← Client: inline snapshot creation on system detail page
+    SnapshotSection.tsx     ← Client: per-snapshot display + edit form (label/notes/components)
   tests/
     CreateTestForm.tsx      ← Client: wizard shell; holds systems in local state
     VoteForm.tsx            ← Client: cast / update votes
@@ -623,6 +627,65 @@ Steps do **not** call `router.refresh()` for inline resource creation — the
 local state update inside `CreateTestForm` is sufficient because the wizard
 is a client component tree, not a server component.
 
+**Contrast: `AddSnapshotForm` on the system detail page**
+
+`app/systems/[id]/page.tsx` is a server component. `AddSnapshotForm` is a
+standalone client component rendered at the bottom of the page (owner-only,
+guarded by `isOwner` computed server-side). After a successful POST it calls
+`router.refresh()` — this triggers a server re-fetch and re-render, causing
+the new snapshot to appear in the list without a full navigation.
+
+```typescript
+// In the server page — adds owner_id to query and computes isOwner:
+const { data: { user } } = await supabase.auth.getUser()
+const { data: system } = await supabase
+  .from('systems')
+  .select('id, name, description, owner_id, system_snapshots(...)')
+  .eq('id', id)
+  .single()
+
+const isOwner = user?.id === (system as { owner_id: string }).owner_id
+
+// In the JSX:
+{isOwner && <AddSnapshotForm systemId={id} />}
+```
+
+Key difference from `StepSnapshots`:
+- No `onSnapshotCreated` callback (no parent client state to update)
+- Uses `router.refresh()` not local state mutation
+- Ownership is checked server-side; the prop is not passed to the client component
+
+**Client-component-with-server-children pattern (`SnapshotSection`)**
+
+`SnapshotSection` handles the display and edit form for each snapshot on the
+system detail page. It is a client component (`useState` needed for edit
+toggle), but the tests history list is complex server-rendered JSX. The
+solution: the server page passes the tests list as `children`.
+
+```tsx
+// Server page passes pre-rendered JSX as children:
+<SnapshotSection
+  systemId={id}
+  snapshot={{ id, version, label, notes, components, created_at }}
+  wins={snapshot.wins}
+  losses={snapshot.losses}
+  draws={snapshot.draws}
+  isOwner={isOwner}
+>
+  {/* Tests list rendered server-side, passed through unchanged */}
+  <ul>...</ul>
+</SnapshotSection>
+```
+
+`SnapshotSection` renders `{children}` below the header and component list.
+Edit mode shows an inline form for `label`, `notes`, and a dynamic component
+row editor (add/remove rows). On save: `PATCH /api/systems/[id]/snapshots/[snapshotId]`,
+then `router.refresh()`. Display mode always reads from props, not local state,
+so after `router.refresh()` the new server values flow in correctly.
+
+This is a valid Next.js App Router pattern: server components can pass
+server-rendered nodes as `children` to client components.
+
 **`CreateTestForm` local state pattern:**
 ```typescript
 // systems comes in as a prop (fetched by the server page)
@@ -663,6 +726,13 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
 7. ✅ Voting
 8. ✅ Results by technique
 9. ✅ System catalogue views (tracks catalogue, track detail, systems list, system detail + win/loss, cross-check)
+   (refinement ✅) Inline snapshot creation from system detail page —
+   `AddSnapshotForm` (client) rendered owner-only; calls `router.refresh()` on success.
+   Tests: `components/systems/__tests__/AddSnapshotForm.test.tsx` (14 tests)
+   (refinement ✅) Snapshot editing from system detail page —
+   `SnapshotSection` (client-with-server-children) handles display + edit form
+   (label, notes, dynamic component rows); `PATCH /api/systems/[id]/snapshots/[snapshotId]`.
+   Tests: `components/systems/__tests__/SnapshotSection.test.tsx` (20 tests)
 10. ⬜ URL health check cron
 11. ⬜ Public feed + pagination
 

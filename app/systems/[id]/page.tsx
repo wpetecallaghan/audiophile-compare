@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { computeOutcome } from '@/lib/votes/compute-outcome'
 import type { Outcome } from '@/lib/votes/compute-outcome'
 import CrossCheckSelector from '@/components/tests/CrossCheckSelector'
+import AddSnapshotForm from '@/components/systems/AddSnapshotForm'
+import SnapshotSection from '@/components/systems/SnapshotSection'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -22,18 +24,21 @@ function outcomeLabel(outcome: Outcome) {
 export default async function SystemDetailPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   // Fetch system with all its snapshots
   const { data: system, error } = await supabase
     .from('systems')
     .select(`
-      id, name, description,
+      id, name, description, owner_id,
       system_snapshots(id, version, label, notes, components, created_at)
     `)
     .eq('id', id)
     .single()
 
   if (error || !system) notFound()
+
+  const isOwner = user?.id === (system as unknown as { owner_id: string }).owner_id
 
   type SnapshotRow = {
     id: string
@@ -166,8 +171,6 @@ export default async function SystemDetailPage({ params }: Props) {
       ) : (
         <div className="space-y-8">
           {snapshotsWithHistory.map(snapshot => {
-            const hasRevealedTests = snapshot.wins + snapshot.losses + snapshot.draws > 0
-
             type ComponentRow = {
               role?: string
               make?: string
@@ -177,64 +180,22 @@ export default async function SystemDetailPage({ params }: Props) {
             const components = snapshot.components as ComponentRow[] | null
 
             return (
-              <section key={snapshot.id} className="space-y-4">
-                {/* Snapshot header */}
-                <div className="flex items-start justify-between gap-4 pb-2 border-b border-gray-100">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
-                        v{snapshot.version}
-                      </span>
-                      <h2 className="text-base font-semibold">{snapshot.label}</h2>
-                    </div>
-                    {snapshot.notes && (
-                      <p className="text-xs text-gray-400">{snapshot.notes}</p>
-                    )}
-                    <p className="text-xs text-gray-400">
-                      {new Date(snapshot.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-
-                  {/* Win/loss record */}
-                  {hasRevealedTests && (
-                    <div className="shrink-0 flex gap-3 text-xs font-medium">
-                      {snapshot.wins > 0 && (
-                        <span className="text-green-700">
-                          {snapshot.wins}W
-                        </span>
-                      )}
-                      {snapshot.losses > 0 && (
-                        <span className="text-red-600">
-                          {snapshot.losses}L
-                        </span>
-                      )}
-                      {snapshot.draws > 0 && (
-                        <span className="text-gray-500">
-                          {snapshot.draws}D
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Component list */}
-                {components && components.length > 0 && (
-                  <ul className="space-y-0.5">
-                    {components.map((c, i) => (
-                      <li key={i} className="text-xs text-gray-500">
-                        <span className="text-gray-400 w-20 inline-block">
-                          {c.role}
-                        </span>
-                        {c.make} {c.model}
-                        {c.notes && (
-                          <span className="text-gray-400"> — {c.notes}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {/* Tests for this snapshot */}
+              <SnapshotSection
+                key={snapshot.id}
+                systemId={id}
+                snapshot={{
+                  id: snapshot.id,
+                  version: snapshot.version,
+                  label: snapshot.label,
+                  notes: snapshot.notes,
+                  components,
+                  created_at: snapshot.created_at,
+                }}
+                wins={snapshot.wins}
+                losses={snapshot.losses}
+                draws={snapshot.draws}
+                isOwner={isOwner}
+              >
                 {snapshot.tests.length === 0 ? (
                   <p className="text-xs text-gray-400">
                     No tests have used this snapshot yet.
@@ -273,11 +234,14 @@ export default async function SystemDetailPage({ params }: Props) {
                     })}
                   </ul>
                 )}
-              </section>
+              </SnapshotSection>
             )
           })}
         </div>
       )}
+
+      {/* Add a new snapshot to this system */}
+      {isOwner && <AddSnapshotForm systemId={id} />}
 
       {/* Cross-check: compare any two snapshots using existing recordings */}
       {snapshots.length >= 2 && (

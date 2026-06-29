@@ -1,0 +1,326 @@
+'use client'
+
+import { useState } from 'react'
+import type { ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
+
+type ComponentDisplay = {
+  role?: string
+  make?: string
+  model?: string
+  notes?: string
+}
+
+type ComponentEdit = {
+  role: string
+  make: string
+  model: string
+  notes: string
+}
+
+type SnapshotData = {
+  id: string
+  version: number
+  label: string
+  notes: string | null
+  components: ComponentDisplay[] | null
+  created_at: string
+}
+
+type Props = {
+  systemId: string
+  snapshot: SnapshotData
+  wins: number
+  losses: number
+  draws: number
+  isOwner: boolean
+  children: ReactNode
+}
+
+function emptyRow(): ComponentEdit {
+  return { role: '', make: '', model: '', notes: '' }
+}
+
+function toEditRows(components: ComponentDisplay[] | null): ComponentEdit[] {
+  if (!components || components.length === 0) return []
+  return components.map(c => ({
+    role: c.role ?? '',
+    make: c.make ?? '',
+    model: c.model ?? '',
+    notes: c.notes ?? '',
+  }))
+}
+
+export default function SnapshotSection({
+  systemId,
+  snapshot,
+  wins,
+  losses,
+  draws,
+  isOwner,
+  children,
+}: Props) {
+  const router = useRouter()
+  const hasRevealedTests = wins + losses + draws > 0
+
+  const [editing, setEditing] = useState(false)
+  const [label, setLabel] = useState(snapshot.label)
+  const [notes, setNotes] = useState(snapshot.notes ?? '')
+  const [componentRows, setComponentRows] = useState<ComponentEdit[]>(
+    toEditRows(snapshot.components),
+  )
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  function handleEdit() {
+    setLabel(snapshot.label)
+    setNotes(snapshot.notes ?? '')
+    setComponentRows(toEditRows(snapshot.components))
+    setError(null)
+    setEditing(true)
+  }
+
+  function handleCancel() {
+    setEditing(false)
+    setError(null)
+  }
+
+  function addComponentRow() {
+    setComponentRows(prev => [...prev, emptyRow()])
+  }
+
+  function removeComponentRow(index: number) {
+    setComponentRows(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function updateComponentRow(index: number, field: keyof ComponentEdit, value: string) {
+    setComponentRows(prev =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
+    )
+  }
+
+  async function handleSave() {
+    if (!label.trim()) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      const cleanedComponents = componentRows
+        .map(c => ({
+          role: c.role.trim(),
+          make: c.make.trim(),
+          model: c.model.trim(),
+          notes: c.notes.trim(),
+        }))
+        .filter(c => c.role || c.make || c.model || c.notes)
+
+      const res = await fetch(
+        `/api/systems/${systemId}/snapshots/${snapshot.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            label: label.trim(),
+            notes: notes.trim() || null,
+            components: cleanedComponents.length > 0 ? cleanedComponents : null,
+          }),
+        },
+      )
+      const body = await res.json()
+      if (!res.ok) {
+        setError((body as { error?: string }).error ?? 'Failed to save changes')
+        return
+      }
+      setEditing(false)
+      router.refresh()
+    } catch {
+      setError('Network error — please try again')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <section className="space-y-4">
+      {editing ? (
+        /* Edit mode */
+        <div className="space-y-4 pb-2 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+              v{snapshot.version}
+            </span>
+            <p className="text-xs text-gray-400 font-medium">Editing snapshot</p>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label
+                htmlFor={`snapshot-label-${snapshot.id}`}
+                className="text-xs font-medium text-gray-600 block mb-1"
+              >
+                Label
+              </label>
+              <input
+                id={`snapshot-label-${snapshot.id}`}
+                type="text"
+                value={label}
+                onChange={e => setLabel(e.target.value)}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
+                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor={`snapshot-notes-${snapshot.id}`}
+                className="text-xs font-medium text-gray-600 block mb-1"
+              >
+                Notes
+              </label>
+              <textarea
+                id={`snapshot-notes-${snapshot.id}`}
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                rows={2}
+                placeholder="Optional"
+                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-gray-600">Components</p>
+              {componentRows.map((row, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-center"
+                >
+                  <input
+                    type="text"
+                    placeholder="Role"
+                    value={row.role}
+                    onChange={e => updateComponentRow(i, 'role', e.target.value)}
+                    aria-label={`Component ${i + 1} role`}
+                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Make"
+                    value={row.make}
+                    onChange={e => updateComponentRow(i, 'make', e.target.value)}
+                    aria-label={`Component ${i + 1} make`}
+                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Model"
+                    value={row.model}
+                    onChange={e => updateComponentRow(i, 'model', e.target.value)}
+                    aria-label={`Component ${i + 1} model`}
+                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Notes"
+                    value={row.notes}
+                    onChange={e => updateComponentRow(i, 'notes', e.target.value)}
+                    aria-label={`Component ${i + 1} notes`}
+                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeComponentRow(i)}
+                    aria-label={`Remove component ${i + 1}`}
+                    className="text-gray-400 hover:text-red-500 text-xs px-1"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addComponentRow}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                + Add component
+              </button>
+            </div>
+          </div>
+
+          {error && <p className="text-xs text-red-500">{error}</p>}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={submitting || !label.trim()}
+              className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
+            >
+              {submitting ? 'Saving…' : 'Save changes'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={submitting}
+              className="text-xs text-gray-500 hover:underline"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Display mode */
+        <div className="flex items-start justify-between gap-4 pb-2 border-b border-gray-100">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+                v{snapshot.version}
+              </span>
+              <h2 className="text-base font-semibold">{snapshot.label}</h2>
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={handleEdit}
+                  className="text-xs text-gray-400 hover:text-blue-600 hover:underline"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+            {snapshot.notes && (
+              <p className="text-xs text-gray-400">{snapshot.notes}</p>
+            )}
+            {/* suppressHydrationWarning: toLocaleDateString() can differ between
+                Node.js (server SSR) and the browser; the mismatch is cosmetic. */}
+            <p className="text-xs text-gray-400" suppressHydrationWarning>
+              {new Date(snapshot.created_at).toLocaleDateString()}
+            </p>
+          </div>
+
+          {hasRevealedTests && (
+            <div className="shrink-0 flex gap-3 text-xs font-medium">
+              {wins > 0 && <span className="text-green-700">{wins}W</span>}
+              {losses > 0 && <span className="text-red-600">{losses}L</span>}
+              {draws > 0 && <span className="text-gray-500">{draws}D</span>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Component list — display mode only */}
+      {!editing && snapshot.components && snapshot.components.length > 0 && (
+        <ul className="space-y-0.5">
+          {snapshot.components.map((c, i) => (
+            <li key={i} className="text-xs text-gray-500">
+              <span className="text-gray-400 w-20 inline-block">{c.role}</span>
+              {c.make} {c.model}
+              {c.notes && <span className="text-gray-400"> — {c.notes}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Tests list — server-rendered, always visible */}
+      {children}
+    </section>
+  )
+}
