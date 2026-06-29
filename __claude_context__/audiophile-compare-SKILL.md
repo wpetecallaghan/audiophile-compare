@@ -108,6 +108,7 @@ lib/
   supabase/
     server.ts               ← createClient() for server components + API routes
     client.ts               ← createClient() for browser components
+    admin.ts                ← createAdminClient() — service role, bypasses RLS; cron/admin only
   clips/
     check-url.ts            ← HEAD request for direct URLs
     detect-provider.ts      ← Pure URL classification (no I/O)
@@ -210,6 +211,18 @@ const supabase = createClient()  // not async
 
 Never import `lib/supabase/server.ts` inside a `'use client'` file.
 Never import `lib/supabase/client.ts` inside a server component or API route.
+
+**Admin / service role client — for background jobs and cron routes only:**
+```typescript
+import { createAdminClient } from '@/lib/supabase/admin'
+
+const supabase = createAdminClient()  // bypasses RLS — no user session needed
+```
+
+Use this when there is no authenticated user (e.g. Vercel Cron, internal admin
+routes). The `SUPABASE_SERVICE_ROLE_KEY` env var must be set in `.env.local` and
+in Vercel environment variables. Never import `lib/supabase/admin.ts` from a
+`'use client'` file or any code that could reach the browser.
 
 ---
 
@@ -768,7 +781,10 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    `SnapshotSection` (client-with-server-children) handles display + edit form
    (label, notes, dynamic component rows); `PATCH /api/systems/[id]/snapshots/[snapshotId]`.
    Tests: `components/systems/__tests__/SnapshotSection.test.tsx`
-10. ⬜ URL health check cron
+10. ✅ URL health check cron — `GET /api/cron/check-urls`; checks `provider='direct'`
+   clips via HEAD request; updates `url_status` and `media_type` where changed;
+   uses service role client (no user session); scheduled daily at 02:00 UTC via
+   `vercel.json`; protected by `CRON_SECRET` env var.
 11. ⬜ Public feed + pagination
 
 Update the checkboxes above as steps are completed.

@@ -200,6 +200,15 @@ create policy "clips: test creator insert"
     )
   );
 
+create policy "clips: test creator update"
+  on public.clips for update
+  using (
+    exists (
+      select 1 from public.tests
+      where id = test_id and creator_id = auth.uid()
+    )
+  );
+
 create policy "clip_mapping: revealed or creator"
   on public.clip_mapping for select
   using (
