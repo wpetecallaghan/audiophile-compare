@@ -34,7 +34,7 @@ npm run test:coverage
 - `lib/clips/__tests__/` - Clip utility tests (provider detection, data transformation, shared-clip finding)
 - `lib/votes/__tests__/` - Vote tally computation tests
 - `components/media/__tests__/` - Media component tests
-- `components/tests/__tests__/` - Test UI component tests (VoteForm)
+- `components/tests/__tests__/` - Test UI component tests (VoteForm, StepSnapshots)
 
 ### Test File Naming
 
@@ -156,6 +156,16 @@ Tests cover:
 - Multiple shared tracks all returned
 - Duplicate track in one list: first (most recent) entry used
 
+#### ✅ StepSnapshots Component Tests
+**File:** `components/tests/__tests__/StepSnapshots.test.tsx` (16 tests)
+
+Tests cover:
+- **Rendering** — system name and snapshot labels, “+ Add new snapshot” on every system (including empty), “no systems” message with link, Continue disabled initially
+- **Form open/close** — clicking add shows mini-form; Cancel hides it and restores link; fields cleared on reopen
+- **Validation** — submit button disabled when label empty; whitespace-only label treated as empty
+- **Submission** — `onSnapshotCreated` called with systemId and snapshot; correct POST URL and body; form hidden on success; server error message shown; network error shown
+- **Selection** — Continue enabled after selecting both sides; inline creation auto-selects and enables Continue
+
 ### Pending Tests (Next.js Environment Required)
 
 The following tests are written but currently skipped pending proper Next.js test environment setup:
@@ -188,8 +198,8 @@ Would test:
 ### Test Coverage Summary
 
 ```
-Test Suites: 2 skipped, 11 passed, 13 total
-Tests:       2 skipped, 100 passed, 102 total
+Test Suites: 2 skipped, 12 passed, 14 total
+Tests:       2 skipped, 116 passed, 118 total
 ```
 
 **Passing Tests:**
@@ -202,6 +212,7 @@ Tests:       2 skipped, 100 passed, 102 total
 - ✅ Shared clip finder (9 tests)
 - ✅ ABPlayer component (1 test)
 - ✅ VoteForm component (20 tests)
+- ✅ StepSnapshots component (16 tests)
 - ✅ Vote tally computation (16 tests)
 - ✅ Snapshot outcome computation (8 tests)
 
@@ -245,8 +256,8 @@ npm test
 
 You should see:
 ```
- Test Files  11 passed | 2 skipped (13)
-      Tests  100 passed | 2 skipped (102)
+ Test Files  12 passed | 2 skipped (14)
+      Tests  116 passed | 2 skipped (118)
 ```
 
 Run tests in watch mode during development:

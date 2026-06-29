@@ -5,7 +5,7 @@ import StepTrack     from './steps/StepTrack'
 import StepSnapshots from './steps/StepSnapshots'
 import StepClips     from './steps/StepClips'
 import StepPublish   from './steps/StepPublish'
-import type { TestDraft, SystemWithSnapshots } from '@/lib/types/test-creation'
+import type { TestDraft, SystemWithSnapshots, Snapshot } from '@/lib/types/test-creation'
 
 type Props = {
   systems: SystemWithSnapshots[]
@@ -26,9 +26,22 @@ const initialDraft: TestDraft = {
   title:         '',
 }
 
-export default function CreateTestForm({ systems }: Props) {
-  const [step, setStep]   = useState<Step>(0)
-  const [draft, setDraft] = useState<TestDraft>(initialDraft)
+export default function CreateTestForm({ systems: initialSystems }: Props) {
+  const [step, setStep]     = useState<Step>(0)
+  const [draft, setDraft]   = useState<TestDraft>(initialDraft)
+  const [systems, setSystems] = useState<SystemWithSnapshots[]>(initialSystems)
+
+  function handleSnapshotCreated(systemId: string, snap: Snapshot) {
+    setSystems(prev => prev.map(sys =>
+      sys.id === systemId
+        ? {
+            ...sys,
+            system_snapshots: [...sys.system_snapshots, snap]
+              .sort((a, b) => b.version - a.version),
+          }
+        : sys
+    ))
+  }
 
   function advance(updates: Partial<TestDraft>) {
     setDraft(prev => ({ ...prev, ...updates }))
@@ -68,7 +81,7 @@ export default function CreateTestForm({ systems }: Props) {
         <StepTrack draft={draft} onComplete={advance} />
       )}
       {step === 1 && (
-        <StepSnapshots draft={draft} systems={systems} onComplete={advance} />
+        <StepSnapshots draft={draft} systems={systems} onComplete={advance} onSnapshotCreated={handleSnapshotCreated} />
       )}
       {step === 2 && (
         <StepClips draft={draft} onComplete={advance} />

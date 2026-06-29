@@ -97,6 +97,17 @@ Go to `http://localhost:3000/tests/new` and complete the four-step wizard.
 - Set before/after: select whichever you prefer
 - Click **Continue**
 
+> **Inline snapshot creation (optional path):**
+> To test the inline creation flow, skip creating snapshots in Step 2 above.
+> Instead, on the Systems wizard step:
+> - [ ] At the bottom of each system group, a **+ Add new snapshot** link is visible
+> - [ ] Clicking it opens an inline form with a Label input (required), Notes textarea (optional), and a note that components can be filled in later
+> - [ ] Submitting with an empty label shows "Label is required" and does not submit
+> - [ ] Submitting a valid label creates the snapshot and immediately selects it for that side
+> - [ ] The new snapshot appears in both selectors (Snapshot A and Snapshot B columns)
+> - [ ] A system with no existing snapshots still shows the **+ Add new snapshot** link (no dead-end message)
+> - [ ] Both sides can have forms open independently
+
 **Step 4 — Publish**
 - Title: `Naim power cable comparison — Nils Lofgren`
 - Review the summary

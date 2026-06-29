@@ -58,10 +58,12 @@ app/
     tests/[id]/route.ts
     tests/[id]/reveal/route.ts
     tests/[id]/results/route.ts
+    tests/cross-check/route.ts          ← POST: create test from existing clip URLs
     votes/route.ts
     votes/[id]/route.ts
     systems/route.ts
-    systems/[id]/snapshots/route.ts
+    systems/[id]/snapshots/route.ts     ← POST: add snapshot inline; auto-assigns version
+    systems/[id]/cross-check/route.ts  ← GET: shared tracks for two snapshots
     tracks/route.ts
     techniques/route.ts
   auth/callback/route.ts    ← Magic link exchange
@@ -84,6 +86,18 @@ components/
       YouTubePlayer.tsx     ← Client: YouTube iframe SDK
       VimeoPlayer.tsx       ← Client: Vimeo SDK
       UnknownPlayer.tsx     ← Client: fallback link
+  tests/
+    CreateTestForm.tsx      ← Client: wizard shell; holds systems in local state
+    VoteForm.tsx            ← Client: cast / update votes
+    TallyDisplay.tsx        ← Server: vote result bars + divergence callout
+    RevealButton.tsx        ← Client: creator-only reveal action
+    MappingBadge.tsx        ← Server: before/after label after reveal
+    CrossCheckSelector.tsx  ← Client: snapshot pair picker; fetches shared tracks
+    steps/
+      StepTrack.tsx
+      StepSnapshots.tsx     ← Client: snapshot picker; supports inline creation
+      StepClips.tsx
+      StepPublish.tsx
   LoginForm.tsx             ← Client: magic link form
 
 lib/
@@ -560,6 +574,12 @@ Next.js 16 deprecates `middleware.ts` in favor of `proxy.ts`. However, Supabase'
 - Tests live in a `__tests__/` folder adjacent to the file under test
 - API routes are tested via integration tests against a Supabase test project (not yet set up — do not add unit tests that mock Supabase internals)
 
+**What to test in wizard step components** (e.g. `StepSnapshots`):
+- Rendering: verify key UI elements appear; verify empty-state messages
+- Inline async forms: open/close, client-side validation (disabled state, trim), submission (success + API error + network error), callback invocation
+- Step-level state: verify parent callbacks (`onComplete`, `onSnapshotCreated`) receive correct args
+- Do NOT test the parent form (`CreateTestForm`) directly — its state management is simple array manipulation that is validated indirectly by the step tests
+
 **Test environment configuration:**
 ```typescript
 // vitest.config.ts - use jsdom as default for convenience
@@ -582,6 +602,52 @@ Per-file environment override (add as first line of test file):
 
 ---
 
+## 9a. Wizard steps that can create sub-resources inline
+
+`CreateTestForm` initialises `systems` from its prop into local `useState`.
+Wizard steps do not mutate the prop directly — they receive the current value
+as a prop and call a callback to signal changes.
+
+When a step can create a resource inline (e.g. `StepSnapshots` creating a new
+snapshot), it receives a callback prop:
+
+```typescript
+onSnapshotCreated: (systemId: string, snapshot: Snapshot) => void
+```
+
+After a successful API call the step:
+1. Calls the callback — `CreateTestForm` merges the new resource into its local state
+2. Auto-selects the new resource for whichever side triggered the action
+
+Steps do **not** call `router.refresh()` for inline resource creation — the
+local state update inside `CreateTestForm` is sufficient because the wizard
+is a client component tree, not a server component.
+
+**`CreateTestForm` local state pattern:**
+```typescript
+// systems comes in as a prop (fetched by the server page)
+// but is immediately copied to local state so inline creations
+// can be appended without a full page reload
+export default function CreateTestForm({ systems: initialSystems }: Props) {
+  const [systems, setSystems] = useState<SystemWithSnapshots[]>(initialSystems)
+
+  function handleSnapshotCreated(systemId: string, snap: Snapshot) {
+    setSystems(prev => prev.map(sys =>
+      sys.id === systemId
+        ? {
+            ...sys,
+            system_snapshots: [...sys.system_snapshots, snap]
+              .sort((a, b) => b.version - a.version),
+          }
+        : sys
+    ))
+  }
+  // ...
+}
+```
+
+---
+
 ## 10. Build order (for orientation in new sessions)
 
 1. ✅ Supabase schema, RLS, seed data
@@ -589,6 +655,10 @@ Per-file environment override (add as first line of test file):
 3. ✅ Clip URL verification (`/api/clips/verify`)
 4. ✅ MediaPlayer component (all four cases, A/B coordination)
 5. ✅ Test creation flow
+   (refinement ✅) Inline snapshot creation from `StepSnapshots` —
+   `CreateTestForm` holds `systems` in local state; `StepSnapshots`
+   calls `onSnapshotCreated(systemId, snapshot)` after API success.
+   Tests: `components/tests/__tests__/StepSnapshots.test.tsx` (16 tests)
 6. ✅ Test detail page + blind playback
 7. ✅ Voting
 8. ✅ Results by technique
@@ -847,6 +917,7 @@ Read `audiophile-compare-schema.md` when working on:
 - Adding or modifying RLS policies
 - Writing migrations
 - Any feature touching the listening techniques or cross-check logic
+- Adding snapshots inline (`version` is auto-assigned as `MAX(version) + 1` per `system_id`)
 
 ---
 
