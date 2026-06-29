@@ -6,11 +6,12 @@ The testing infrastructure is now set up and ready to use.
 
 ### Installed Dependencies
 
-- **Jest** - Test runner
+- **Vitest** - Test runner
 - **React Testing Library** - Component testing utilities
 - **@testing-library/jest-dom** - Custom DOM matchers
 - **@testing-library/user-event** - User interaction simulation
 - **MSW (Mock Service Worker)** - API mocking
+- **@vitest/coverage-v8** - Coverage reporting
 
 ### Available Test Commands
 
@@ -27,9 +28,11 @@ npm run test:coverage
 
 ### Configuration Files
 
-- `jest.config.js` - Jest configuration with Next.js integration
-- `jest.setup.js` - Global test setup (mocks, custom matchers)
-- `__tests__/` - Directory for test files
+- `vitest.config.ts` - Vitest configuration
+- `vitest.setup.ts` - Global test setup (mocks, custom matchers)
+- `__tests__/` - Directory for root-level test files
+- `lib/clips/__tests__/` - Clip utility tests
+- `components/media/__tests__/` - Media component tests
 
 ### Test File Naming
 
@@ -40,7 +43,7 @@ Tests can be placed in:
 
 ### Environment Variables
 
-Test environment variables are mocked in `jest.setup.js`:
+Test environment variables are mocked in `vitest.setup.ts`:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
@@ -51,20 +54,18 @@ Unit tests have been implemented for core business logic components.
 ### Implemented Tests
 
 #### ✅ LoginForm Component Tests
-**File:** `__tests__/LoginForm.test.tsx` (16 tests)
+**File:** `__tests__/LoginForm.test.tsx` (9 tests)
 
 Tests cover:
-- **Rendering** - Email input, submit button, accessibility
-- **User Interactions** - Input changes, form submission
+- **Rendering** - Email input, submit button, accessibility, initial state
 - **State Management** - Success messages, error handling, state resets
 - **Supabase Integration** - OTP sign-in with correct parameters and redirects
 
 Key test scenarios:
-- Email input validation
-- Magic link request submission
-- Success message display
+- Email input rendering and accessibility
+- Success message display after submission
 - Error message handling
-- redirectTo parameter handling
+- `redirectTo` parameter handling
 
 #### ✅ Supabase Browser Client Tests
 **File:** `__tests__/supabase-client.test.ts` (7 tests)
@@ -84,6 +85,31 @@ Tests cover:
 - Error handling in Server Components
 - Environment variable configuration
 - Request context requirement
+
+#### ✅ Clip Provider Detection Tests
+**File:** `lib/clips/__tests__/detect-provider.test.ts` (9 tests)
+
+Tests cover:
+- **YouTube** - Standard watch URLs, shortened `youtu.be` URLs, already-embedded URLs
+- **Vimeo** - Standard URLs, already-embedded URLs
+- **Direct** - Audio and video direct URLs
+- **Unknown** - Malformed URLs, empty strings
+
+#### ✅ Clip Data Transformation Tests
+**File:** `lib/clips/__tests__/to-clip-data.test.ts` (5 tests)
+
+Tests cover:
+- Passthrough of `id`, `label`, `source_url`, `provider`, `media_type`
+- `embed_id` and `canonical_url` derivation for YouTube URLs
+- `embed_id` and `canonical_url` derivation for Vimeo URLs
+- `null` embed_id for direct URLs
+- Correct handling of label B clips
+
+#### ✅ ABPlayer Component Tests
+**File:** `components/media/__tests__/ABPlayer.test.tsx` (1 test)
+
+Tests cover:
+- Renders labels for both clips (A/B)
 
 ### Pending Tests (Next.js Environment Required)
 
@@ -117,19 +143,22 @@ Would test:
 ### Test Coverage Summary
 
 ```
-Test Suites: 2 skipped, 4 passed, 6 total
-Tests:       2 skipped, 32 passed, 34 total
+Test Suites: 2 skipped, 7 passed, 9 total
+Tests:       2 skipped, 47 passed, 49 total
 ```
 
 **Passing Tests:**
 - ✅ Setup verification (3 tests)
-- ✅ LoginForm component (16 tests)
+- ✅ LoginForm component (9 tests)
 - ✅ Supabase browser client (7 tests)
 - ✅ Supabase server client (10 tests)
+- ✅ Clip provider detection (9 tests)
+- ✅ Clip data transformation (5 tests)
+- ✅ ABPlayer component (1 test)
 
 **Skipped Tests:**
-- ⏸️ Middleware (20 tests - pending Next.js environment)
-- ⏸️ Auth callback route (14 tests - pending Next.js environment)
+- ⏸️ Middleware (pending Next.js environment)
+- ⏸️ Auth callback route (pending Next.js environment)
 
 ## Next Steps
 
@@ -167,13 +196,8 @@ npm test
 
 You should see:
 ```
-PASS  __tests__/LoginForm.test.tsx
-PASS  __tests__/supabase-server.test.ts
-PASS  __tests__/supabase-client.test.ts
-PASS  __tests__/setup.test.ts
-
-Test Suites: 2 skipped, 4 passed, 6 total
-Tests:       2 skipped, 32 passed, 34 total
+ Test Files  7 passed | 2 skipped (9)
+      Tests  47 passed | 2 skipped (49)
 ```
 
 Run tests in watch mode during development:
