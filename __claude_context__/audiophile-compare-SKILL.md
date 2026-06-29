@@ -590,7 +590,7 @@ Per-file environment override (add as first line of test file):
 4. ✅ MediaPlayer component (all four cases, A/B coordination)
 5. ✅ Test creation flow
 6. ✅ Test detail page + blind playback
-7. ⬜ Voting
+7. ✅ Voting
 8. ⬜ Results by technique
 9. ⬜ System catalogue views
 10. ⬜ URL health check cron

@@ -113,10 +113,12 @@ Check each of the following on the page you land on.
 **As the logged-in creator:**
 - [ ] Title and track info appear in the header
 - [ ] Status shows "Blind test"
+- [ ] Vote count in the header reads "0 votes"
 - [ ] Both clips are playable — starting one pauses the other
 - [ ] "Reveal before/after" button is visible
-- [ ] Vote tally placeholder is not visible (you haven't voted yet)
-- [ ] Voting placeholder is visible
+- [ ] Vote tally section is **not** visible (you haven't voted yet)
+- [ ] "Cast your vote" form is visible, listing all six techniques with Clip A / Clip B radio buttons
+- [ ] Submit button is disabled until at least one technique is selected
 
 **Reveal flow:**
 - [ ] Click "Reveal before/after" — confirmation panel appears
@@ -127,11 +129,69 @@ Check each of the following on the page you land on.
 - [ ] Title and track info are visible
 - [ ] Player is replaced by "Sign in to listen" prompt
 - [ ] No reveal button visible
+- [ ] No vote form visible
 - [ ] Status shows "Blind test" (or "Revealed" if you revealed it)
 
 ---
 
-## Step 5 — Verify security rules in SQL
+## Step 5 — Voting flow
+
+**Cast a vote as the creator:**
+1. Return to the test detail page as your logged-in user
+2. In the "Cast your vote" form, select **Clip A** for **Tune Method**
+3. Add an optional observation in the textarea that appears — e.g. `Better pace`
+4. Select **Clip B** for **General preference** (leave all others blank)
+5. Click **Submit votes**
+
+- [ ] Page refreshes automatically
+- [ ] Heading changes to "Update your vote"
+- [ ] Vote count in the header now reads "1 vote"
+- [ ] Submit button now reads "Update votes"
+- [ ] Vote tally section is now visible (you have voted)
+- [ ] Tally placeholder shows (step 8 will replace this with real results)
+
+**Verify you can update your vote:**
+1. Change the **Tune Method** selection from Clip A to **Clip B**
+2. Click **Update votes**
+
+- [ ] Page refreshes, selections are preserved
+- [ ] Vote count still reads "1 vote" (same listener — not double-counted)
+
+**Verify the Other technique requires a description:**
+1. Select **Clip A** for the **Other** technique
+2. Leave the description field blank
+3. Click **Update votes**
+
+- [ ] Error message appears: `Please describe your criterion for the "Other" technique`
+- [ ] No network request is made (check browser DevTools → Network)
+
+**Verify vote visibility rules as a logged-out visitor:**
+1. Open an incognito window and navigate to the same test URL
+
+- [ ] Vote form is not shown
+- [ ] Vote tally is not shown (test is still open)
+- [ ] Vote count is visible in the header
+
+**Verify a second user can vote independently:**
+1. Log in as a second user (use a different email, or a private browsing session)
+2. Open the same test URL
+
+- [ ] "Cast your vote" form is shown (fresh — no pre-selections)
+- [ ] Vote on at least one technique and submit
+- [ ] Vote count increments to "2 votes"
+- [ ] Tally is now visible for this user too
+
+**Verify the vote form disappears after reveal:**
+1. Log back in as the creator and click **Reveal before/after**
+2. Confirm the reveal
+
+- [ ] Vote form is gone (test is now revealed)
+- [ ] Tally is visible to everyone, including logged-out visitors
+- [ ] Vote count is still shown in the header
+
+---
+
+## Step 6 — Verify security rules in SQL
 
 Run these in the SQL editor to confirm the data is correct.
 
@@ -153,7 +213,21 @@ select name, sort_order, is_other
 from public.listening_techniques
 order by sort_order;
 
--- Confirm vote count function works (should return 0)
+-- Confirm votes were recorded (replace YOUR-TEST-ID)
+select
+  u.email,
+  lt.name  as technique,
+  c.label  as chose_clip,
+  v.observation,
+  v.other_description
+from public.votes v
+join public.users              u  on u.id  = v.user_id
+join public.listening_techniques lt on lt.id = v.technique_id
+join public.clips              c  on c.id  = v.chosen_clip_id
+where v.test_id = 'YOUR-TEST-ID'
+order by u.email, lt.sort_order;
+
+-- Confirm distinct voter count matches what the UI shows
 select public.test_vote_count('YOUR-TEST-ID');
 ```
 

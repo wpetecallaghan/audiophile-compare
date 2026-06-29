@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation'
 import ABPlayer from '@/components/media/ABPlayer'
 import RevealButton from '@/components/tests/RevealButton'
 import MappingBadge from '@/components/tests/MappingBadge'
+import VoteForm from '@/components/tests/VoteForm'
 import { toClipData } from '@/lib/clips/to-clip-data'
+import type { Technique, ExistingVote } from '@/components/tests/VoteForm'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -44,18 +46,36 @@ export default async function TestDetailPage({ params }: Props) {
     mapping = data
   }
 
-  // Vote tally visibility
+  // Vote tally visibility + public vote count
   let hasVoted = false
+  let existingVotes: ExistingVote[] = []
   if (user) {
-    const { count } = await supabase
+    const { data: userVotes } = await supabase
       .from('votes')
-      .select('*', { count: 'exact', head: true })
+      .select('technique_id, chosen_clip_id, other_description, observation')
       .eq('test_id', test.id)
       .eq('user_id', user.id)
-    hasVoted = (count ?? 0) > 0
+    existingVotes = userVotes ?? []
+    hasVoted = existingVotes.length > 0
   }
 
   const canSeeTally = isRevealed || hasVoted
+
+  // Public vote count (via security-definer RPC — safe for all viewers)
+  const { data: voteCountData } = await supabase
+    .rpc('test_vote_count', { test_id: test.id })
+  const voteCount: number = voteCountData ?? 0
+
+  // Listening techniques (only needed for open tests)
+  let techniques: Technique[] = []
+  if (!isRevealed) {
+    const { data } = await supabase
+      .from('listening_techniques')
+      .select('id, name, description, is_other')
+      .eq('is_active', true)
+      .order('sort_order')
+    techniques = data ?? []
+  }
 
   // --- Shape the clips for ABPlayer ---
 
@@ -99,7 +119,8 @@ export default async function TestDetailPage({ params }: Props) {
         )}
         <p className="text-xs text-gray-400">
           by {creator?.display_name ?? 'Anonymous'} ·{' '}
-          {new Date(test.created_at).toLocaleDateString()}
+          {new Date(test.created_at).toLocaleDateString()} ·{' '}
+          {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
         </p>
       </div>
 
@@ -136,11 +157,15 @@ export default async function TestDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* Vote form placeholder — replaced in step 7 */}
+      {/* Vote form */}
       {user && !isRevealed && (
-        <div className="rounded border border-gray-200 p-3 sm:p-4 text-sm text-gray-400">
-          Voting will appear here (step 7).
-        </div>
+        <VoteForm
+          testId={test.id}
+          clipAId={rawA.id}
+          clipBId={rawB.id}
+          techniques={techniques}
+          existingVotes={existingVotes}
+        />
       )}
 
     </main>
