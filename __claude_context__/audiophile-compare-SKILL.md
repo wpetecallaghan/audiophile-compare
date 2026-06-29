@@ -1107,3 +1107,63 @@ These notes inform how explanations should be framed and how code should be writ
 - HTTP and API route design explanations can be concise
 - Prefer explicit and readable code over clever and terse — the developer will be reading and maintaining it
 - When there are multiple ways to do something, briefly describe the options and recommend one with a reason
+
+---
+
+## 18. Deployment environments
+
+### Architecture
+
+Three environments, two Supabase cloud projects:
+
+| Environment | Git trigger | Supabase project | Vercel scope |
+|---|---|---|---|
+| Production | Push to `main` | `audiophile-prod` | Production |
+| Preview | Push to any branch / PR | `audiophile-staging` | Preview |
+| Development | `next dev` locally | Local or staging | Development |
+
+### Required environment variables
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | All client + server code | Different value per environment |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Browser Supabase client | Different value per environment |
+| `SUPABASE_SERVICE_ROLE_KEY` | `lib/supabase/admin.ts` only | Never expose to browser |
+| `CRON_SECRET` | `GET /api/cron/check-urls` | Vercel passes as `Authorization: Bearer` header |
+
+### Supabase client selection by context
+
+| Context | Client to use | Key used |
+|---|---|---|
+| Server components, API routes (user request) | `lib/supabase/server.ts` | Anon key + user session cookies |
+| Cron routes, admin operations | `lib/supabase/admin.ts` | Service role key (bypasses RLS) |
+| Browser / client components | `lib/supabase/client.ts` | Anon key |
+
+### Local development
+
+`vercel env pull` writes the Vercel Development-scoped variables to `.env.local`.
+Run after first project setup and whenever Development variables change:
+
+```bash
+npx vercel link      # one-time: links repo to Vercel project
+npx vercel env pull  # writes .env.local
+```
+
+Alternatively, point local dev at local Supabase (`npx supabase start`) —
+see `docs/supabase-environments.md` for local Supabase setup.
+
+### Auth redirect configuration (Supabase dashboard)
+
+Each Supabase project must trust the URLs that Auth will redirect to.
+
+- **Production project** → Authentication → URL Configuration → add production domain `/auth/callback`
+- **Staging project** → add `https://*.vercel.app/auth/callback` (wildcard covers all preview URLs)
+
+Without this, magic link clicks return an error after email verification.
+
+### Detailed setup instructions
+
+- Vercel project creation, environment variable setup, preview deployments:
+  `docs/vercel-setup.md`
+- Supabase project creation, schema application, multi-environment sync:
+  `docs/supabase-environments.md`
