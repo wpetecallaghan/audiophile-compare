@@ -133,6 +133,17 @@ Tests cover:
 - Other votes routed to qualitative list (not curated bars)
 - Supabase array join format handled
 
+#### ✅ Snapshot Outcome Computation Tests
+**File:** `lib/votes/__tests__/compute-outcome.test.ts` (8 tests)
+
+Tests cover:
+- Open (unrevealed) test returns `'open'`
+- Revealed test with no votes returns `'no-votes'`
+- Revealed test with missing clips returns `'no-votes'`
+- Snapshot on side A: win, loss
+- Snapshot on side B: win, loss
+- Equal votes returns `'draw'`
+
 ### Pending Tests (Next.js Environment Required)
 
 The following tests are written but currently skipped pending proper Next.js test environment setup:
@@ -165,8 +176,8 @@ Would test:
 ### Test Coverage Summary
 
 ```
-Test Suites: 2 skipped, 9 passed, 11 total
-Tests:       2 skipped, 83 passed, 85 total
+Test Suites: 2 skipped, 10 passed, 12 total
+Tests:       2 skipped, 91 passed, 93 total
 ```
 
 **Passing Tests:**
@@ -179,6 +190,7 @@ Tests:       2 skipped, 83 passed, 85 total
 - ✅ ABPlayer component (1 test)
 - ✅ VoteForm component (20 tests)
 - ✅ Vote tally computation (16 tests)
+- ✅ Snapshot outcome computation (8 tests)
 
 **Skipped Tests:**
 - ⏸️ Middleware (pending Next.js environment)
@@ -220,8 +232,8 @@ npm test
 
 You should see:
 ```
- Test Files  9 passed | 2 skipped (11)
-      Tests  83 passed | 2 skipped (85)
+ Test Files  10 passed | 2 skipped (12)
+      Tests  91 passed | 2 skipped (93)
 ```
 
 Run tests in watch mode during development:

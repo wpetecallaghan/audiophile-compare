@@ -148,7 +148,7 @@ Check each of the following on the page you land on.
 - [ ] Vote count in the header now reads "1 vote"
 - [ ] Submit button now reads "Update votes"
 - [ ] Vote tally section is now visible (you have voted)
-- [ ] Tally placeholder shows (step 8 will replace this with real results)
+- [ ] Tally shows percentage bars for each technique you voted on
 
 **Verify you can update your vote:**
 1. Change the **Tune Method** selection from Clip A to **Clip B**
@@ -188,6 +188,95 @@ Check each of the following on the page you land on.
 - [ ] Vote form is gone (test is now revealed)
 - [ ] Tally is visible to everyone, including logged-out visitors
 - [ ] Vote count is still shown in the header
+
+---
+
+## Step 7 — Tally display
+
+This step assumes you have at least one test where:
+- Two or more users have voted on multiple techniques
+- The test has been revealed
+
+If you only have one voter, the bars will show 100 % / 0 % on every technique.
+For a more realistic result, log in as a second user and cast votes that
+differ from the first (e.g. first user picks Clip A for Tune Method,
+second user picks Clip B).
+
+**Percentage bars:**
+- [ ] Each technique voted on shows a row with Clip A % and Clip B %
+- [ ] The bar for the winning side is blue; the losing side is grey
+- [ ] Percentages in a single row add up to 100
+- [ ] Techniques with equal votes show 50 % / 50 % (no highlighted winner)
+- [ ] The voter count below each bar matches the number of people who voted on that technique
+
+**Divergence callout:**
+- [ ] If two or more curated techniques have clear but *opposing* winners, an amber callout appears: "Interesting — techniques diverged"
+- [ ] If all curated techniques agree (or only one has a clear winner), no callout appears
+
+**Other approaches:**
+- [ ] If any voter used the "Other" technique, a qualitative list appears below the bars
+- [ ] Each entry shows the listener's description and their chosen clip
+- [ ] Observations entered during voting appear indented under the technique row
+
+**Logged-out visitor after reveal:**
+- [ ] Open the test URL in an incognito window
+- [ ] Tally section is visible even without logging in
+
+---
+
+## Step 8 — Systems and tracks catalogue
+
+These pages require the middleware-protected routes, so you must be logged in.
+
+**Tracks list — `/tracks`**
+1. Navigate to `http://localhost:3000/tracks`
+
+- [ ] The track created in Step 3 (Nils Lofgren — Keith Don't Go) is listed
+- [ ] Test count next to the track reflects the number of tests using it
+- [ ] Clicking the track navigates to `/tracks/[id]`
+
+**Track detail — `/tracks/[id]`**
+- [ ] Artist, title, album, and passage note are shown in the header
+- [ ] A breadcrumb link returns you to `/tracks`
+- [ ] The test created in Step 3 is listed
+- [ ] Blind tests show a "Blind" badge; revealed tests show a "Revealed" badge
+- [ ] Clicking a test navigates to `/tests/[id]`
+
+**Systems list — `/systems`**
+1. Navigate to `http://localhost:3000/systems`
+
+- [ ] The system created in Step 2 (Main system) is listed
+- [ ] The snapshot count and latest snapshot label are shown
+- [ ] Clicking the system navigates to `/systems/[id]`
+- [ ] Systems belonging to other users are not shown
+
+**System detail — `/systems/[id]`**
+- [ ] System name, description, and snapshots are shown
+- [ ] Each snapshot shows a test history section
+- [ ] The test from Step 3 appears under the correct snapshot (whichever was Clip A or Clip B)
+- [ ] Blind tests show "In progress" — no outcome until revealed
+- [ ] After revealing the test (Step 5 flow), the snapshot shows Win, Loss, or Draw
+- [ ] Win/loss counts are correct across all tests for that snapshot
+
+**Verify win/loss counts in SQL:**
+```sql
+-- Confirm revealed test outcome data (replace YOUR-TEST-ID and SNAPSHOT-IDs)
+select
+  t.id,
+  t.status,
+  t.snapshot_a_id,
+  t.snapshot_b_id,
+  count(v.id) filter (where v.chosen_clip_id = (
+    select id from public.clips where test_id = t.id and label = 'A'
+  )) as clip_a_votes,
+  count(v.id) filter (where v.chosen_clip_id = (
+    select id from public.clips where test_id = t.id and label = 'B'
+  )) as clip_b_votes
+from public.tests t
+join public.votes v on v.test_id = t.id
+where t.id = 'YOUR-TEST-ID'
+group by t.id, t.status, t.snapshot_a_id, t.snapshot_b_id;
+```
 
 ---
 
