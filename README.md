@@ -31,9 +31,11 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Testing
 
-For manual testing instructions, see [manual-testing-setup.md](manual-testing-setup.md).
+For automated test documentation (Vitest, test suites, coverage), see [docs/TESTING.md](docs/TESTING.md).
 
-For database reset and recovery steps, see [supabase-database-reset.md](supabase-database-reset.md).
+For manual testing instructions, see [docs/manual-testing-setup.md](docs/manual-testing-setup.md).
+
+For database reset and recovery steps, see [docs/supabase-database-reset.md](docs/supabase-database-reset.md).
 
 ## Deploy on Vercel
 
