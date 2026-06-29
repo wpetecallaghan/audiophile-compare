@@ -109,8 +109,15 @@ lib/
     server.ts               ← createClient() for server components + API routes
     client.ts               ← createClient() for browser components
   clips/
-    detect-provider.ts      ← Pure URL classification (no I/O)
     check-url.ts            ← HEAD request for direct URLs
+    detect-provider.ts      ← Pure URL classification (no I/O)
+    to-clip-data.ts         ← Converts verified URL into ClipData shape
+    find-shared-clips.ts    ← Shared track finder for cross-check feature
+  votes/
+    compute-outcome.ts      ← computeOutcome(); Outcome type
+    compute-tally.ts        ← computeTally(); RawVoteRow, CuratedResult types
+  types/
+    test-creation.ts        ← TestDraft, Snapshot, SystemWithSnapshots types
   youtube-api.ts            ← Singleton YouTube iframe API loader
 
 types/
@@ -163,6 +170,24 @@ export async function GET(
   // ...
 }
 ```
+
+**Hydration-sensitive rendering in client components:**
+
+`'use client'` components are SSR'd on the server and then hydrated in the
+browser. Methods that produce locale- or timezone-dependent output (e.g.
+`toLocaleDateString()`) can produce different strings on the Node.js server
+vs the browser, causing React hydration warnings. Add `suppressHydrationWarning`
+to the element:
+
+```tsx
+{/* suppressHydrationWarning: toLocaleDateString() may differ between Node.js and browser locale */}
+<p className="text-xs text-gray-400" suppressHydrationWarning>
+  {new Date(createdAt).toLocaleDateString()}
+</p>
+```
+
+This was not an issue when date display lived in server components. It becomes
+an issue when a section is extracted into a client component (e.g. `SnapshotSection`).
 
 ---
 
@@ -240,14 +265,13 @@ const { data } = await supabase
 
 **Standard response format:**
 ```typescript
-// Success responses
-return NextResponse.json({ data: result }, { status: 200 })
+// Success responses — use a named field matching the resource, not a generic 'data' wrapper
+return NextResponse.json({ snapshot }, { status: 201 })  // POST (created)
+return NextResponse.json({ snapshot }, { status: 200 })  // PATCH (updated)
+return NextResponse.json({ tests }, { status: 200 })     // GET (list)
 
-// Error responses (use consistent error shape)
-return NextResponse.json(
-  { error: 'Descriptive message', code: 'ERROR_CODE' },
-  { status: 400 | 401 | 403 | 404 | 500 }
-)
+// Error responses — consistent error shape; no 'code' field used in this project
+return NextResponse.json({ error: 'Descriptive message' }, { status: 400 /* | 401 | 403 | 404 | 500 */ })
 ```
 
 ---
@@ -374,7 +398,7 @@ or the Supabase JS client directly for read operations.
 user, not as "the app". Existing RLS policies and route auth checks apply
 unchanged.
 
-**Upload flow** (when owned storage is implemented — see section 15):
+**Upload flow** (when owned storage is implemented — see section 14):
 ```
 Mobile → POST /api/clips/upload-url   (authenticated as user; returns presigned URL)
 Mobile → PUT  {presignedUrl}          (direct to storage; no server involvement)
@@ -395,10 +419,9 @@ routes for mutations (with the user's session token) avoids CORS entirely.
 
 ---
 
-**Current state:** Neither use case is implemented. The ingestion pipeline
-and mobile app are deferred until after the core build steps (1–11) are
-complete. The `source_ref` migration should be added to `tests` before the
-first production data is written, to avoid a backfill later.
+**Current state:** Neither use case is implemented. Both are deferred until
+after the core build steps (1–11) are complete. Note: `source_ref` is already
+included in the initial schema migration — no additional migration needed.
 
 ---
 
@@ -482,6 +505,18 @@ await supabase
   .update({ status: 'revealed', revealed_at: new Date().toISOString() })
   .eq('id', testId)
 ```
+
+### Rule 5 — RLS policies must cover every operation the API performs
+
+When an API route performs both `INSERT` and `UPDATE` on a table, both must
+have explicit RLS policies. A missing UPDATE policy causes the Supabase client
+to return an error object (the route sees `error` truthy and returns 500),
+even when application-level ownership checks pass. Always audit the schema
+migrations when a write route returns 500 unexpectedly.
+
+Example — `system_snapshots` requires two write policies:
+- `snapshots: owner insert` — for `POST /api/systems/[id]/snapshots`
+- `snapshots: owner update` — for `PATCH /api/systems/[id]/snapshots/[snapshotId]`
 
 ---
 
@@ -721,18 +756,18 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    (refinement ✅) Inline snapshot creation from `StepSnapshots` —
    `CreateTestForm` holds `systems` in local state; `StepSnapshots`
    calls `onSnapshotCreated(systemId, snapshot)` after API success.
-   Tests: `components/tests/__tests__/StepSnapshots.test.tsx` (16 tests)
+   Tests: `components/tests/__tests__/StepSnapshots.test.tsx`
 6. ✅ Test detail page + blind playback
 7. ✅ Voting
 8. ✅ Results by technique
 9. ✅ System catalogue views (tracks catalogue, track detail, systems list, system detail + win/loss, cross-check)
    (refinement ✅) Inline snapshot creation from system detail page —
    `AddSnapshotForm` (client) rendered owner-only; calls `router.refresh()` on success.
-   Tests: `components/systems/__tests__/AddSnapshotForm.test.tsx` (14 tests)
+   Tests: `components/systems/__tests__/AddSnapshotForm.test.tsx`
    (refinement ✅) Snapshot editing from system detail page —
    `SnapshotSection` (client-with-server-children) handles display + edit form
    (label, notes, dynamic component rows); `PATCH /api/systems/[id]/snapshots/[snapshotId]`.
-   Tests: `components/systems/__tests__/SnapshotSection.test.tsx` (20 tests)
+   Tests: `components/systems/__tests__/SnapshotSection.test.tsx`
 10. ⬜ URL health check cron
 11. ⬜ Public feed + pagination
 
@@ -855,9 +890,7 @@ export default function GlobalError({
 
 ---
 
----
-
-## 15. Future expansion — dedicated storage and mobile recording
+## 14. Future expansion — dedicated storage and mobile recording
 
 This section records architectural decisions for a potential future feature:
 owned blob storage for recordings, and a mobile app to make recording and
@@ -985,13 +1018,19 @@ No current implementation decisions need revisiting to keep these options open.
 Read `audiophile-compare-schema.md` when working on:
 - Any new query involving `clip_mapping`, `votes`, or `system_snapshots`
 - Adding or modifying RLS policies
-- Writing migrations
+- Adding schema changes (see database strategy note below)
 - Any feature touching the listening techniques or cross-check logic
 - Adding snapshots inline (`version` is auto-assigned as `MAX(version) + 1` per `system_id`)
 
+**Database schema strategy (dev phase):** The project has no production data and the
+database can be discarded at any time. All schema changes go directly into
+`supabase/migrations/20260625094142_initial_schema.sql` — the single source of
+truth. Do **not** create additional migration files until there is production data
+that cannot be thrown away. Run `npx supabase db push` after editing the schema file.
+
 ---
 
-## 16. Listening technique governance and results display
+## 15. Listening technique governance and results display
 
 ### Three tiers
 
@@ -1010,7 +1049,7 @@ Read `audiophile-compare-schema.md` when working on:
 
 ---
 
-## 17. System catalogue views (build step 9)
+## 16. System catalogue views (build step 9)
 
 Three navigation views support cross-time comparison.
 
@@ -1034,7 +1073,7 @@ Three navigation views support cross-time comparison.
 
 ---
 
-## 18. Developer context
+## 17. Developer context
 
 These notes inform how explanations should be framed and how code should be written.
 

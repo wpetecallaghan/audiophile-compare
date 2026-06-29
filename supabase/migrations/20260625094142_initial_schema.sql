@@ -164,6 +164,15 @@ create policy "snapshots: owner insert"
     )
   );
 
+create policy "snapshots: owner update"
+  on public.system_snapshots for update
+  using (
+    exists (
+      select 1 from public.systems
+      where id = system_id and owner_id = auth.uid()
+    )
+  );
+
 create policy "tracks: authenticated read"
   on public.tracks for select using (auth.uid() is not null);
 
