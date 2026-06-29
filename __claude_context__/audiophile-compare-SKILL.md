@@ -847,3 +847,67 @@ Read `audiophile-compare-schema.md` when working on:
 - Adding or modifying RLS policies
 - Writing migrations
 - Any feature touching the listening techniques or cross-check logic
+
+---
+
+## 16. Listening technique governance and results display
+
+### Three tiers
+
+| Tier | Name | Behaviour |
+|---|---|---|
+| 1 | Curated | Named techniques seeded at launch. Stable IDs. Results are cross-test comparable. Admin-managed only. |
+| 2 | Other | Single row (`is_other = true`). Requires free-text description. Excluded from technique-level aggregation. Shown as qualitative list in results. |
+| 3 | Proposed | Deferred to v2. Recurrent "Other" descriptions may be nominated for promotion to Tier 1. |
+
+### Results display logic
+
+- **Curated techniques** (`is_other = false`): shown as percentage bars, grouped by technique, with vote count
+- **Other votes**: shown as a separate qualitative section — each voter's description and preference listed individually
+- **Divergence detection**: when curated techniques disagree on winner, surface a note to the viewer, e.g.:
+  > "Timing-focused listeners preferred B; tonal listeners preferred A — this change may involve a tradeoff."
+
+---
+
+## 17. System catalogue views (build step 9)
+
+Three navigation views support cross-time comparison.
+
+### View 1 — By track
+"Show me all tests that used this passage."
+- User selects a track; app returns all tests referencing it, ordered by date
+- Displays which snapshots were compared in each test
+- Enables "go back in time" — the full history of how a track sounded across configurations
+
+### View 2 — By snapshot
+"Show me everything tested at this system configuration."
+- User selects a snapshot; app returns all tests where it appeared as either side A or side B
+- Shows win/loss record for that snapshot across all tests
+
+### View 3 — Cross-check (anti-local-maxima feature)
+"Compare any two snapshots directly."
+- User selects Snapshot A and Snapshot B (regardless of when they were created)
+- App finds tracks that appear in tests for both snapshots
+- If matching clips exist, a new test can be created from existing clip URLs — no new recording needed
+- This directly addresses the risk of successive "locally good" decisions leading to a globally suboptimal system configuration
+
+---
+
+## 18. Developer context
+
+These notes inform how explanations should be framed and how code should be written.
+
+### Background
+- **SQL:** Expert — complex queries, JOINs, indexes, migrations, stored procedures
+- **HTTP / REST:** Experienced — request/response cycle, headers, status codes, API design
+- **Back-end:** .NET, Java, Go — strong server-side instincts (middleware, dependency injection, connection pooling, background jobs)
+- **HTML:** Familiar — comfortable reading and writing markup
+- **JavaScript / TypeScript:** Beginner — understands basics but needs guidance on idioms, patterns, and tooling
+- **React / Next.js:** No prior experience — starting fresh
+
+### Working style preferences
+- Explain JS/TS patterns and React/Next.js conventions — do not assume familiarity
+- Use SQL analogies where helpful (e.g. RLS policies are like row-filtered views with a `WHERE` clause based on the current user)
+- HTTP and API route design explanations can be concise
+- Prefer explicit and readable code over clever and terse — the developer will be reading and maintaining it
+- When there are multiple ways to do something, briefly describe the options and recommend one with a reason
