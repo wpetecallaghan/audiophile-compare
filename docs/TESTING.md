@@ -30,9 +30,11 @@ npm run test:coverage
 
 - `vitest.config.ts` - Vitest configuration
 - `vitest.setup.ts` - Global test setup (mocks, custom matchers)
-- `__tests__/` - Directory for root-level test files
+- `__tests__/` - Root-level test files
 - `lib/clips/__tests__/` - Clip utility tests
+- `lib/votes/__tests__/` - Vote tally computation tests
 - `components/media/__tests__/` - Media component tests
+- `components/tests/__tests__/` - Test UI component tests (VoteForm)
 
 ### Test File Naming
 
@@ -111,6 +113,26 @@ Tests cover:
 Tests cover:
 - Renders labels for both clips (A/B)
 
+#### ✅ VoteForm Component Tests
+**File:** `components/tests/__tests__/VoteForm.test.tsx` (20 tests)
+
+Tests cover:
+- **Rendering** — technique names/descriptions, A/B radios, disabled submit, headings
+- **Conditional rendering** — observation textarea, Other description field visibility
+- **Validation** — Other technique requires description; fetch not called on failure
+- **Submission** — payload includes only voted techniques, router.refresh() on success, API and network error handling
+- **Pre-population** — existing votes pre-select radios and fill observation; "Update votes" label
+
+#### ✅ Vote Tally Computation Tests
+**File:** `lib/votes/__tests__/compute-tally.test.ts` (16 tests)
+
+Tests cover:
+- Empty input, single technique (100%/0%, 50/50, 67/33, totals)
+- Multiple techniques grouped and sorted by sort_order
+- Divergence detection (agree, disagree, tied techniques excluded)
+- Other votes routed to qualitative list (not curated bars)
+- Supabase array join format handled
+
 ### Pending Tests (Next.js Environment Required)
 
 The following tests are written but currently skipped pending proper Next.js test environment setup:
@@ -143,8 +165,8 @@ Would test:
 ### Test Coverage Summary
 
 ```
-Test Suites: 2 skipped, 7 passed, 9 total
-Tests:       2 skipped, 47 passed, 49 total
+Test Suites: 2 skipped, 9 passed, 11 total
+Tests:       2 skipped, 83 passed, 85 total
 ```
 
 **Passing Tests:**
@@ -155,6 +177,8 @@ Tests:       2 skipped, 47 passed, 49 total
 - ✅ Clip provider detection (9 tests)
 - ✅ Clip data transformation (5 tests)
 - ✅ ABPlayer component (1 test)
+- ✅ VoteForm component (20 tests)
+- ✅ Vote tally computation (16 tests)
 
 **Skipped Tests:**
 - ⏸️ Middleware (pending Next.js environment)
@@ -196,8 +220,8 @@ npm test
 
 You should see:
 ```
- Test Files  7 passed | 2 skipped (9)
-      Tests  47 passed | 2 skipped (49)
+ Test Files  9 passed | 2 skipped (11)
+      Tests  83 passed | 2 skipped (85)
 ```
 
 Run tests in watch mode during development:

@@ -4,8 +4,11 @@ import ABPlayer from '@/components/media/ABPlayer'
 import RevealButton from '@/components/tests/RevealButton'
 import MappingBadge from '@/components/tests/MappingBadge'
 import VoteForm from '@/components/tests/VoteForm'
+import TallyDisplay from '@/components/tests/TallyDisplay'
 import { toClipData } from '@/lib/clips/to-clip-data'
+import { computeTally } from '@/lib/votes/compute-tally'
 import type { Technique, ExistingVote } from '@/components/tests/VoteForm'
+import type { RawVoteRow, TallyResult } from '@/lib/votes/compute-tally'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -96,6 +99,21 @@ export default async function TestDetailPage({ params }: Props) {
   const clipA = toClipData(rawA)
   const clipB = toClipData(rawB)
 
+  // Vote tally — fetch all votes for this test when the viewer is entitled
+  let tally: TallyResult | null = null
+  if (canSeeTally) {
+    const { data } = await supabase
+      .from('votes')
+      .select(`
+        chosen_clip_id,
+        other_description,
+        observation,
+        technique:listening_techniques(id, name, is_other, sort_order)
+      `)
+      .eq('test_id', test.id)
+    tally = computeTally((data ?? []) as RawVoteRow[], rawA.id, rawB.id)
+  }
+
   // Cast joined relations — Supabase returns these as arrays even for
   // singular foreign key joins; we take the first element
   const track  = Array.isArray(test.track)  ? test.track[0]  : test.track
@@ -150,11 +168,9 @@ export default async function TestDetailPage({ params }: Props) {
         <RevealButton testId={test.id} />
       )}
 
-      {/* Tally placeholder — replaced in step 9 */}
-      {canSeeTally && (
-        <div className="rounded border border-gray-200 p-3 sm:p-4 text-sm text-gray-400">
-          Vote tally will appear here (step 9).
-        </div>
+      {/* Vote tally */}
+      {canSeeTally && tally && (
+        <TallyDisplay tally={tally} clipAId={rawA.id} clipBId={rawB.id} />
       )}
 
       {/* Vote form */}
