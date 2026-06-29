@@ -234,78 +234,153 @@ return NextResponse.json(
 
 ---
 
-## 5a. API-first architecture for programmatic access
+## 5a. Programmatic access — two use cases only
 
-**Current state:** The API currently serves the Next.js web frontend exclusively,
-using session cookie authentication. All routes expect `supabase.auth.getUser()`
-to extract the user from the session cookie.
+There are exactly two non-browser callers anticipated. No general-purpose
+public API, no API key management UI, no versioned contract, no OpenAPI
+documentation. The design is the minimum needed for these two cases.
 
-**Future consideration:** To support programmatic/agentic access (AI agents,
-CLI tools, external integrations), the API would need:
+---
 
-### Dual authentication strategy
+### Decisions recorded
+
+**Go vs Next.js:** A separate Go service was considered and rejected. Both use
+cases are low-frequency and operate on the same data model as the browser. A
+Go service would add a second deployment, second secret management, and a
+second codebase to keep in sync with the schema — with no performance benefit
+at this scale. Go remains an option if sustained high concurrency or
+long-running operations become a concrete requirement; extraction would be
+mechanical since Supabase is the shared data layer.
+
+**No public API, no versioning, no API keys:** Neither use case is a
+third-party integration. A versioned `/api/v1/` surface, OpenAPI
+documentation, per-user API keys, and rate limiting infrastructure would all
+be overhead with no benefit. Both callers are first-party and controlled.
+
+---
+
+### Use case 1 — Forum ingestion pipeline
+
+An AI process reads Lejonklou forum threads, extracts recordings and listening
+comparisons, and writes them into the database as tests, tracks, clips, and
+votes. Periodic scheduled refreshes catch new posts.
+
+**Authentication:** A single dedicated `ingestion_bot` user in the `users`
+table, created manually. The ingestion service authenticates as this user via
+Supabase Auth (magic link issued once; token stored in the service's
+environment). No API key table needed.
+
+**Idempotency:** Forum posts must not produce duplicate tests on repeated
+runs. Add a `source_ref` column to `tests` to record provenance:
+
+```sql
+-- Migration: add_source_ref_to_tests
+alter table public.tests add column source_ref text unique;
+-- e.g. 'lejonklou-forum:thread-42:post-187'
+```
+
+Before inserting a test, check `source_ref` — skip if already present.
+
+**Ingest endpoint:** A single internal route, not part of any public surface:
+
+```
+POST /api/internal/ingest
+```
+
+Protected by a shared secret in an environment variable — not Supabase Auth —
+since this route is called server-to-server, not from a browser:
+
 ```typescript
-// lib/auth/get-user.ts — unified auth for both web and API clients
-export async function authenticateRequest(request: NextRequest) {
-  // 1. Check for Authorization header (programmatic access)
-  const authHeader = request.headers.get('authorization')
-  
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    // Validate API key or JWT token
-    // Return user object or null
+// app/api/internal/ingest/route.ts
+export async function POST(request: NextRequest) {
+  const secret = request.headers.get('x-ingest-secret')
+  if (secret !== process.env.INGEST_SECRET) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
-  
-  // 2. Fall back to session cookie (browser access)
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
+  // ... write track, test, clips, clip_mapping, votes atomically
+  // using the ingestion_bot user's supabase client
 }
 ```
 
-### API versioning (when programmatic access is added)
-```
-app/api/
-  v1/                       ← Versioned public API for programmatic access
-    tests/route.ts
-    tests/[id]/route.ts
-    votes/route.ts
-  internal/                 ← Web app internal endpoints (not documented)
-    clips/verify/route.ts
-```
+`INGEST_SECRET` is set in Vercel environment variables and in the ingestion
+service's environment. Never committed to source control.
 
-**Pattern:** Public-facing endpoints go in `/api/v1/`. Internal endpoints used
-only by the Next.js frontend can remain at `/api/`. This separation allows:
-- Independent versioning of the public API
-- Breaking changes to internal endpoints without affecting external clients
-- Clear documentation boundary (only document `/api/v1/`)
-
-### API documentation (when exposing public API)
-- Use OpenAPI 3.x specification
-- Generate from TypeScript types where possible
-- Host Swagger UI at `/api/v1/docs`
-- Include authentication examples for both session and bearer token
-
-### CORS configuration (when supporting non-browser clients)
+**Payload shape** (one test per call):
 ```typescript
-// middleware.ts additions for programmatic access
-if (request.nextUrl.pathname.startsWith('/api/v1/')) {
-  const response = NextResponse.next()
-  response.headers.set('Access-Control-Allow-Origin', '*')  // Or specific domains
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
-  response.headers.set('Access-Control-Allow-Headers', 'Authorization, Content-Type')
-  return response
+type IngestPayload = {
+  source_ref: string           // unique identifier for the forum post
+  track: {
+    artist: string
+    title: string
+    album?: string
+    passage_note?: string
+  }
+  snapshot_a: {
+    system_name: string        // matched or created by name
+    version_label: string
+    components?: object[]
+  }
+  snapshot_b: {
+    system_name: string
+    version_label: string
+    components?: object[]
+  }
+  clip_a_url: string
+  clip_b_url: string
+  before_is_a: boolean
+  votes?: Array<{
+    chosen_label: 'A' | 'B'
+    technique_name: string     // matched against listening_techniques.name
+    observation?: string
+    other_description?: string
+  }>
 }
 ```
 
-### Rate limiting (future consideration)
-- Implement per-user or per-API-key rate limits
-- Different tiers for web vs programmatic access
-- Return `X-RateLimit-*` headers
+The ingest route resolves or creates tracks, systems, and snapshots by name
+before writing the test — the same logic as the web creation flow, but
+automated. All writes are attributed to the `ingestion_bot` user.
 
-**Decision:** These patterns are NOT currently implemented. The API is
-web-frontend-focused for build phases 1-12. Add programmatic access support
-only when external integrations or agent access become a requirement.
+**CORS:** Not needed — server-to-server call, no browser involved.
+
+---
+
+### Use case 2 — Mobile app (future)
+
+The mobile app is a first-party client. It authenticates users via Supabase
+Auth directly (magic link or OAuth), storing tokens in `expo-secure-store`
+rather than cookies. It then calls the same `/api/` routes as the browser,
+or the Supabase JS client directly for read operations.
+
+**No separate auth mechanism needed.** The mobile app authenticates as the
+user, not as "the app". Existing RLS policies and route auth checks apply
+unchanged.
+
+**Upload flow** (when owned storage is implemented — see section 15):
+```
+Mobile → POST /api/clips/upload-url   (authenticated as user; returns presigned URL)
+Mobile → PUT  {presignedUrl}          (direct to storage; no server involvement)
+Mobile → POST /api/clips/confirm      (marks clip row as uploaded)
+```
+
+**CORS:** Needed only if the mobile app calls `/api/` routes directly rather
+than via the Supabase JS client. Add to `middleware.ts` if required:
+```typescript
+if (request.nextUrl.pathname.startsWith('/api/') &&
+    request.headers.get('x-client') === 'mobile') {
+  // set CORS headers
+}
+```
+
+In practice, using the Supabase JS client for reads and the existing `/api/`
+routes for mutations (with the user's session token) avoids CORS entirely.
+
+---
+
+**Current state:** Neither use case is implemented. The ingestion pipeline
+and mobile app are deferred until after the core build steps (1–11) are
+complete. The `source_ref` migration should be added to `tests` before the
+first production data is written, to avoid a backfill later.
 
 ---
 
@@ -337,11 +412,31 @@ if (!canSeeMapping) {
 }
 ```
 
-### Rule 2 — vote tallies hidden until user has voted or test is revealed
+### Rule 2 — vote tallies hidden until user has voted or test is revealed; vote COUNT is always public
+
+There is a deliberate distinction between the **count** and the **tally**:
+
+- **Vote count** (how many distinct listeners have voted): always public, shown to
+  everyone including logged-out visitors. Encourages participation. Carries no
+  information about which clip is preferred.
+- **Vote tally** (breakdown by clip and technique): hidden until the viewer has
+  voted or the test is revealed. Prevents anchoring bias.
+
+**Fetching the public count** — always via the `test_vote_count` Postgres
+function, never by querying `votes` directly. The function runs as
+`security definer` so it can count rows across the RLS boundary without
+exposing individual votes or clip choices:
+
 ```typescript
-// Before returning tallies, check one of:
-// (a) test.status === 'revealed'
-// (b) user has at least one vote on this test
+// Safe for any viewer including logged-out — returns only an integer
+const { data } = await supabase
+  .rpc('test_vote_count', { test_id: testId })
+
+const voteCount: number = data ?? 0
+```
+
+**Fetching the tally** — still gated, same rule as before:
+```typescript
 const { count } = await supabase
   .from('votes')
   .select('*', { count: 'exact', head: true })
@@ -350,6 +445,9 @@ const { count } = await supabase
 
 const canSeeTally = test.status === 'revealed' || (count ?? 0) > 0
 ```
+
+Never query the `votes` table directly for a public count — that would require
+relaxing the RLS policy in ways that could expose individual vote rows.
 
 ### Rule 3 — clip playback requires login
 Enforced in middleware for protected routes. API routes serving clip data
@@ -493,11 +591,10 @@ Per-file environment override (add as first line of test file):
 5. ✅ Test creation flow
 6. ✅ Test detail page + blind playback
 7. ⬜ Voting
-8. ⬜ Reveal
-9. ⬜ Results by technique
-10. ⬜ System catalogue views
-11. ⬜ URL health check cron
-12. ⬜ Public feed + pagination
+8. ⬜ Results by technique
+9. ⬜ System catalogue views
+10. ⬜ URL health check cron
+11. ⬜ Public feed + pagination
 
 Update the checkboxes above as steps are completed.
 
@@ -618,7 +715,132 @@ export default function GlobalError({
 
 ---
 
-## 14. Reference files
+---
+
+## 15. Future expansion — dedicated storage and mobile recording
+
+This section records architectural decisions for a potential future feature:
+owned blob storage for recordings, and a mobile app to make recording and
+upload simple. Neither is under active development. No current code needs to
+change to keep these options open.
+
+---
+
+### Storage
+
+**Current model:** BYOS — users supply URLs (YouTube, Vimeo, Dropbox, direct
+links). The app never handles audio/video bytes.
+
+**Future model:** Owned blob storage where the app accepts and stores
+recordings directly.
+
+**Preferred options (in order):**
+
+- **Supabase Storage** — already in the stack; RLS policies mirror the database
+  rules; signed URLs for time-limited playback; direct upload from mobile
+  without proxying through the server. Lowest operational overhead.
+- **Cloudflare R2** — S3-compatible, no egress fees (important for audio/video
+  replayed many times), pairs well with Vercel. Use if Supabase Storage proves
+  limiting.
+- **AWS S3** — standard but egress costs accumulate at scale for media files.
+  Avoid unless other AWS services are already in use.
+
+**Schema change needed (one migration, no data migration):**
+
+The `clips` table has a CHECK constraint on `provider`:
+```sql
+CONSTRAINT clips_provider_check CHECK (provider IN ('youtube', 'vimeo', 'direct', 'unknown'))
+```
+Add new values when owned storage is introduced:
+```sql
+ALTER TABLE public.clips
+  DROP CONSTRAINT clips_provider_check,
+  ADD CONSTRAINT clips_provider_check
+    CHECK (provider IN ('youtube', 'vimeo', 'direct', 'unknown', 'supabase', 'r2'));
+```
+
+A `storage_key` column should also be added for the internal object path
+(separate from the public/signed URL which may rotate):
+```sql
+ALTER TABLE public.clips ADD COLUMN storage_key text;
+```
+
+**Retention policy** must be decided before launch of owned storage — who pays
+for indefinitely stored files. Options: retain permanently, archive after N
+years, delete when parent test is deleted. Affects whether `archived_at` needs
+to be added to `clips`.
+
+---
+
+### Upload flow
+
+For files of any meaningful size, the mobile app uploads directly to storage —
+never through the Next.js server. The server generates a pre-signed upload URL
+and the app PUTs directly to storage.
+
+```
+Mobile → POST /api/v1/clips/upload-url   (authenticated; returns presigned URL + clipId)
+Mobile → PUT  {presignedUrl}             (direct to storage; server not involved)
+Mobile → POST /api/v1/clips/confirm      (tells server upload is complete)
+Server →      updates clip row, optionally enqueues transcode job
+```
+
+This flow fits cleanly into the existing agentic API design (section 5a).
+The two new endpoints (`upload-url` and `confirm`) are the only additions
+needed in the Next.js codebase.
+
+---
+
+### Transcoding
+
+Raw mobile recordings (typically AAC/M4A for audio, MP4 for video) may need
+normalisation for consistent cross-device playback. Options:
+
+- **Accept raw and transcode server-side** — better user experience; requires
+  a background job queue. Recommended choice: **Inngest** or **Trigger.dev**
+  (both integrate with Vercel and support durable job execution beyond the
+  5-minute function limit).
+- **Require app to transcode before upload** — simpler server; more complex
+  app; not recommended for a first version.
+
+Vercel Cron (already planned for URL health checks) is not suitable for
+transcoding — jobs may run longer than the cron execution window.
+
+---
+
+### Mobile app
+
+**Technology options:**
+
+| Option | Fit | Notes |
+|---|---|---|
+| React Native + Expo | Best for speed | TypeScript reuse; Supabase JS client works; Expo AV has recording APIs; cross-platform |
+| Swift (iOS only) | Best for audio quality | Native CoreAudio/AVFoundation access; sample-accurate recording; significant language investment |
+| Flutter | Middle ground | Cross-platform; Dart approachable from Java/Go background; good Supabase client |
+
+**Recommendation:** React Native + Expo if time-to-working-app is the
+priority. Swift if the audiophile community is iOS-dominated and recording
+fidelity at the hardware level is central to the value proposition.
+
+**Auth difference from web:** Mobile apps cannot use cookies. Supabase Auth
+works via token storage in `expo-secure-store` instead of `@supabase/ssr`.
+The agentic API Bearer token pattern (section 5a) applies directly — the
+mobile app is an API client using the same `/api/v1/` routes.
+
+---
+
+### What requires no change now
+
+The current BYOS architecture is forward-compatible with all of the above:
+
+- `source_url` is agnostic about where the file lives
+- `MediaPlayer` already handles `direct` audio/video URLs — owned storage URLs
+  render via the same code path
+- The agentic API design already accommodates non-browser callers
+- The `provider` CHECK constraint is the only schema change needed, and it is
+  additive (no data migration)
+
+No current implementation decisions need revisiting to keep these options open.
 
 Read `audiophile-compare-schema.md` when working on:
 - Any new query involving `clip_mapping`, `votes`, or `system_snapshots`

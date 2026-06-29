@@ -59,6 +59,8 @@ tests (
   status         text NOT NULL DEFAULT 'open',   -- 'open' | 'revealed'
   revealed_at    timestamptz,
   created_at     timestamptz DEFAULT now(),
+  source_ref     text UNIQUE,   -- ingestion provenance e.g. 'lejonklou-forum:thread-42:post-187'
+                                -- NULL for tests created via the web UI
   CONSTRAINT tests_status_check CHECK (status IN ('open', 'revealed'))
 )
 
@@ -123,6 +125,26 @@ comments (
   body       text NOT NULL,
   created_at timestamptz DEFAULT now()
 )
+
+-- API keys for programmatic / agentic access (added when agentic API is implemented)
+-- key_hash stores a bcrypt hash — plaintext key shown to user once and never stored
+-- DECISION: api_keys table is NOT needed. The only non-browser callers are:
+--   (1) the forum ingestion pipeline — authenticated as a dedicated ingestion_bot user
+--   (2) the mobile app — authenticated as the end user via Supabase Auth
+-- No general-purpose API key infrastructure is planned.
+
+-- FUTURE (not yet implemented): owned blob storage for recordings
+-- When added, clips.provider gains 'supabase' and 'r2' as valid values,
+-- and a storage_key column is added for the internal object path:
+--
+-- ALTER TABLE public.clips
+--   DROP CONSTRAINT clips_provider_check,
+--   ADD CONSTRAINT clips_provider_check
+--     CHECK (provider IN ('youtube', 'vimeo', 'direct', 'unknown', 'supabase', 'r2'));
+--
+-- ALTER TABLE public.clips ADD COLUMN storage_key text;
+--
+-- See SKILL.md section 15 for full storage and mobile expansion plan.
 ```
 
 ---
@@ -144,6 +166,13 @@ All tables have RLS enabled. Policy intent per table:
 | votes | Own votes OR revealed test | Authenticated (own rows) |
 | comments | Public | Authenticated (insert); owner (delete) |
 
+**Note on ingestion_bot:** The forum ingestion pipeline runs as a dedicated
+`ingestion_bot` user created manually in `auth.users`. It is subject to the
+same RLS policies as any other user — no policy exceptions are needed. Tests
+it creates are owned by `ingestion_bot` and can be revealed by that user only.
+The `source_ref` column on `tests` (UNIQUE, nullable) records forum provenance
+for idempotency — see SKILL.md section 5a.
+
 ### clip_mapping policy (most important)
 ```sql
 -- Read: only when test is revealed OR you are the creator
@@ -157,6 +186,40 @@ CREATE POLICY "clip_mapping: revealed or creator"
     )
   );
 ```
+
+### test_vote_count function (public vote count)
+
+A `security definer` Postgres function that returns the number of distinct
+listeners who have voted on a test, bypassing RLS safely. It exposes only
+an aggregate — never individual votes or clip choices — so it is safe to
+call for any viewer including logged-out visitors.
+
+Add this as a migration (`supabase migration new add_vote_count_function`):
+
+```sql
+create or replace function public.test_vote_count(test_id uuid)
+returns bigint
+language sql
+security definer
+set search_path = public
+as $$
+  select count(distinct user_id)
+  from public.votes
+  where votes.test_id = $1
+$$;
+```
+
+Called from application code via:
+```typescript
+const { data } = await supabase
+  .rpc('test_vote_count', { test_id: testId })
+
+const voteCount: number = data ?? 0
+```
+
+Never query the `votes` table directly for a public count — the RLS policy
+restricts vote rows to own votes or revealed tests, so a direct count would
+return 0 or an error for most callers.
 
 ---
 
@@ -198,6 +261,15 @@ tracks first and creates a new one only if the recording isn't already listed.
 
 ## Common query patterns
 
+### Public vote count (safe for all viewers including logged-out)
+```typescript
+// Always use the RPC function — never query votes directly for a public count
+const { data } = await supabase
+  .rpc('test_vote_count', { test_id: testId })
+
+const voteCount: number = data ?? 0
+```
+
 ### Fetch a test with its clips (no mapping)
 ```typescript
 const { data } = await supabase
@@ -206,7 +278,7 @@ const { data } = await supabase
     id, title, status, created_at,
     creator:users!creator_id(display_name),
     track:tracks(artist, title, album, passage_note),
-    clips(id, label, source_url, provider, media_type, url_status, embed_id)
+    clips(id, label, source_url, provider, media_type, url_status)
   `)
   .eq('id', testId)
   .single()
