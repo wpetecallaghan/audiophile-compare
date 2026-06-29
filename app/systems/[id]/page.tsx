@@ -165,6 +165,15 @@ export default async function SystemDetailPage({ params }: Props) {
         </p>
       </div>
 
+      {/* Actions: add snapshot (owner only) + cross-check (when ≥2 snapshots exist) */}
+      {isOwner && <AddSnapshotForm systemId={id} />}
+      {snapshots.length >= 2 && (
+        <CrossCheckSelector
+          systemId={id}
+          snapshots={snapshots.map(s => ({ id: s.id, version: s.version, label: s.label }))}
+        />
+      )}
+
       {/* Per-snapshot sections */}
       {snapshotsWithHistory.length === 0 ? (
         <p className="text-sm text-gray-400">No snapshots yet.</p>
@@ -238,17 +247,6 @@ export default async function SystemDetailPage({ params }: Props) {
             )
           })}
         </div>
-      )}
-
-      {/* Add a new snapshot to this system */}
-      {isOwner && <AddSnapshotForm systemId={id} />}
-
-      {/* Cross-check: compare any two snapshots using existing recordings */}
-      {snapshots.length >= 2 && (
-        <CrossCheckSelector
-          systemId={id}
-          snapshots={snapshots.map(s => ({ id: s.id, version: s.version, label: s.label }))}
-        />
       )}
     </main>
   )
