@@ -48,6 +48,54 @@ Alternatively, remove unused lockfiles from parent directories.
 
 ---
 
+## 1a. Deployment topology
+
+Two environments, each with its own Supabase project. Vercel uses a single
+project with branch-based environment mapping — not two Vercel projects.
+
+```
+GitHub main branch     → Vercel Production  → Supabase production project
+GitHub staging branch  → Vercel Preview     → Supabase staging project
+```
+
+**Why two Supabase projects, one Vercel project:** Supabase projects are
+fully isolated (separate Postgres, separate Auth user pool, separate API
+keys) with no built-in environment concept — sharing one project between
+staging and production would mean shared data and shared user accounts.
+Vercel, by contrast, supports multiple environments natively within a single
+project via branch-to-environment mapping, so a second Vercel project is not
+needed.
+
+**Current configuration:**
+- Production Supabase project ↔ Vercel **Production** environment variables
+  ↔ `main` branch ↔ production redirect URL configured in that Supabase
+  project's Auth settings
+- Staging Supabase project ↔ Vercel **Preview** environment variables ↔
+  `staging` branch (and, by default, all other non-production branches/PRs)
+  ↔ staging redirect URL configured in that Supabase project's Auth settings
+
+**Known nuance:** Vercel's default Preview environment applies to *every*
+non-production branch, not just `staging` — so any feature branch or PR
+deployment currently also uses the staging Supabase project. This is
+acceptable for now (one shared staging database for all preview deploys).
+If `staging` needs to be isolated from ephemeral PR previews later, create a
+custom Vercel environment named "Staging" scoped to the `staging` branch
+specifically, and move the staging env vars there — a Vercel-only change,
+no Supabase-side changes required.
+
+**Each Supabase project requires its own Auth redirect URL** (Authentication
+→ URL Configuration) matching its corresponding Vercel deployment domain.
+Mismatched redirect URLs cause magic link logins to land on the wrong
+environment.
+
+**Migrations are applied independently to each Supabase project** via the
+SQL Editor (see the database reset and recovery procedures) — there is no
+automatic migration sync between staging and production. When the schema
+changes, apply the migration to staging first, verify, then apply the same
+script to production.
+
+---
+
 ## 2. Project file layout
 
 ```
