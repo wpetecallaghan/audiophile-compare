@@ -138,6 +138,8 @@ components/
       YouTubePlayer.tsx     ← Client: YouTube iframe SDK
       VimeoPlayer.tsx       ← Client: Vimeo SDK
       UnknownPlayer.tsx     ← Client: fallback link
+  feed/
+    FeedCard.tsx            ← Server: single test card for the public feed (title, track, snapshots, status badge)
   systems/
     AddSnapshotForm.tsx     ← Client: inline snapshot creation on system detail page
     CreateSystemForm.tsx    ← Client: new system form; POSTs to /api/systems; redirects to /systems/[id]
@@ -838,7 +840,9 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    clips via HEAD request; updates `url_status` and `media_type` where changed;
    uses service role client (no user session); scheduled daily at 02:00 UTC via
    `vercel.json`; protected by `CRON_SECRET` env var.
-11. ⬜ Public feed + pagination
+11. ✅ Public feed + pagination — `app/page.tsx` (server, public); `?page=N` searchParam;
+   `PAGE_SIZE=20`; `.range()` + `count: 'exact'`; `components/feed/FeedCard.tsx`;
+   normalises Supabase array/object join ambiguity before passing to FeedCard.
 
 Update the checkboxes above as steps are completed.
 

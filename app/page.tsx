@@ -1,101 +1,152 @@
-import Image from "next/image";
+import { createClient } from '@/lib/supabase/server'
+import Link from 'next/link'
+import FeedCard from '@/components/feed/FeedCard'
+import type { FeedTest } from '@/components/feed/FeedCard'
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+const PAGE_SIZE = 20
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+type Props = {
+  searchParams: Promise<{ page?: string }>
 }
+
+export default async function HomePage({ searchParams }: Props) {
+  const { page: pageParam } = await searchParams
+  const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
+  const from = (page - 1) * PAGE_SIZE
+  const to   = from + PAGE_SIZE - 1
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { data, count, error } = await supabase
+    .from('tests')
+    .select(
+      `
+        id, title, status, created_at,
+        creator:users!creator_id(display_name),
+        track:tracks(artist, title),
+        snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
+        snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name))
+      `,
+      { count: 'exact' },
+    )
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  const tests = (data ?? []) as unknown as Array<{
+    id: string
+    title: string
+    status: string
+    created_at: string
+    creator: { display_name: string | null } | { display_name: string | null }[] | null
+    track: { artist: string; title: string } | { artist: string; title: string }[] | null
+    snapshot_a: { label: string; system: { name: string } | { name: string }[] | null } | { label: string; system: { name: string } | { name: string }[] | null }[] | null
+    snapshot_b: { label: string; system: { name: string } | { name: string }[] | null } | { label: string; system: { name: string } | { name: string }[] | null }[] | null
+  }>
+
+  // Normalise Supabase joined relations — singular FK joins may come back as
+  // an object or a single-element array depending on the PostgREST version
+  const feedTests: FeedTest[] = error ? [] : tests.map(t => {
+    const creator = Array.isArray(t.creator) ? t.creator[0] : t.creator
+    const track   = Array.isArray(t.track)   ? t.track[0]   : t.track
+
+    const rawA = Array.isArray(t.snapshot_a) ? t.snapshot_a[0] : t.snapshot_a
+    const rawB = Array.isArray(t.snapshot_b) ? t.snapshot_b[0] : t.snapshot_b
+
+    const sysA = rawA ? (Array.isArray(rawA.system) ? rawA.system[0] : rawA.system) : null
+    const sysB = rawB ? (Array.isArray(rawB.system) ? rawB.system[0] : rawB.system) : null
+
+    return {
+      id:         t.id,
+      title:      t.title,
+      status:     t.status,
+      created_at: t.created_at,
+      creator:    creator ?? null,
+      track:      track   ?? null,
+      snapshot_a: rawA ? { label: rawA.label, system: sysA ?? null } : null,
+      snapshot_b: rawB ? { label: rawB.label, system: sysB ?? null } : null,
+    }
+  })
+
+  const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
+  const hasPrev = page > 1
+  const hasNext = page < totalPages
+
+  return (
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="text-xl sm:text-2xl font-semibold">Listening tests</h1>
+          <p className="text-sm text-gray-400">
+            Blind A/B comparisons for hi-fi systems and recordings.
+          </p>
+        </div>
+        {user && (
+          <Link
+            href="/tests/new"
+            className="shrink-0 rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
+          >
+            + New test
+          </Link>
+        )}
+      </div>
+
+      {/* Feed */}
+      {feedTests.length === 0 ? (
+        <p className="text-sm text-gray-400">
+          No tests yet.{' '}
+          {user ? (
+            <Link href="/tests/new" className="text-blue-600 underline">
+              Create the first one.
+            </Link>
+          ) : (
+            <>
+              <Link href="/login" className="text-blue-600 underline">Sign in</Link>
+              {' '}to create the first one.
+            </>
+          )}
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {feedTests.map(test => (
+            <FeedCard key={test.id} test={test} />
+          ))}
+        </ul>
+      )}
+
+      {/* Pagination */}
+      {(hasPrev || hasNext) && (
+        <div className="flex items-center justify-between pt-2">
+          {hasPrev ? (
+            <Link
+              href={`/?page=${page - 1}`}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              ← Previous
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="text-xs text-gray-400">
+            Page {page} of {totalPages}
+          </span>
+          {hasNext ? (
+            <Link
+              href={`/?page=${page + 1}`}
+              className="text-sm text-blue-600 hover:underline"
+            >
+              Next →
+            </Link>
+          ) : (
+            <span />
+          )}
+        </div>
+      )}
+
+    </main>
+  )
+}
+
+
