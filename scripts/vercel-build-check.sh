@@ -1,4 +1,5 @@
 #!/bin/bash
+# 
 # Vercel "Ignored Build Step" script.
 # Vercel runs this before each build; the exit code controls whether to proceed:
 #   exit 0  →  cancel (ignore) the build
@@ -25,4 +26,4 @@ for branch in "${ALLOWED_BRANCHES[@]}"; do
 done
 
 echo "Branch not in allowed list — skipping build."
-exit 0
+exit 0 
