@@ -145,9 +145,9 @@ export default function SnapshotSection({
     <section className="space-y-4">
       {editing ? (
         /* Edit mode */
-        <div className="space-y-4 pb-2 border-b border-gray-100">
+        <div className="space-y-4 pb-2 border-b border-gray-100 dark:border-gray-800">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+            <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
               v{snapshot.version}
             </span>
             <p className="text-xs text-gray-400 font-medium">Editing snapshot</p>
@@ -157,7 +157,7 @@ export default function SnapshotSection({
             <div>
               <label
                 htmlFor={`snapshot-label-${snapshot.id}`}
-                className="text-xs font-medium text-gray-600 block mb-1"
+                className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1"
               >
                 Label
               </label>
@@ -168,14 +168,14 @@ export default function SnapshotSection({
                 onChange={e => setLabel(e.target.value)}
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
-                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
               <label
                 htmlFor={`snapshot-notes-${snapshot.id}`}
-                className="text-xs font-medium text-gray-600 block mb-1"
+                className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1"
               >
                 Notes
               </label>
@@ -185,12 +185,12 @@ export default function SnapshotSection({
                 onChange={e => setNotes(e.target.value)}
                 rows={2}
                 placeholder={t('notesEditPlaceholder')}
-                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-medium text-gray-600">{t('componentsLabel')}</p>
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-300">{t('componentsLabel')}</p>
               {componentRows.map((row, i) => (
                 <div
                   key={i}
@@ -202,7 +202,7 @@ export default function SnapshotSection({
                     value={row.role}
                     onChange={e => updateComponentRow(i, 'role', e.target.value)}
                     aria-label={t('componentRoleAriaLabel', { n: i + 1 })}
-                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <input
                     type="text"
@@ -210,7 +210,7 @@ export default function SnapshotSection({
                     value={row.make}
                     onChange={e => updateComponentRow(i, 'make', e.target.value)}
                     aria-label={t('componentMakeAriaLabel', { n: i + 1 })}
-                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <input
                     type="text"
@@ -218,7 +218,7 @@ export default function SnapshotSection({
                     value={row.model}
                     onChange={e => updateComponentRow(i, 'model', e.target.value)}
                     aria-label={t('componentModelAriaLabel', { n: i + 1 })}
-                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <input
                     type="text"
@@ -226,7 +226,7 @@ export default function SnapshotSection({
                     value={row.notes}
                     onChange={e => updateComponentRow(i, 'notes', e.target.value)}
                     aria-label={t('componentNotesAriaLabel', { n: i + 1 })}
-                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <button
                     type="button"
@@ -271,10 +271,10 @@ export default function SnapshotSection({
         </div>
       ) : (
         /* Display mode */
-        <div className="flex items-start justify-between gap-4 pb-2 border-b border-gray-100">
+        <div className="flex items-start justify-between gap-4 pb-2 border-b border-gray-100 dark:border-gray-800">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
+              <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
                 v{snapshot.version}
               </span>
               <h2 className="text-base font-semibold">{snapshot.label}</h2>

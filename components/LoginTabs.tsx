@@ -24,7 +24,7 @@ export default function LoginTabs({ redirectTo }: { redirectTo?: string }) {
   return (
     <div className="space-y-5">
       {/* Tab bar */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-gray-200 dark:border-gray-700">
         {tabs.map(({ id, label }) => (
           <button
             key={id}
@@ -32,8 +32,8 @@ export default function LoginTabs({ redirectTo }: { redirectTo?: string }) {
             onClick={() => { setTab(id); setShowForgot(false) }}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === id
-                ? 'border-black text-black'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
+                ? 'border-black text-black dark:border-white dark:text-white'
+                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             }`}
           >
             {label}

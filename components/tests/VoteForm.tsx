@@ -134,7 +134,7 @@ export default function VoteForm({
         return (
           <div
             key={t.id}
-            className="rounded border border-gray-200 p-3 sm:p-4 space-y-3"
+            className="rounded border border-gray-200 dark:border-gray-700 p-3 sm:p-4 space-y-3"
           >
             {/* Technique header + A/B radio */}
             <div className="flex items-start justify-between gap-4">
@@ -173,7 +173,7 @@ export default function VoteForm({
                 </label>
                 <input
                   type="text"
-                  className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                  className="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                   placeholder="e.g. Low-level detail retrieval"
                   value={v.otherDescription}
                   onChange={e =>
@@ -192,7 +192,7 @@ export default function VoteForm({
                 </label>
                 <textarea
                   rows={2}
-                  className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
+                  className="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
                   placeholder={tr('observationPlaceholder')}
                   value={v.observation}
                   onChange={e =>

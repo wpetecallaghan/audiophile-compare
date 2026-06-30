@@ -47,7 +47,7 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
           required
           value={email}
           onChange={e => setEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2 text-sm"
+          className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

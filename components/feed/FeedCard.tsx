@@ -14,8 +14,8 @@ export type FeedTest = {
 
 function statusBadge(status: string, t: Awaited<ReturnType<typeof getTranslations<'feed'>>>) {
   return status === 'revealed'
-    ? { text: t('statusRevealed'), cls: 'bg-blue-100 text-blue-700' }
-    : { text: t('statusBlind'),    cls: 'bg-amber-100 text-amber-700' }
+    ? { text: t('statusRevealed'), cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' }
+    : { text: t('statusBlind'),    cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' }
 }
 
 export default async function FeedCard({ test }: { test: FeedTest }) {
@@ -37,7 +37,7 @@ export default async function FeedCard({ test }: { test: FeedTest }) {
     <li>
       <Link
         href={`/tests/${test.id}`}
-        className="block rounded border border-gray-200 px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="block rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-0.5">

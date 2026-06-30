@@ -38,7 +38,7 @@ export default async function ProfilePage({
         <ProfileForm initialDisplayName={profile?.display_name ?? ''} />
       </section>
 
-      <hr className="border-gray-100" />
+      <hr className="border-gray-100 dark:border-gray-800" />
 
       {/* Change email */}
       <section className="space-y-3">
@@ -46,7 +46,7 @@ export default async function ProfilePage({
         <ChangeEmailForm />
       </section>
 
-      <hr className="border-gray-100" />
+      <hr className="border-gray-100 dark:border-gray-800" />
 
       {/* Change password */}
       <section className="space-y-3">

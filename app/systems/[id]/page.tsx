@@ -13,11 +13,11 @@ type Props = {
 
 function outcomeLabel(outcome: Outcome) {
   switch (outcome) {
-    case 'win':      return { text: 'Win',      cls: 'bg-green-100 text-green-700' }
-    case 'loss':     return { text: 'Loss',     cls: 'bg-red-100 text-red-700' }
-    case 'draw':     return { text: 'Draw',     cls: 'bg-gray-100 text-gray-500' }
-    case 'open':     return { text: 'Blind',    cls: 'bg-amber-100 text-amber-700' }
-    case 'no-votes': return { text: 'Revealed', cls: 'bg-blue-100 text-blue-700' }
+    case 'win':      return { text: 'Win',      cls: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' }
+    case 'loss':     return { text: 'Loss',     cls: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' }
+    case 'draw':     return { text: 'Draw',     cls: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }
+    case 'open':     return { text: 'Blind',    cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' }
+    case 'no-votes': return { text: 'Revealed', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' }
   }
 }
 
@@ -227,7 +227,7 @@ export default async function SystemDetailPage({ params }: Props) {
                         <li key={test.id}>
                           <Link
                             href={`/tests/${test.id}`}
-                            className="flex items-center justify-between rounded border border-gray-200 px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors"
+                            className="flex items-center justify-between rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                           >
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate">

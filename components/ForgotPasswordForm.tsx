@@ -63,7 +63,7 @@ export default function ForgotPasswordForm({ onBack }: { onBack?: () => void }) 
             required
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="w-full border rounded px-3 py-2 text-sm"
+            className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
           />
         </div>
         {error && <p className="text-xs text-red-500">{error}</p>}

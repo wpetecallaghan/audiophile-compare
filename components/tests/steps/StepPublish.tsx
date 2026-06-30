@@ -70,7 +70,7 @@ export default function StepPublish({ draft, onBack }: Props) {
       </div>
 
       {/* Summary */}
-      <div className="rounded border divide-y text-sm">
+      <div className="rounded border dark:border-gray-700 divide-y dark:divide-gray-700 text-sm">
         <div className="px-4 py-3 space-y-0.5">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('trackBadge')}</p>
           <p className="font-medium">{draft.track?.artist} — {draft.track?.title}</p>
@@ -103,7 +103,7 @@ export default function StepPublish({ draft, onBack }: Props) {
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder={t('titlePlaceholder')}
-          className="w-full border rounded px-3 py-2 text-sm"
+          className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
       </div>
 
@@ -112,7 +112,7 @@ export default function StepPublish({ draft, onBack }: Props) {
       <div className="flex gap-3">
         <button
           onClick={onBack}
-          className="text-sm text-gray-600 underline"
+          className="text-sm text-gray-600 dark:text-gray-300 underline"
         >
           Back
         </button>

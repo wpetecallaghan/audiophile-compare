@@ -71,7 +71,7 @@ export default function AddSnapshotForm({ systemId }: Props) {
   }
 
   return (
-    <div className="space-y-3 rounded border border-gray-200 p-4">
+    <div className="space-y-3 rounded border border-gray-200 dark:border-gray-700 p-4">
       <p className="text-sm font-medium">{t('newHeading')}</p>
       <input
         type="text"
@@ -80,14 +80,14 @@ export default function AddSnapshotForm({ systemId }: Props) {
         onChange={e => setLabel(e.target.value)}
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
-        className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       <textarea
         placeholder={t('notesPlaceholder')}
         value={notes}
         onChange={e => setNotes(e.target.value)}
         rows={2}
-        className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
       />
       {error && (
         <p className="text-xs text-red-500">{error}</p>

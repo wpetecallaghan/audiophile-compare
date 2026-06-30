@@ -22,7 +22,7 @@ export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
       )}
 
       {divergent && (
-        <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+        <div className="rounded border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">
           Techniques disagree on the winner — this change may involve a
           tradeoff.
         </div>
@@ -60,12 +60,12 @@ export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
                   <span className="text-xs text-gray-500 w-12 text-right shrink-0">
                     {label}
                   </span>
-                  <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                  <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                     <div
                       className={`h-full rounded-full ${
                         r.winnerClipId === clipId
                           ? 'bg-blue-500'
-                          : 'bg-gray-300'
+                          : 'bg-gray-300 dark:bg-gray-600'
                       }`}
                       style={{ width: `${percent}%` }}
                     />
@@ -83,12 +83,12 @@ export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
       {/* Other — qualitative list */}
       {others.length > 0 && (
         <div className="space-y-2 pt-1">
-          <h3 className="text-sm font-medium text-gray-700">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Other {others.length === 1 ? 'approach' : 'approaches'}
           </h3>
           <ul className="space-y-2">
             {others.map((vote, i) => (
-              <li key={i} className="text-sm text-gray-600">
+              <li key={i} className="text-sm text-gray-600 dark:text-gray-300">
                 <span className="font-medium">
                   {vote.chosenClipId === clipAId ? 'Clip A' : 'Clip B'}
                 </span>

@@ -54,7 +54,7 @@ export default function RevealButton({ testId }: Props) {
           </button>
           <button
             onClick={() => setConfirming(false)}
-            className="text-sm text-gray-600 underline"
+            className="text-sm text-gray-600 dark:text-gray-300 underline"
           >
             {t('cancelButton')}
           </button>
@@ -66,7 +66,7 @@ export default function RevealButton({ testId }: Props) {
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="border border-amber-400 text-amber-700 rounded px-4 py-2 text-sm font-medium hover:bg-amber-50"
+      className="border border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-400 rounded px-4 py-2 text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20"
     >
       {t('button')}
     </button>

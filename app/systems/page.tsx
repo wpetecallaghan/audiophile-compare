@@ -62,7 +62,7 @@ export default async function SystemsPage() {
               <li key={system.id}>
                 <Link
                   href={`/systems/${system.id}`}
-                  className="block rounded border border-gray-200 px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors"
+                  className="block rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">

@@ -89,7 +89,7 @@ export default async function TrackDetailPage({ params }: Props) {
                 <li key={test.id}>
                   <Link
                     href={`/tests/${test.id}`}
-                    className="flex items-center justify-between rounded border border-gray-200 px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{test.title}</p>
@@ -101,8 +101,8 @@ export default async function TrackDetailPage({ params }: Props) {
                     <span
                       className={`ml-4 shrink-0 text-xs px-2 py-0.5 rounded-full ${
                         test.status === 'revealed'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-gray-100 text-gray-500'
+                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                          : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
                       }`}
                     >
                       {test.status === 'revealed' ? t('statusRevealed') : t('statusBlind')}

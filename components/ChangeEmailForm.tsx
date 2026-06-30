@@ -47,7 +47,7 @@ export default function ChangeEmailForm() {
           value={newEmail}
           onChange={e => { setNewEmail(e.target.value); setError(null) }}
           placeholder={t('newEmailPlaceholder')}
-          className="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
       {error && <p className="text-xs text-red-500">{error}</p>}

@@ -58,13 +58,13 @@ function ClipInput({
           value={url}
           onChange={e => { onUrlChange(e.target.value); }}
           placeholder={urlPlaceholder}
-          className="flex-1 border rounded px-3 py-2 text-sm"
+          className="flex-1 border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
         <button
           onClick={onVerify}
           disabled={!url.trim() || verifying}
-          className="shrink-0 border rounded px-3 py-2 text-sm font-medium
-            hover:bg-gray-50 disabled:opacity-40"
+          className="shrink-0 border dark:border-gray-600 rounded px-3 py-2 text-sm font-medium
+            hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40"
         >
           {verifying ? verifyingLabel : verifyLabel}
         </button>

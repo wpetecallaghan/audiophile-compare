@@ -127,7 +127,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
 
   return (
     <section className="space-y-4">
-      <div className="pb-2 border-b border-gray-100">
+      <div className="pb-2 border-b border-gray-100 dark:border-gray-800">
         <h2 className="text-base font-semibold">{t('heading')}</h2>
         <p className="text-xs text-gray-400 mt-0.5">
           {t('description')}
@@ -140,7 +140,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
           <label
-            className="block text-xs font-medium text-gray-500"
+            className="block text-xs font-medium text-gray-500 dark:text-gray-400"
             htmlFor="cc-snap-a"
           >
             Snapshot A
@@ -149,7 +149,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
             id="cc-snap-a"
             value={snapshotAId}
             onChange={e => setSnapshotAId(e.target.value)}
-            className="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">{t('choosePlaceholder')}</option>
             {snapshots.map(s => (
@@ -162,7 +162,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
 
         <div className="space-y-1">
           <label
-            className="block text-xs font-medium text-gray-500"
+            className="block text-xs font-medium text-gray-500 dark:text-gray-400"
             htmlFor="cc-snap-b"
           >
             Snapshot B
@@ -171,7 +171,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
             id="cc-snap-b"
             value={snapshotBId}
             onChange={e => setSnapshotBId(e.target.value)}
-            className="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">{t('choosePlaceholder')}</option>
             {snapshots.map(s => (
@@ -207,7 +207,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
               {results.map(item => (
                 <div
                   key={item.trackId}
-                  className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 px-4 py-3"
+                  className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 dark:border-gray-800 px-4 py-3"
                 >
                   {/* Track info */}
                   <div className="space-y-0.5 min-w-0">
@@ -222,10 +222,10 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                       </p>
                     )}
                     <div className="flex gap-2 mt-1">
-                      <span className="text-xs bg-gray-100 text-gray-500 rounded px-1.5 py-0.5">
+                      <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded px-1.5 py-0.5">
                         A: {item.clipForSnapshotA.provider} / {item.clipForSnapshotA.media_type}
                       </span>
-                      <span className="text-xs bg-gray-100 text-gray-500 rounded px-1.5 py-0.5">
+                      <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded px-1.5 py-0.5">
                         B: {item.clipForSnapshotB.provider} / {item.clipForSnapshotB.media_type}
                       </span>
                     </div>

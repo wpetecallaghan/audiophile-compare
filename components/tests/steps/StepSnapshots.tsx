@@ -89,7 +89,7 @@ function SnapshotSelector({
     <div className="space-y-2">
       <p className="text-sm font-medium">{label}</p>
       {systems.map(system => (
-        <div key={system.id} className="border rounded p-3 space-y-2">
+        <div key={system.id} className="border dark:border-gray-700 rounded p-3 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
             {system.name}
           </p>
@@ -99,8 +99,8 @@ function SnapshotSelector({
             <label
               key={snap.id}
               className={`flex items-start gap-3 cursor-pointer rounded p-2 text-sm
-                ${snap.id === exclude ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-50'}
-                ${selected?.id === snap.id ? 'bg-blue-50 ring-1 ring-blue-300 rounded' : ''}
+                ${snap.id === exclude ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}
+                ${selected?.id === snap.id ? 'bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-300 dark:ring-blue-700 rounded' : ''}
               `}
             >
               <input
@@ -123,7 +123,7 @@ function SnapshotSelector({
 
           {/* Inline mini-form or add button */}
           {addingForSystemId === system.id ? (
-            <div className="space-y-2 pt-2 border-t border-gray-100 mt-1">
+            <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800 mt-1">
               <p className="text-xs font-medium text-gray-500">New snapshot</p>
               <input
                 type="text"
@@ -132,14 +132,14 @@ function SnapshotSelector({
                 onChange={e => setNewLabel(e.target.value)}
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
-                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea
                 placeholder="Notes (optional)"
                 value={newNotes}
                 onChange={e => setNewNotes(e.target.value)}
                 rows={2}
-                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               {createError && (
                 <p className="text-xs text-red-500">{createError}</p>
@@ -242,7 +242,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
   }
 
   const addSystemTrigger = addingSystem ? (
-    <div className="space-y-2 rounded border border-gray-200 p-3">
+    <div className="space-y-2 rounded border border-gray-200 dark:border-gray-700 p-3">
       <p className="text-xs font-medium text-gray-500">New system</p>
       <input
         type="text"
@@ -251,14 +251,14 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
         onChange={e => setNewSystemName(e.target.value)}
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
-        className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       <textarea
         placeholder="Description (optional)"
         value={newSystemDesc}
         onChange={e => setNewSystemDesc(e.target.value)}
         rows={2}
-        className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
       />
       {systemCreateError && (
         <p className="text-xs text-red-500">{systemCreateError}</p>

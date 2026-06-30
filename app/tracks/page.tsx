@@ -43,7 +43,7 @@ export default async function TracksPage() {
             <li key={track.id}>
               <Link
                 href={`/tracks/${track.id}`}
-                className="flex items-center justify-between rounded border border-gray-200 px-3 sm:px-4 py-3 hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
