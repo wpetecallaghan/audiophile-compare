@@ -47,6 +47,19 @@ export default async function HomePage({ searchParams }: Props) {
 
   // Normalise Supabase joined relations — singular FK joins may come back as
   // an object or a single-element array depending on the PostgREST version
+  const testIds = (data ?? []).map(t => t.id)
+
+  // Fetch vote counts for the current page in one RPC call
+  const { data: voteCounts } = error || testIds.length === 0
+    ? { data: null }
+    : await supabase.rpc('test_vote_counts', { test_ids: testIds })
+
+  const voteCountMap = new Map<string, number>(
+    (voteCounts ?? []).map(
+      (row: { test_id: string; vote_count: number }) => [row.test_id, row.vote_count]
+    )
+  )
+
   const feedTests: FeedTest[] = error ? [] : tests.map(t => {
     const creator = Array.isArray(t.creator) ? t.creator[0] : t.creator
     const track   = Array.isArray(t.track)   ? t.track[0]   : t.track
@@ -62,6 +75,7 @@ export default async function HomePage({ searchParams }: Props) {
       title:      t.title,
       status:     t.status,
       created_at: t.created_at,
+      vote_count: voteCountMap.get(t.id) ?? 0,
       creator:    creator ?? null,
       track:      track   ?? null,
       snapshot_a: rawA ? { label: rawA.label, system: sysA ?? null } : null,

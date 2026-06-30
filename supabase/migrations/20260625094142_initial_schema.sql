@@ -301,6 +301,22 @@ as $$
   where votes.test_id = $1
 $$;
 
+-- Bulk variant of test_vote_count: returns vote counts for multiple tests in
+-- one round-trip. Used by the feed page to avoid N+1 RPC calls.
+create or replace function public.test_vote_counts(test_ids uuid[])
+returns table(test_id uuid, vote_count bigint)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    v.test_id,
+    count(distinct v.user_id) as vote_count
+  from public.votes v
+  where v.test_id = any(test_ids)
+  group by v.test_id
+$$;
+
 -- ============================================================
 -- SEED DATA
 -- ============================================================

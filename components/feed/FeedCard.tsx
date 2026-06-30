@@ -6,6 +6,7 @@ export type FeedTest = {
   title: string
   status: string
   created_at: string
+  vote_count: number
   track: { artist: string; title: string } | null
   creator: { display_name: string | null } | null
   snapshot_a: { label: string; system: { name: string } | null } | null
@@ -57,6 +58,8 @@ export default async function FeedCard({ test }: { test: FeedTest }) {
               <span suppressHydrationWarning>
                 {new Date(test.created_at).toLocaleDateString()}
               </span>
+              {' · '}
+              {test.vote_count} {test.vote_count === 1 ? 'vote' : 'votes'}
             </p>
           </div>
           <span
