@@ -56,9 +56,9 @@ function renderStep(
     <StepSnapshots
       draft={BLANK_DRAFT}
       systems={systems}
-      onComplete={mockOnComplete}
-      onSnapshotCreated={mockOnSnapshotCreated}
-      onSystemCreated={mockOnSystemCreated}
+      onComplete={mockOnComplete as (updates: Partial<TestDraft>) => void}
+      onSnapshotCreated={mockOnSnapshotCreated as (systemId: string, snap: Snapshot) => void}
+      onSystemCreated={mockOnSystemCreated as (system: SystemWithSnapshots) => void}
     />,
   )
   return { mockOnComplete, mockOnSnapshotCreated, mockOnSystemCreated }
