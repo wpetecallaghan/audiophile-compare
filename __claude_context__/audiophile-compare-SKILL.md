@@ -140,6 +140,8 @@ components/
       UnknownPlayer.tsx     ← Client: fallback link
   feed/
     FeedCard.tsx            ← Server: single test card for the public feed (title, track, snapshots, status badge)
+  SiteHeader.tsx            ← Server: global page header; reads auth; renders nav links + SignOutButton
+  SignOutButton.tsx         ← Client: calls supabase.auth.signOut() then router.push('/')
   systems/
     AddSnapshotForm.tsx     ← Client: inline snapshot creation on system detail page
     CreateSystemForm.tsx    ← Client: new system form; POSTs to /api/systems; redirects to /systems/[id]
@@ -847,6 +849,12 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
 11. ✅ Public feed + pagination — `app/page.tsx` (server, public); `?page=N` searchParam;
    `PAGE_SIZE=20`; `.range()` + `count: 'exact'`; `components/feed/FeedCard.tsx`;
    normalises Supabase array/object join ambiguity before passing to FeedCard.
+12. ✅ Page header — `components/SiteHeader.tsx` (server: reads auth, renders nav);
+   `components/SignOutButton.tsx` (client: calls `supabase.auth.signOut()` then
+   `router.push('/')`); inserted into `app/layout.tsx` above `{children}`.
+   Unauthenticated: wordmark + "Sign in" link.
+   Authenticated: wordmark + "Tests" / "Systems" / "Tracks" links + SignOutButton.
+   Tests: `components/__tests__/SignOutButton.test.tsx`
 
 Update the checkboxes above as steps are completed.
 
