@@ -1051,6 +1051,26 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    Full register → confirm → login flow is not E2E-testable without an email
    inbox; the Admin API seed approach covers the authenticated side.
 
+17. ⬜ End-to-end test coverage — run the full Playwright suite against staging
+   and confirm every named route has at least one passing happy-path scenario.
+   Existing specs: `auth`, `profile`, `public-feed`, `systems`, `test-creation`,
+   `voting`. Gaps to close before marking complete: cross-check selector flow,
+   reveal flow, feed vote-count display. See `docs/end-to-end-testing.md`.
+
+18. ⬜ Visual polish — tighten the UI for a modern, compact look:
+   - **Font scale:** reduce to two body sizes (`text-sm` for body, `text-xs` for
+     metadata/badges); reserve `text-base`+ for headings only.
+   - **Whitespace:** cut vertical padding/spacing by ~30% across cards, list
+     items, page sections, and form fields (e.g. `py-3` → `py-2`, `space-y-6`
+     → `space-y-4`, `gap-4` → `gap-3`).
+   - **Buttons vs links:** replace plain `<a>`/`<Link>` inline actions (edit,
+     cancel, back, reveal, add snapshot, sign out) with small `<button>` or
+     `<Link>` elements styled as buttons (`border rounded px-2 py-1 text-xs`);
+     reserve unstyled links for navigation only.
+   - **Consistency:** audit all pages for one-off sizing, colour, or spacing
+     deviations and align to a single set of Tailwind utility patterns.
+   - No layout or feature changes — purely presentation.
+
 ---
 
 ## 11. Mobile responsiveness patterns
