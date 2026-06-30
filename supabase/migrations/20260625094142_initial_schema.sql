@@ -131,6 +131,25 @@ create trigger on_auth_user_created
   for each row execute procedure public.handle_new_user();
 
 -- ============================================================
+-- SYNC EMAIL CHANGES TO PUBLIC USERS
+-- ============================================================
+
+create or replace function public.handle_user_email_updated()
+returns trigger language plpgsql security definer set search_path = public
+as $$
+begin
+  update public.users set email = new.email where id = new.id;
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_email_updated
+  after update of email on auth.users
+  for each row
+  when (old.email is distinct from new.email)
+  execute procedure public.handle_user_email_updated();
+
+-- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
 

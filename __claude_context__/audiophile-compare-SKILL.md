@@ -141,7 +141,7 @@ components/
   feed/
     FeedCard.tsx            ← Server: single test card for the public feed (title, track, snapshots, status badge)
   SiteHeader.tsx            ← Server: global page header; reads auth; renders nav links + SignOutButton
-  SignOutButton.tsx         ← Client: calls supabase.auth.signOut() then router.push('/')
+  SignOutButton.tsx         ← Client: calls supabase.auth.signOut() then window.location.href = '/'
   OAuthButtons.tsx          ← Client: social sign-in buttons; calls signInWithOAuth; accepts redirectTo prop
   systems/
     AddSnapshotForm.tsx     ← Client: inline snapshot creation on system detail page
@@ -253,6 +253,35 @@ to the element:
 
 This was not an issue when date display lived in server components. It becomes
 an issue when a section is extracted into a client component (e.g. `SnapshotSection`).
+
+---
+
+**Navigation after auth state changes:**
+
+After a client-side auth event (password sign-in, sign-out), use
+`window.location.href = path` rather than `router.push(path)` or
+`router.refresh()` + `router.push(path)`.
+
+`SiteHeader` is a server component in the layout. Next.js App Router caches the
+RSC payload on the client. `router.refresh()` queues a re-render but is
+non-blocking — `router.push()` fires immediately and the destination may be
+served from the stale cache before the refresh completes, leaving the header
+showing the wrong auth state.
+
+`window.location.href` is a full browser navigation: it bypasses the RSC cache
+entirely and guarantees a fresh server render with the current session cookie.
+
+```typescript
+// ✅ correct — full navigation, fresh server render
+window.location.href = redirectTo ?? '/'
+
+// ❌ wrong — router may serve stale layout from cache
+router.refresh()
+router.push(redirectTo ?? '/')
+```
+
+Magic link and OAuth logins are not affected — their callback route performs a
+server-side redirect, which is always a fresh render.
 
 ---
 
@@ -855,7 +884,7 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    `PAGE_SIZE=20`; `.range()` + `count: 'exact'`; `FeedCard` server component;
    normalises Supabase array/object join ambiguity before passing typed props.
 12. ✅ Page header — `SiteHeader` (server, in layout); `SignOutButton` (client:
-   `supabase.auth.signOut()` → `router.push('/')`).
+   `supabase.auth.signOut()` → `window.location.href = '/'`).
    Unauthenticated: wordmark + "Sign in". Authenticated: Tests / Systems / Tracks / Profile + Sign out.
 13. ✅ Display name / profile — trigger derives `display_name` from email local-part
    on sign-up (coalesces OAuth `raw_user_meta_data` name fields first — see step 14).
@@ -893,6 +922,134 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    automatically without edits to spec files.
    Namespaces: `common`, `nav`, `auth`, `systems`, `snapshots`, `tests`, `profile`,
    `feed`, `tracks`.
+16. ✅ Email/password auth and account management — register with email + name +
+   password; sign in with email + password (alongside existing magic link and Google
+   OAuth); change email, password, or display name from the profile page; forgot
+   password flow.
+
+   **Supabase configuration (both projects):**
+   - Authentication → Providers → Email: already enabled; confirm "Confirm email" is
+     on (new signups require email verification before first login).
+   - "Disable new user signups" must be off.
+   - Add `/auth/callback` to allowed Redirect URLs if not already present.
+
+   **Schema:** `handle_user_email_updated()` function and `on_auth_user_email_updated`
+   trigger are part of `20260625094142_initial_schema.sql` (incorporated after
+   initial deployment — no separate migration file exists).
+   The `handle_new_user` trigger already reads `raw_user_meta_data->>'full_name'`
+   so `signUp({ options: { data: { full_name: name } } })` will populate
+   `display_name` automatically on registration — no trigger change needed.
+
+   **Registration — `RegisterForm.tsx` (client component):**
+   ```typescript
+   // supabase.auth.signUp({
+   //   email, password,
+   //   options: { data: { full_name: name },
+   //              emailRedirectTo: `${origin}/auth/callback` }
+   // })
+   ```
+   Fields: name (text, required), email (email, required), password (min 8 chars,
+   required), confirm password (must match, validated client-side only).
+   On success: show "Check your inbox to confirm your account." state (same
+   pattern as magic link submitted state — no redirect yet; user must confirm first).
+   Error cases: "Email already registered" (`User already registered`),
+   "Password should be at least 8 characters", network error.
+   New page: `app/register/page.tsx` — mirrors `/login` layout; links back to
+   `/login`. The `/login` page links to `/register`.
+
+   **Password login — `LoginWithPasswordForm.tsx` (client component):**
+   ```typescript
+   // supabase.auth.signInWithPassword({ email, password })
+   // Returns session directly — no callback redirect needed.
+   // After success: window.location.href = redirectTo ?? '/'
+   ```
+   Error cases: "Invalid email or password" (map from Supabase's generic
+   "Invalid login credentials"), "Email not confirmed — check your inbox"
+   (Supabase error: `Email not confirmed`), network error.
+
+   **Login page restructure (`app/login/page.tsx`):**
+   Three tabs: **Password** | **Magic link** | **Google**.
+   Tab state is client-side only; all three accept the `redirectTo` prop.
+   Add link: "Don't have an account? Register" → `/register`.
+   Add link under password tab: "Forgot password?" → triggers forgot-password flow.
+   i18n: extend `auth` namespace with `tabs.password`, `tabs.magicLink`,
+   `tabs.google`, `registerLink`, `forgotPasswordLink`, `registerHeading`,
+   `nameLabel`, `namePlaceholder`, `passwordLabel`, `confirmPasswordLabel`,
+   `passwordMinLength`, `passwordMismatch`, `registerButton`, `registering`,
+   `emailAlreadyRegistered`, `invalidCredentials`, `emailNotConfirmed`,
+   `registrationSuccess`.
+
+   **`app/auth/callback/route.ts` update:**
+   Add handling for `type=recovery` (password reset link) — after exchanging the
+   code for a session, redirect to `/profile?reset=true` instead of `redirectTo`.
+   The profile page detects `?reset=true` and scrolls to / opens the
+   change-password section automatically.
+   ```typescript
+   const type = searchParams.get('type')
+   if (code) {
+     await supabase.auth.exchangeCodeForSession(code)
+   }
+   if (type === 'recovery') {
+     return NextResponse.redirect(`${origin}/profile?reset=true`)
+   }
+   return NextResponse.redirect(`${origin}${redirectTo}`)
+   ```
+
+   **Forgot password flow:**
+   `ForgotPasswordForm.tsx` (client component) — email input only.
+   ```typescript
+   // supabase.auth.resetPasswordForEmail(email, {
+   //   redirectTo: `${origin}/auth/callback?type=recovery`
+   // })
+   ```
+   On success: show "Check your inbox for a password reset link."
+   Rendered as a fourth tab ("Reset password") on `/login`, or inline under the
+   password tab after clicking "Forgot password?" — implementation choice deferred
+   to build time.
+
+   **Profile page additions (`app/profile/page.tsx` + components):**
+   Add two new collapsible sections below the existing display-name form:
+
+   *Change email — `ChangeEmailForm.tsx` (client component):*
+   Single field: new email address.
+   ```typescript
+   // supabase.auth.updateUser({ email: newEmail })
+   ```
+   On success: "Confirmation emails sent to your old and new address. Click
+   either link to confirm the change."  `public.users.email` is updated by
+   the `on_auth_user_email_updated` trigger when both emails are confirmed.
+
+   *Change password — `ChangePasswordForm.tsx` (client component):*
+   Fields: new password (min 8 chars), confirm new password (client-side match).
+   ```typescript
+   // supabase.auth.updateUser({ password: newPassword })
+   ```
+   On success: "Password updated." Both `updateUser` calls require a valid
+   session; no explicit re-authentication step needed for MVP.
+   When profile page receives `?reset=true` (recovery flow), auto-open this
+   section and clear the query param from the URL.
+   i18n: extend `profile` namespace with `changeEmailHeading`, `newEmailLabel`,
+   `newEmailPlaceholder`, `sendConfirmationButton`, `sendingConfirmation`,
+   `emailConfirmationSent`, `changePasswordHeading`, `newPasswordLabel`,
+   `confirmPasswordLabel`, `passwordMinLength`, `passwordMismatch`,
+   `updatePasswordButton`, `updatingPassword`, `passwordUpdated`.
+
+   **Tests — unit:**
+   - `components/__tests__/RegisterForm.test.tsx`
+   - `components/__tests__/LoginWithPasswordForm.test.tsx`
+   - `components/__tests__/ChangeEmailForm.test.tsx`
+   - `components/__tests__/ChangePasswordForm.test.tsx`
+   - `components/__tests__/ForgotPasswordForm.test.tsx`
+   Cover: rendering, validation (min length, password match), success states,
+   all Supabase error cases, network errors, loading states.
+
+   **Tests — E2E (`e2e/tests/account.spec.ts`):**
+   Use Supabase Admin API (`createUser` with `email_confirm: true`) to seed a
+   fresh test account with a known password before the suite; teardown deletes
+   it. Scenarios: sign in with password; change password and sign in with new
+   password; registration form shows confirmation state.
+   Full register → confirm → login flow is not E2E-testable without an email
+   inbox; the Admin API seed approach covers the authenticated side.
 
 ---
 

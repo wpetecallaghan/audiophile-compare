@@ -5,11 +5,6 @@ import SignOutButton from '../SignOutButton'
 
 // --- Mocks ---
 
-const mockPush = vi.fn()
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: mockPush }),
-}))
-
 const mockSignOut = vi.fn()
 vi.mock('@/lib/supabase/client', () => ({
   createClient: vi.fn(() => ({
@@ -52,14 +47,14 @@ describe('SignOutButton', () => {
       })
     })
 
-    it('calls router.push("/") after sign-out completes', async () => {
+    it('navigates to / after sign-out completes', async () => {
       const user = userEvent.setup()
       render(<SignOutButton />)
 
       await user.click(screen.getByRole('button', { name: 'Sign out' }))
 
       await waitFor(() => {
-        expect(mockPush).toHaveBeenCalledWith('/')
+        expect(window.location.href).toBe('/')
       })
     })
 

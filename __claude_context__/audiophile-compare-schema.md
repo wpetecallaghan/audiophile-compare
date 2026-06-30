@@ -223,6 +223,28 @@ return 0 or an error for most callers.
 
 ---
 
+### Auth triggers (in initial_schema.sql)
+
+Two `security definer` triggers on `auth.users` keep `public.users` in sync:
+
+**`on_auth_user_created`** — fires on `INSERT` (every new sign-up or OAuth login).
+Inserts a row into `public.users`, deriving `display_name` from user metadata:
+```sql
+coalesce(
+  raw_user_meta_data->>'full_name',  -- set by signUp({ options: { data: { full_name } } })
+  raw_user_meta_data->>'name',       -- some OAuth providers
+  split_part(email, '@', 1)          -- magic link / password fallback
+)
+```
+Uses `ON CONFLICT (id) DO NOTHING` so re-triggering is safe.
+
+**`on_auth_user_email_updated`** — fires on `UPDATE OF email` when the value
+actually changes. Updates `public.users.email` to match. Supabase only writes
+the new email to `auth.users` after both confirmation emails are clicked, so
+this is the correct place to sync the change.
+
+---
+
 ## Key data model notes
 
 ### system_snapshots are append-only

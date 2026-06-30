@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
 
 export default function SignOutButton() {
-  const router = useRouter()
   const t = useTranslations('nav')
   const [signingOut, setSigningOut] = useState(false)
 
@@ -14,7 +12,7 @@ export default function SignOutButton() {
     setSigningOut(true)
     const supabase = createClient()
     await supabase.auth.signOut()
-    router.push('/')
+    window.location.href = '/'
   }
 
   return (
