@@ -5,8 +5,13 @@
 #   exit 1  →  proceed with the build
 #
 # Configure in Vercel project settings:
-#   Build & Development Settings → Ignored Build Step
-#   Command: bash scripts/vercel-build-check.sh
+#   Settings → Git → Ignored Build Step
+#
+# Option A — inline (works immediately, no file needed in repo):
+#   if [[ "$VERCEL_GIT_COMMIT_REF" == "main" || "$VERCEL_GIT_COMMIT_REF" == "staging" ]]; then exit 1; else exit 0; fi
+#
+# Option B — file-based (requires this script committed and pushed first):
+#   bash scripts/vercel-build-check.sh
 
 ALLOWED_BRANCHES=("main" "staging")
 
