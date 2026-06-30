@@ -180,7 +180,46 @@ Tests cover:
 
 Tests cover:
 - **Rendering** — "Sign out" button present
-- **Sign-out behaviour** — `supabase.auth.signOut()` called on click; `router.push('/')` called after; shows "Signing out…" and disables the button while in flight
+- **Sign-out behaviour** — `supabase.auth.signOut()` called on click; navigates to `/` after; shows "Signing out…" and disables the button while in flight
+
+#### ✅ LoginWithPasswordForm Component Tests
+**File:** `components/__tests__/LoginWithPasswordForm.test.tsx` (9 tests)
+
+Tests cover:
+- **Rendering** — email and password inputs, Sign in button, no error initially
+- **Submission** — `signInWithPassword` called with correct credentials; navigates to `redirectTo` on success; navigates to `/` when `redirectTo` omitted; shows "Signing in…" while in flight
+- **Error handling** — generic auth failure shows "Invalid email or password"; unconfirmed email shows "Email not confirmed" message
+
+#### ✅ RegisterForm Component Tests
+**File:** `components/__tests__/RegisterForm.test.tsx` (8 tests)
+
+Tests cover:
+- **Rendering** — name, email, password, confirm password inputs; Create account button
+- **Validation** — error when password shorter than 8 characters; error when passwords do not match; neither calls `signUp`
+- **Submission** — `signUp` called with email, password, and `full_name` in user metadata; success message shown; "already registered" error; "Creating account…" loading state
+
+#### ✅ ForgotPasswordForm Component Tests
+**File:** `components/__tests__/ForgotPasswordForm.test.tsx` (5 tests)
+
+Tests cover:
+- **Rendering** — heading, email input, Send reset link button, Back to sign in button when `onBack` provided
+- **Submission** — `resetPasswordForEmail` called with correct redirect URL; success message shown; "Sending…" loading state; error message on failure; `onBack` callback invoked
+
+#### ✅ ChangeEmailForm Component Tests
+**File:** `components/__tests__/ChangeEmailForm.test.tsx` (4 tests)
+
+Tests cover:
+- **Rendering** — new email input, Send confirmation button disabled when empty
+- **Submission** — `updateUser({ email })` called; confirmation sent message on success; "Sending…" loading state; error message on failure
+
+#### ✅ ChangePasswordForm Component Tests
+**File:** `components/__tests__/ChangePasswordForm.test.tsx` (9 tests)
+
+Tests cover:
+- **Collapsed state** — trigger button shown; inputs hidden until opened; form revealed on click
+- **Open state** — `autoOpen` prop renders inputs immediately
+- **Validation** — error when password shorter than 8 characters; error when passwords do not match
+- **Submission** — `updateUser({ password })` called; success message shown; "Updating…" loading state; auth error displayed
 
 #### ✅ ProfileForm Component Tests
 **File:** `components/__tests__/ProfileForm.test.tsx` (13 tests)
@@ -227,53 +266,24 @@ Tests cover:
 - **Validation** — Save disabled when label cleared; whitespace-only label treated as empty
 - **Submission** — PATCHes to correct URL; sends null for notes when field cleared; `router.refresh()` and closes edit mode on success; server error shown and edit mode kept open; network error shown
 
-### Pending Tests (Next.js Environment Required)
-
-The following tests are written but currently skipped pending proper Next.js test environment setup:
-
-#### ⏸️ Middleware Tests
-**File:** `__tests__/middleware.test.ts` (20 tests - skipped)
-
-Would test:
-- Protected route redirects for unauthenticated users
-- Authenticated user access to protected routes
-- Public route accessibility
-- Session refresh on requests
-- Cookie operations
-- Nested path protection
-
-**Status:** Requires Next.js middleware runtime environment
-
-#### ⏸️ Auth Callback Route Tests
-**File:** `__tests__/auth-callback-route.test.ts` (14 tests - skipped)
-
-Would test:
-- Code exchange for session
-- Redirect to specified paths
-- Missing/invalid code handling
-- Security (open redirect prevention)
-- Error handling
-
-**Status:** Requires Next.js route handler runtime environment
-
-#### ⏸️ Systems PATCH Route Tests
-**File:** `__tests__/systems-patch-route.test.ts` (1 placeholder - skipped)
-
-**Status:** Skipped placeholder; follows the same pattern as middleware and auth-callback tests. Full tests deferred pending Next.js route handler environment setup.
-
 ### Test Coverage Summary
 
 ```
-Test Suites: 3 skipped, 19 passed, 22 total
-Tests:       3 skipped, 207 passed, 210 total
+Test Files: 24 passed (24)
+Tests:      249 passed (249)
 ```
 
 **Passing Tests:**
 - ✅ Setup verification (3 tests)
 - ✅ LoginForm component (12 tests)
+- ✅ LoginWithPasswordForm component (9 tests)
+- ✅ RegisterForm component (8 tests)
+- ✅ ForgotPasswordForm component (5 tests)
 - ✅ OAuthButtons component (5 tests)
 - ✅ SignOutButton component (4 tests)
 - ✅ ProfileForm component (13 tests)
+- ✅ ChangeEmailForm component (4 tests)
+- ✅ ChangePasswordForm component (9 tests)
 - ✅ Supabase browser client (7 tests)
 - ✅ Supabase server client (10 tests)
 - ✅ Clip provider detection (9 tests)
@@ -288,11 +298,6 @@ Tests:       3 skipped, 207 passed, 210 total
 - ✅ SnapshotSection component (20 tests)
 - ✅ Vote tally computation (16 tests)
 - ✅ Snapshot outcome computation (8 tests)
-
-**Skipped Tests:**
-- ⏸️ Middleware (pending Next.js environment)
-- ⏸️ Auth callback route (pending Next.js environment)
-- ⏸️ Systems PATCH route (placeholder, pending Next.js environment)
 
 ## Phase 4: E2E Tests ✅
 
@@ -319,14 +324,6 @@ Future integration tests could cover:
 - Protected route access patterns
 - Form submission workflows at the API boundary
 
-### Improving Middleware/Route Tests
-
-To enable the skipped tests, we would need to:
-1. Set up proper Next.js edge runtime polyfills
-2. Configure test environment for middleware testing
-3. Add proper Request/Response mocking
-4. Consider using Next.js test helpers or E2E framework instead
-
 ## Running the Tests
 
 Verify the setup is working:
@@ -337,8 +334,8 @@ npm test
 
 You should see:
 ```
- Test Files  19 passed | 3 skipped (22)
-      Tests  207 passed | 3 skipped (210)
+ Test Files  24 passed (24)
+      Tests  249 passed (249)
 ```
 
 Run tests in watch mode during development:
