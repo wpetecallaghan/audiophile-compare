@@ -21,9 +21,9 @@ echo "Branch: ${VERCEL_GIT_COMMIT_REF}"
 for branch in "${ALLOWED_BRANCHES[@]}"; do
   if [[ "${VERCEL_GIT_COMMIT_REF}" == "${branch}" ]]; then
     echo "Allowed branch — proceeding with build."
-    exit 1
+    exit 0
   fi
 done
 
 echo "Branch not in allowed list — skipping build."
-exit 0 
+exit 1
