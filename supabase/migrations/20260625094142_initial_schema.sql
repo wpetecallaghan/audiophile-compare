@@ -112,7 +112,15 @@ returns trigger language plpgsql security definer set search_path = public
 as $$
 begin
   insert into public.users (id, email, display_name)
-  values (new.id, new.email, split_part(new.email, '@', 1))
+  values (
+    new.id,
+    new.email,
+    coalesce(
+      new.raw_user_meta_data->>'full_name',  -- Google / GitHub OAuth display name
+      new.raw_user_meta_data->>'name',       -- fallback OAuth field
+      split_part(new.email, '@', 1)          -- magic link fallback
+    )
+  )
   on conflict (id) do nothing;
   return new;
 end;

@@ -142,6 +142,7 @@ components/
     FeedCard.tsx            ← Server: single test card for the public feed (title, track, snapshots, status badge)
   SiteHeader.tsx            ← Server: global page header; reads auth; renders nav links + SignOutButton
   SignOutButton.tsx         ← Client: calls supabase.auth.signOut() then router.push('/')
+  OAuthButtons.tsx          ← Client: social sign-in buttons; calls signInWithOAuth; accepts redirectTo prop
   systems/
     AddSnapshotForm.tsx     ← Client: inline snapshot creation on system detail page
     CreateSystemForm.tsx    ← Client: new system form; POSTs to /api/systems; redirects to /systems/[id]
@@ -850,11 +851,24 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
 12. ✅ Page header — `SiteHeader` (server, in layout); `SignOutButton` (client:
    `supabase.auth.signOut()` → `router.push('/')`).
    Unauthenticated: wordmark + "Sign in". Authenticated: Tests / Systems / Tracks / Profile + Sign out.
-13. ✅ Display name / profile — migration `20260630000001_set_display_name_from_email.sql`
-   updates trigger to derive `display_name` from email local-part on sign-up and
-   backfills existing null rows. `PATCH /api/profile` updates `display_name` (RLS:
-   own row only). `ProfileForm` client component; `app/profile/page.tsx` server page.
+13. ✅ Display name / profile — trigger derives `display_name` from email local-part
+   on sign-up (coalesces OAuth `raw_user_meta_data` name fields first — see step 14).
+   `PATCH /api/profile` updates `display_name` (RLS: own row only). `ProfileForm`
+   client component; `app/profile/page.tsx` server page.
    Tests: `components/__tests__/ProfileForm.test.tsx`
+14. ✅ OAuth / social login — Google sign-in via `supabase.auth.signInWithOAuth`.
+   `OAuthButtons` client component renders above `LoginForm` with a divider in
+   `app/login/page.tsx`; both accept and thread the `redirectTo` prop.
+   Trigger updated to `coalesce(raw_user_meta_data->>'full_name', raw_user_meta_data->>'name',
+   split_part(email,'@',1))` so OAuth sign-ups get a real display name automatically.
+   `app/auth/callback/route.ts` unchanged — `exchangeCodeForSession` handles OAuth
+   code exchange identically to magic links.
+   Supabase config (per project, staging + production): Authentication → Providers →
+   Google (enable; paste Client ID + Secret). Authentication → URL Configuration →
+   add `{vercel-domain}/auth/callback*` to allowed Redirect URLs (wildcard covers
+   the `?redirectTo=` query param). In Google Cloud Console: create OAuth 2.0
+   credentials; add the Supabase callback URL as an Authorized Redirect URI.
+   Tests: `__tests__/OAuthButtons.test.tsx`
 
 ---
 
