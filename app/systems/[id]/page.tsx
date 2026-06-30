@@ -156,7 +156,17 @@ export default async function SystemDetailPage({ params }: Props) {
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
           System
         </p>
-        <h1 className="text-xl sm:text-2xl font-semibold">{system.name}</h1>
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-xl sm:text-2xl font-semibold">{system.name}</h1>
+          {isOwner && (
+            <Link
+              href={`/systems/${id}/edit`}
+              className="shrink-0 text-xs text-blue-600 hover:underline"
+            >
+              Edit
+            </Link>
+          )}
+        </div>
         {system.description && (
           <p className="text-sm text-gray-500">{system.description}</p>
         )}

@@ -30,9 +30,17 @@ export default async function SystemsPage() {
     <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-semibold">My systems</h1>
-        <span className="text-sm text-gray-400">
-          {systems.length} {systems.length === 1 ? 'system' : 'systems'}
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-400">
+            {systems.length} {systems.length === 1 ? 'system' : 'systems'}
+          </span>
+          <Link
+            href="/systems/new"
+            className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
+          >
+            + New system
+          </Link>
+        </div>
       </div>
 
       {systems.length === 0 ? (

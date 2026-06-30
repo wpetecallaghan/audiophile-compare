@@ -110,6 +110,7 @@ app/
     votes/route.ts
     votes/[id]/route.ts
     systems/route.ts
+    systems/[id]/route.ts               ← PATCH: update system name/description (owner only)
     systems/[id]/snapshots/route.ts     ← POST: add snapshot inline; auto-assigns version
     systems/[id]/snapshots/[snapshotId]/route.ts  ← PATCH: edit label/notes/components
     systems/[id]/cross-check/route.ts  ← GET: shared tracks for two snapshots
@@ -121,7 +122,9 @@ app/
   tests/[id]/page.tsx       ← Server component: fetches, passes props to client
   tests/new/page.tsx
   systems/page.tsx
+  systems/new/page.tsx
   systems/[id]/page.tsx
+  systems/[id]/edit/page.tsx
   tracks/page.tsx
   profile/page.tsx
   page.tsx                  ← Public feed
@@ -137,6 +140,8 @@ components/
       UnknownPlayer.tsx     ← Client: fallback link
   systems/
     AddSnapshotForm.tsx     ← Client: inline snapshot creation on system detail page
+    CreateSystemForm.tsx    ← Client: new system form; POSTs to /api/systems; redirects to /systems/[id]
+    EditSystemForm.tsx      ← Client: edit name/description; PATCHes /api/systems/[id]; redirects to /systems/[id]
     SnapshotSection.tsx     ← Client: per-snapshot display + edit form (label/notes/components)
   tests/
     CreateTestForm.tsx      ← Client: wizard shell; holds systems in local state
