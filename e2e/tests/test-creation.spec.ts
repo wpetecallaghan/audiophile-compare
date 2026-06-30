@@ -8,6 +8,7 @@
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
 import { E2E_PREFIX } from '../helpers/constants'
+import m from '../../messages/en.json'
 import {
   seedTrack,
   seedSystem,
@@ -54,7 +55,7 @@ test.describe('Test creation wizard', () => {
     // ── Step 1: Select track ─────────────────────────────────────────────────
     await page.getByPlaceholder(/Search by artist/i).fill(`${E2E_PREFIX} Wizard Track`)
     await page.getByText(track.title).click()
-    await page.getByRole('button', { name: 'Continue' }).click()
+    await page.getByRole('button', { name: m.tests.wizard.continueButton }).click()
 
     // ── Step 2: Select snapshots ─────────────────────────────────────────────
     // Snapshot A selector
@@ -65,7 +66,7 @@ test.describe('Test creation wizard', () => {
     const snapBSelect = page.getByLabel(/Snapshot B/i)
     await snapBSelect.selectOption({ label: snapshotB.label })
 
-    await page.getByRole('button', { name: 'Continue' }).click()
+    await page.getByRole('button', { name: m.tests.wizard.continueButton }).click()
 
     // ── Step 3: Enter and verify clip URLs ───────────────────────────────────
     // Clip A
@@ -84,7 +85,7 @@ test.describe('Test creation wizard', () => {
     await page.getByRole('button', { name: 'Verify' }).nth(1).click()
     await expect(page.getByText(/youtube/i).nth(1)).toBeVisible({ timeout: 10_000 })
 
-    await page.getByRole('button', { name: 'Continue' }).click()
+    await page.getByRole('button', { name: m.tests.wizard.continueButton }).click()
 
     // ── Step 4: Publish ──────────────────────────────────────────────────────
     await expect(page.getByRole('heading', { name: 'Publish' })).toBeVisible()
@@ -95,7 +96,7 @@ test.describe('Test creation wizard', () => {
     await titleInput.clear()
     await titleInput.fill(`${E2E_PREFIX} ${currentTitle}`)
 
-    await page.getByRole('button', { name: 'Publish test' }).click()
+    await page.getByRole('button', { name: m.tests.publishStep.publishButton }).click()
 
     // Should land on the test detail page
     await expect(page).toHaveURL(/\/tests\/[a-f0-9-]{36}$/, { timeout: 15_000 })

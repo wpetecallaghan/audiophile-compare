@@ -1,0 +1,190 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "networkError": "Network error — please try again"
+  },
+  "nav": {
+    "wordmark": "Audiophile Compare",
+    "tests": "Tests",
+    "systems": "Systems",
+    "tracks": "Tracks",
+    "profile": "Profile",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…"
+  },
+  "auth": {
+    "heading": "Sign in",
+    "googleButton": "Continue with Google",
+    "emailLabel": "Email address",
+    "magicLinkButton": "Send magic link",
+    "magicLinkSent": "Check your email — a magic link is on its way."
+  },
+  "systems": {
+    "heading": "My systems",
+    "newButton": "+ New system",
+    "empty": "No systems yet.",
+    "createTestLink": "Create a test",
+    "newHeading": "New system",
+    "editHeading": "Edit system",
+    "editBreadcrumb": "Edit",
+    "namePlaceholder": "System name (e.g. Living room rig)",
+    "editNamePlaceholder": "System name",
+    "descriptionPlaceholder": "Description (optional)",
+    "createButton": "Create system",
+    "creating": "Creating…",
+    "saveButton": "Save changes",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "failedToCreate": "Failed to create system",
+    "failedToUpdate": "Failed to update system",
+    "networkError": "Network error — please try again"
+  },
+  "snapshots": {
+    "addButton": "+ Add new snapshot",
+    "newHeading": "New snapshot",
+    "labelPlaceholder": "Label (e.g. After — Furutech cable)",
+    "notesPlaceholder": "Notes (optional)",
+    "submitButton": "Add snapshot",
+    "adding": "Adding…",
+    "cancel": "Cancel",
+    "editButton": "Edit",
+    "notesLabel": "Notes",
+    "notesEditPlaceholder": "Optional",
+    "componentsLabel": "Components",
+    "rolePlaceholder": "Role",
+    "makePlaceholder": "Make",
+    "modelPlaceholder": "Model",
+    "notesColumnPlaceholder": "Notes",
+    "addComponentButton": "+ Add component",
+    "componentRoleAriaLabel": "Component {n} role",
+    "componentMakeAriaLabel": "Component {n} make",
+    "componentModelAriaLabel": "Component {n} model",
+    "componentNotesAriaLabel": "Component {n} notes",
+    "removeComponentAriaLabel": "Remove component {n}",
+    "saveButton": "Save changes",
+    "saving": "Saving…",
+    "failedToCreate": "Failed to create snapshot",
+    "networkError": "Network error — please try again"
+  },
+  "tests": {
+    "newHeading": "New test",
+    "blindStatus": "Blind test",
+    "revealedStatus": "Revealed",
+    "anonymous": "Anonymous",
+    "signIn": "Sign in",
+    "signInToListen": "to listen to the clips.",
+    "wizard": {
+      "stepTrack": "Track",
+      "stepSystems": "Systems",
+      "stepClips": "Clips",
+      "stepPublish": "Publish",
+      "continueButton": "Continue"
+    },
+    "trackStep": {
+      "heading": "Track",
+      "searchPlaceholder": "Search by artist, title or album…",
+      "searching": "Searching…",
+      "noResults": "No tracks found.",
+      "addTrackLink": "Add a track that isn't listed",
+      "addTrackHeading": "Add a track",
+      "artistLabel": "Artist *",
+      "titleLabel": "Title *",
+      "albumLabel": "Album",
+      "passageNoteLabel": "Passage note",
+      "createButton": "Create track"
+    },
+    "snapshotsStep": {
+      "description": "Choose the two system snapshots being compared. They must be different.",
+      "snapshotALabel": "Snapshot A",
+      "snapshotBLabel": "Snapshot B",
+      "choosePlaceholder": "— choose snapshot —"
+    },
+    "clipsStep": {
+      "heading": "Clips",
+      "urlPlaceholder": "YouTube, Vimeo, or direct audio/video URL",
+      "verifyButton": "Verify",
+      "verifying": "Checking…",
+      "beforeQuestion": "Which clip is the 'before' system?",
+      "beforeDescription": "This is recorded now and revealed to listeners only when you choose to reveal the test.",
+      "continueButton": "Continue"
+    },
+    "publishStep": {
+      "heading": "Publish",
+      "titlePlaceholder": "e.g. 'Naim vs Rega — same source, different amps'",
+      "publishButton": "Publish test",
+      "publishing": "Publishing…",
+      "trackBadge": "Track"
+    },
+    "vote": {
+      "castHeading": "Cast your vote",
+      "updateHeading": "Update your vote",
+      "observationPlaceholder": "What did you notice?",
+      "saveButton": "Save votes",
+      "updateButton": "Update votes",
+      "submitting": "Submitting…",
+      "atLeastOneError": "Please vote on at least one technique before submitting."
+    },
+    "reveal": {
+      "button": "Reveal before/after",
+      "confirmHeading": "Reveal the before/after identity to all listeners?",
+      "confirmWarning": "This cannot be undone. Listeners who haven't voted yet will see the result before they vote.",
+      "confirmButton": "Yes, reveal",
+      "revealing": "Revealing…",
+      "cancelButton": "Cancel"
+    },
+    "results": {
+      "heading": "Results",
+      "noVotes": "No votes recorded yet."
+    },
+    "mapping": {
+      "revealedBadge": "Revealed",
+      "clipALabel": "Clip A",
+      "clipBLabel": "Clip B",
+      "before": "Before",
+      "after": "After"
+    }
+  },
+  "profile": {
+    "heading": "Profile",
+    "displayNameLabel": "Display name",
+    "displayNamePlaceholder": "Your display name",
+    "saveButton": "Save",
+    "saving": "Saving…",
+    "successMessage": "Display name updated.",
+    "cancelButton": "Cancel"
+  },
+  "feed": {
+    "heading": "Listening tests",
+    "subheading": "Blind A/B comparisons for hi-fi systems and recordings.",
+    "newTestButton": "+ New test",
+    "noTests": "No tests yet.",
+    "createFirst": "Create the first one.",
+    "signIn": "Sign in",
+    "toCreateFirst": "to create the first one.",
+    "previousPage": "← Previous",
+    "nextPage": "Next →",
+    "pageOf": "Page {page} of {total}",
+    "statusBlind": "Blind",
+    "statusRevealed": "Revealed",
+    "anonymous": "Anonymous"
+  },
+  "tracks": {
+    "heading": "Tracks",
+    "empty": "No tracks yet.",
+    "createTestLink": "Create a test",
+    "toAddFirst": "to add the first one.",
+    "testsHeading": "Tests",
+    "noTestsForTrack": "No tests use this track yet.",
+    "trackBadge": "Track",
+    "statusRevealed": "Revealed",
+    "statusBlind": "Blind",
+    "anonymous": "Anonymous"
+  },
+  "crosscheck": {
+    "heading": "Cross-check",
+    "description": "Compare any two snapshots directly using recordings from existing tests —",
+    "choosePlaceholder": "— choose snapshot —",
+    "noSharedTracks": "No shared tracks found — these snapshots haven't been tested on the same recording yet."
+  }
+}

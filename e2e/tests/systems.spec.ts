@@ -8,6 +8,7 @@ import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
 import { seedSystem, seedSnapshot } from '../helpers/admin'
 import { E2E_PREFIX } from '../helpers/constants'
+import m from '../../messages/en.json'
 
 const SYSTEM_NAME = `System ${Date.now()}`
 const UPDATED_NAME = `${SYSTEM_NAME} (edited)`
@@ -81,7 +82,7 @@ test.describe('System management', () => {
     const system = await seedSystem(`${SYSTEM_NAME} list`)
     await page.goto(routes.systems())
 
-    await expect(page.getByRole('heading', { name: 'My systems' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: m.systems.heading })).toBeVisible()
     await expect(page.getByText(`${E2E_PREFIX} ${SYSTEM_NAME} list`)).toBeVisible()
 
     void system

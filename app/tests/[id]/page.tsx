@@ -9,6 +9,7 @@ import { toClipData } from '@/lib/clips/to-clip-data'
 import { computeTally } from '@/lib/votes/compute-tally'
 import type { Technique, ExistingVote } from '@/components/tests/VoteForm'
 import type { RawVoteRow, TallyResult } from '@/lib/votes/compute-tally'
+import { getTranslations } from 'next-intl/server'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -18,6 +19,7 @@ export default async function TestDetailPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const t = await getTranslations('tests')
 
   const { data: test, error } = await supabase
     .from('tests')
@@ -125,7 +127,7 @@ export default async function TestDetailPage({ params }: Props) {
       {/* Header */}
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-          {isRevealed ? 'Revealed' : 'Blind test'}
+          {isRevealed ? t('revealedStatus') : t('blindStatus')}
         </p>
         <h1 className="text-xl sm:text-2xl font-semibold">{test.title}</h1>
         <p className="text-sm text-gray-500">
@@ -136,7 +138,7 @@ export default async function TestDetailPage({ params }: Props) {
           <p className="text-sm text-gray-400 italic">{track.passage_note}</p>
         )}
         <p className="text-xs text-gray-400">
-          by {creator?.display_name ?? 'Anonymous'} ·{' '}
+          by {creator?.display_name ?? t('anonymous')} ·{' '}
           {new Date(test.created_at).toLocaleDateString()} ·{' '}
           {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
         </p>
@@ -157,8 +159,8 @@ export default async function TestDetailPage({ params }: Props) {
           <ABPlayer clipA={clipA} clipB={clipB} />
         ) : (
           <div className="rounded border border-gray-200 bg-gray-50 p-4 sm:p-6 text-center text-sm text-gray-500">
-            <a href="/login" className="text-blue-600 underline">Sign in</a>
-            {' '}to listen to the clips.
+            <a href="/login" className="text-blue-600 underline">{t('signIn')}</a>
+            {' '}{t('signInToListen')}
           </div>
         )}
       </div>

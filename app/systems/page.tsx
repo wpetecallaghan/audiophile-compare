@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 export default async function SystemsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const t = await getTranslations('systems')
 
   if (!user) return null // middleware handles the redirect
 
@@ -29,7 +31,7 @@ export default async function SystemsPage() {
   return (
     <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-semibold">My systems</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-400">
             {systems.length} {systems.length === 1 ? 'system' : 'systems'}
@@ -38,16 +40,16 @@ export default async function SystemsPage() {
             href="/systems/new"
             className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
           >
-            + New system
+            {t('newButton')}
           </Link>
         </div>
       </div>
 
       {systems.length === 0 ? (
         <p className="text-sm text-gray-400">
-          No systems yet.{' '}
+          {t('empty')}{' '}
           <Link href="/tests/new" className="text-blue-600 underline">
-            Create a test
+            {t('createTestLink')}
           </Link>{' '}
           to add your first system.
         </p>

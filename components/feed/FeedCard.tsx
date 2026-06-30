@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 export type FeedTest = {
   id: string
@@ -11,14 +12,15 @@ export type FeedTest = {
   snapshot_b: { label: string; system: { name: string } | null } | null
 }
 
-function statusBadge(status: string) {
+function statusBadge(status: string, t: Awaited<ReturnType<typeof getTranslations<'feed'>>>) {
   return status === 'revealed'
-    ? { text: 'Revealed', cls: 'bg-blue-100 text-blue-700' }
-    : { text: 'Blind',    cls: 'bg-amber-100 text-amber-700' }
+    ? { text: t('statusRevealed'), cls: 'bg-blue-100 text-blue-700' }
+    : { text: t('statusBlind'),    cls: 'bg-amber-100 text-amber-700' }
 }
 
-export default function FeedCard({ test }: { test: FeedTest }) {
-  const badge = statusBadge(test.status)
+export default async function FeedCard({ test }: { test: FeedTest }) {
+  const t = await getTranslations('feed')
+  const badge = statusBadge(test.status, t)
 
   const snapshotLine = [
     test.snapshot_a
@@ -49,7 +51,7 @@ export default function FeedCard({ test }: { test: FeedTest }) {
               <p className="text-xs text-gray-400 truncate">{snapshotLine}</p>
             )}
             <p className="text-xs text-gray-400">
-              {test.creator?.display_name ?? 'Anonymous'}
+              {test.creator?.display_name ?? t('anonymous')}
               {' · '}
               {/* suppressHydrationWarning: toLocaleDateString() may differ between Node.js and browser locale */}
               <span suppressHydrationWarning>

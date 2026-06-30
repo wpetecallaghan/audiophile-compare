@@ -8,6 +8,7 @@
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
 import { seedCompleteTest, type SeedTestFixture } from '../helpers/admin'
+import m from '../../messages/en.json'
 
 let fixture: SeedTestFixture
 
@@ -33,7 +34,7 @@ test.describe('Voting flow', () => {
     const radioA = page.locator(`input[type="radio"][value="${fixture.clipA.id}"]`).first()
     await radioA.check()
 
-    await page.getByRole('button', { name: 'Save votes' }).click()
+    await page.getByRole('button', { name: m.tests.vote.saveButton }).click()
 
     // After saving, tally should be visible
     await expect(page.getByText(/%/)).toBeVisible({ timeout: 5_000 })

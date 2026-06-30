@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import type { Track, TestDraft } from '@/lib/types/test-creation'
+import { useTranslations } from 'next-intl'
 
 type Props = {
   draft: TestDraft
@@ -9,6 +10,8 @@ type Props = {
 }
 
 export default function StepTrack({ draft, onComplete }: Props) {
+  const t = useTranslations('tests.trackStep')
+  const tw = useTranslations('tests.wizard')
   const [query, setQuery]       = useState('')
   const [results, setResults]   = useState<Track[]>([])
   const [selected, setSelected] = useState<Track | null>(draft.track)
@@ -83,11 +86,11 @@ export default function StepTrack({ draft, onComplete }: Props) {
         </div>
       ) : creating ? (
         <div className="space-y-4 rounded border p-4">
-          <h3 className="font-medium text-sm">Add a track</h3>
+        <h3 className="font-medium text-sm">{t('addTrackHeading')}</h3>
           {[
-            { label: 'Artist *', value: artist, set: setArtist },
-            { label: 'Title *',  value: title,  set: setTitle  },
-            { label: 'Album',    value: album,   set: setAlbum  },
+            { label: t('artistLabel'), value: artist, set: setArtist },
+            { label: t('titleLabel'),  value: title,  set: setTitle  },
+            { label: t('albumLabel'),  value: album,  set: setAlbum  },
           ].map(({ label, value, set }) => (
             <div key={label}>
               <label className="block text-sm font-medium mb-1">{label}</label>
@@ -101,7 +104,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
           ))}
           <div>
             <label className="block text-sm font-medium mb-1">
-              Passage note
+              {t('passageNoteLabel')}
               <span className="text-gray-400 font-normal ml-1">
                 (e.g. "Opening bars, track 3")
               </span>
@@ -119,7 +122,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
               onClick={handleCreate}
               className="bg-black text-white rounded px-4 py-2 text-sm font-medium"
             >
-              Add track
+              {t('createButton')}
             </button>
             <button
               onClick={() => setCreating(false)}
@@ -133,12 +136,12 @@ export default function StepTrack({ draft, onComplete }: Props) {
         <div className="space-y-3">
           <input
             type="text"
-            placeholder="Search by artist, title or album…"
+            placeholder={t('searchPlaceholder')}
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="w-full border rounded px-3 py-2 text-sm"
           />
-          {loading && <p className="text-sm text-gray-400">Searching…</p>}
+          {loading && <p className="text-sm text-gray-400">{t('searching')}</p>}
           {results.length > 0 && (
             <ul className="border rounded divide-y">
               {results.map(track => (
@@ -159,13 +162,13 @@ export default function StepTrack({ draft, onComplete }: Props) {
             </ul>
           )}
           {!loading && query.trim() && results.length === 0 && (
-            <p className="text-sm text-gray-500">No tracks found.</p>
+            <p className="text-sm text-gray-500">{t('noResults')}</p>
           )}
           <button
             onClick={() => setCreating(true)}
             className="text-sm text-blue-600 underline"
           >
-            Add a track that isn't listed
+            {t('addTrackLink')}
           </button>
         </div>
       )}
@@ -176,7 +179,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
         className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
         suppressHydrationWarning
       >
-        Continue
+        {tw('continueButton')}
       </button>
     </div>
   )

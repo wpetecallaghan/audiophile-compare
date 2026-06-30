@@ -94,7 +94,7 @@ describe('VoteForm', () => {
     it('disables the submit button when no clips are selected', () => {
       renderForm()
 
-      expect(screen.getByRole('button', { name: /submit votes/i })).toBeDisabled()
+      expect(screen.getByRole('button', { name: /save votes/i })).toBeDisabled()
     })
 
     it('shows "Cast your vote" heading when there are no existing votes', () => {
@@ -172,7 +172,7 @@ describe('VoteForm', () => {
       renderForm()
 
       await user.click(screen.getAllByRole('radio', { name: /clip a/i })[2])
-      await user.click(screen.getByRole('button', { name: /submit votes/i }))
+      await user.click(screen.getByRole('button', { name: /save votes/i }))
 
       expect(
         screen.getByText(/please describe your criterion for the "other" technique/i),
@@ -184,7 +184,7 @@ describe('VoteForm', () => {
       renderForm()
 
       await user.click(screen.getAllByRole('radio', { name: /clip a/i })[2])
-      await user.click(screen.getByRole('button', { name: /submit votes/i }))
+      await user.click(screen.getByRole('button', { name: /save votes/i }))
 
       expect(mockFetch).not.toHaveBeenCalled()
     })
@@ -198,7 +198,7 @@ describe('VoteForm', () => {
       await user.click(screen.getAllByRole('radio', { name: /clip a/i })[0])
 
       expect(
-        screen.getByRole('button', { name: /submit votes/i }),
+        screen.getByRole('button', { name: /save votes/i }),
       ).not.toBeDisabled()
     })
 
@@ -211,7 +211,7 @@ describe('VoteForm', () => {
 
       // Vote only on Tune Method (index 0); leave PRaT and Other blank
       await user.click(screen.getAllByRole('radio', { name: /clip a/i })[0])
-      await user.click(screen.getByRole('button', { name: /submit votes/i }))
+      await user.click(screen.getByRole('button', { name: /save votes/i }))
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
@@ -240,7 +240,7 @@ describe('VoteForm', () => {
         screen.getByPlaceholderText(/what did you notice/i),
         'Clip B had better rhythm',
       )
-      await user.click(screen.getByRole('button', { name: /submit votes/i }))
+      await user.click(screen.getByRole('button', { name: /save votes/i }))
 
       await waitFor(() => {
         const body = JSON.parse(
@@ -259,7 +259,7 @@ describe('VoteForm', () => {
       renderForm()
 
       await user.click(screen.getAllByRole('radio', { name: /clip a/i })[0])
-      await user.click(screen.getByRole('button', { name: /submit votes/i }))
+      await user.click(screen.getByRole('button', { name: /save votes/i }))
 
       await waitFor(() => {
         expect(mockRefresh).toHaveBeenCalledOnce()
@@ -277,7 +277,7 @@ describe('VoteForm', () => {
       renderForm()
 
       await user.click(screen.getAllByRole('radio', { name: /clip a/i })[0])
-      await user.click(screen.getByRole('button', { name: /submit votes/i }))
+      await user.click(screen.getByRole('button', { name: /save votes/i }))
 
       await waitFor(() => {
         expect(
@@ -293,7 +293,7 @@ describe('VoteForm', () => {
       renderForm()
 
       await user.click(screen.getAllByRole('radio', { name: /clip a/i })[0])
-      await user.click(screen.getByRole('button', { name: /submit votes/i }))
+      await user.click(screen.getByRole('button', { name: /save votes/i }))
 
       await waitFor(() => {
         expect(screen.getByText(/network error/i)).toBeInTheDocument()

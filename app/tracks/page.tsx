@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 export default async function TracksPage() {
   const supabase = await createClient()
+  const t = await getTranslations('tracks')
 
   const { data } = await supabase
     .from('tracks')
@@ -21,7 +23,7 @@ export default async function TracksPage() {
   return (
     <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-semibold">Tracks</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
         <span className="text-sm text-gray-400">
           {tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}
         </span>
@@ -29,11 +31,11 @@ export default async function TracksPage() {
 
       {tracks.length === 0 ? (
         <p className="text-sm text-gray-400">
-          No tracks yet.{' '}
+          {t('empty')}{' '}
           <Link href="/tests/new" className="text-blue-600 underline">
-            Create a test
+            {t('createTestLink')}
           </Link>{' '}
-          to add the first one.
+          {t('toAddFirst')}
         </p>
       ) : (
         <ul className="space-y-2">

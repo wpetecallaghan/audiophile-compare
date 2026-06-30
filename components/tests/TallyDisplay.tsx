@@ -1,4 +1,5 @@
 import type { TallyResult } from '@/lib/votes/compute-tally'
+import { getTranslations } from 'next-intl/server'
 
 type Props = {
   tally: TallyResult
@@ -6,17 +7,18 @@ type Props = {
   clipBId: string
 }
 
-export default function TallyDisplay({ tally, clipAId, clipBId }: Props) {
+export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
+  const t = await getTranslations('tests.results')
   const { curated, others, divergent } = tally
   const votedTechniques = curated.filter(r => r.total > 0)
   const hasAnyVotes = votedTechniques.length > 0 || others.length > 0
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base sm:text-lg font-semibold">Results</h2>
+      <h2 className="text-base sm:text-lg font-semibold">{t('heading')}</h2>
 
       {!hasAnyVotes && (
-        <p className="text-sm text-gray-400">No votes recorded yet.</p>
+        <p className="text-sm text-gray-400">{t('noVotes')}</p>
       )}
 
       {divergent && (

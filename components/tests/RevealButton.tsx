@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 type Props = {
   testId: string
 }
 
 export default function RevealButton({ testId }: Props) {
+  const t = useTranslations('tests.reveal')
   const [confirming, setConfirming] = useState(false)
   const [loading, setLoading]       = useState(false)
   const [error, setError]           = useState<string | null>(null)
@@ -36,11 +38,10 @@ export default function RevealButton({ testId }: Props) {
     return (
       <div className="rounded border border-amber-200 bg-amber-50 p-4 space-y-3">
         <p className="text-sm font-medium text-amber-900">
-          Reveal the before/after identity to all listeners?
+          {t('confirmHeading')}
         </p>
         <p className="text-sm text-amber-700">
-          This cannot be undone. Listeners who haven't voted yet will see the
-          result before they vote.
+          {t('confirmWarning')}
         </p>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-3">
@@ -49,13 +50,13 @@ export default function RevealButton({ testId }: Props) {
             disabled={loading}
             className="bg-amber-600 text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
           >
-            {loading ? 'Revealing…' : 'Yes, reveal'}
+            {loading ? t('revealing') : t('confirmButton')}
           </button>
           <button
             onClick={() => setConfirming(false)}
             className="text-sm text-gray-600 underline"
           >
-            Cancel
+            {t('cancelButton')}
           </button>
         </div>
       </div>
@@ -67,7 +68,7 @@ export default function RevealButton({ testId }: Props) {
       onClick={() => setConfirming(true)}
       className="border border-amber-400 text-amber-700 rounded px-4 py-2 text-sm font-medium hover:bg-amber-50"
     >
-      Reveal before/after
+      {t('button')}
     </button>
   )
 }

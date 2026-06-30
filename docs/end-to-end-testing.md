@@ -53,6 +53,7 @@ e2e/
   global-teardown.ts       ← delete all [E2E]-prefixed records owned by test user
   helpers/
     admin.ts               ← Supabase admin client; seed and cleanup helpers
+    constants.ts           ← shared constants (E2E_PREFIX etc.)
     routes.ts              ← typed URL builders
   tests/
     public-feed.spec.ts    ← unauthenticated user: feed, redirects
@@ -72,10 +73,13 @@ playwright.config.ts
 
 | # | Scenario |
 |---|---|
-| 1 | Home page loads without a session cookie |
-| 2 | Test cards have expected structure (title, status badge) when tests exist |
-| 3 | Visiting `/systems` redirects to `/login?redirectTo=%2Fsystems` |
-| 4 | The login page shows both the magic link form and the Google sign-in button |
+| 1 | Home page loads successfully |
+| 2 | Header shows "Sign in" link and not authenticated nav |
+| 3 | Test cards have expected structure (title, status badge) when tests exist |
+| 4 | Visiting `/systems` redirects to `/login` with `redirectTo` param |
+| 5 | Login page shows magic link form and Google sign-in button |
+| 6 | Visiting `/profile` redirects to `/login` |
+| 7 | Visiting `/tracks` redirects to `/login` |
 
 ### `auth.spec.ts` — auth session state
 
@@ -93,35 +97,31 @@ playwright.config.ts
 | 2 | Edit the system name and description: save → detail page shows updated values |
 | 3 | Add a snapshot to the system: fill label → submit → snapshot appears in list |
 | 4 | Edit a snapshot label: save → updated label shown |
-| 5 | Non-owner does not see the Edit button on a system they don't own |
+| 5 | Systems list shows the test user's own systems |
 
 ### `test-creation.spec.ts` — full wizard (seeds a track and two systems)
 
 | # | Scenario |
 |---|---|
-| 1 | Navigate to `/tests/new` — step indicator shows "1 Track" as active |
-| 2 | Search for and select a seeded track — Continue advances to step 2 |
-| 3 | Select Snapshot A and Snapshot B from seeded systems — Continue advances |
-| 4 | Enter valid YouTube URLs for clips A and B — Verify succeeds for both |
-| 5 | Continue to step 4 — Publish test creates the test and lands on detail page |
-| 6 | Published test appears on the home feed |
+| 1 | Step 1: navigate to wizard and search for the seeded track |
+| 2 | Full wizard flow: select track → snapshots → verify clips → publish |
 
 ### `voting.spec.ts` — voting flow (seeds a complete published test)
 
 | # | Scenario |
 |---|---|
-| 1 | Before voting: vote tally is hidden; vote count is visible |
-| 2 | Cast a vote: select a clip preference for one technique → Save votes |
-| 3 | After voting: tally bars are visible for the voted technique |
-| 4 | Update the vote: radios pre-filled; save changes the tally |
-| 5 | Creator can reveal the test: Reveal button visible; tally shown to all after reveal |
+| 1 | Before voting: tally is hidden but vote count is visible |
+| 2 | Cast a vote: select clip A for the first technique → Save votes |
+| 3 | Update an existing vote: radios pre-filled, change to clip B |
+| 4 | Creator can reveal the test |
 
 ### `profile.spec.ts`
 
 | # | Scenario |
 |---|---|
-| 1 | Profile page shows the current display name |
-| 2 | Update display name → save → "Display name updated." confirmation shown |
+| 1 | Profile page loads and shows the display name field |
+| 2 | Update display name and see confirmation |
+| 3 | Save button is disabled when display name is cleared |
 
 ---
 

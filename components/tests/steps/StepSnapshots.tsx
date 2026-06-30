@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Snapshot, SystemWithSnapshots, TestDraft } from '@/lib/types/test-creation'
+import { useTranslations } from 'next-intl'
 
 type Props = {
   draft: TestDraft
@@ -181,6 +182,8 @@ function SnapshotSelector({
 }
 
 export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCreated, onSystemCreated }: Props) {
+  const t = useTranslations('tests.snapshotsStep')
+  const tw = useTranslations('tests.wizard')
   const [snapshotA, setSnapshotA] = useState<Snapshot | null>(draft.snapshotA)
   const [snapshotB, setSnapshotB] = useState<Snapshot | null>(draft.snapshotB)
 
@@ -294,7 +297,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
       <div>
         <h2 className="text-lg font-semibold">Systems</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Choose the two system snapshots being compared. They must be different.
+          {t('description')}
         </p>
       </div>
 
@@ -312,7 +315,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
               systems={systems}
               selected={snapshotA}
               exclude={snapshotB?.id ?? null}
-              label="Snapshot A"
+              label={t('snapshotALabel')}
               onChange={setSnapshotA}
               onSnapshotCreated={onSnapshotCreated}
             />
@@ -320,7 +323,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
               systems={systems}
               selected={snapshotB}
               exclude={snapshotA?.id ?? null}
-              label="Snapshot B"
+              label={t('snapshotBLabel')}
               onChange={setSnapshotB}
               onSnapshotCreated={onSnapshotCreated}
             />
@@ -335,7 +338,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
         className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
         suppressHydrationWarning
       >
-        Continue
+        {tw('continueButton')}
       </button>
     </div>
   )

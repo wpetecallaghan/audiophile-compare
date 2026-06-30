@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { TestDraft } from '@/lib/types/test-creation'
+import { useTranslations } from 'next-intl'
 
 type Props = {
   draft: TestDraft
@@ -10,6 +11,7 @@ type Props = {
 }
 
 export default function StepPublish({ draft, onBack }: Props) {
+  const t = useTranslations('tests.publishStep')
   const [title, setTitle]     = useState(draft.title)
   const [error, setError]     = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -61,7 +63,7 @@ export default function StepPublish({ draft, onBack }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Publish</h2>
+        <h2 className="text-lg font-semibold">{t('heading')}</h2>
         <p className="text-sm text-gray-500 mt-1">
           Review your test, give it a title, then publish.
         </p>
@@ -70,7 +72,7 @@ export default function StepPublish({ draft, onBack }: Props) {
       {/* Summary */}
       <div className="rounded border divide-y text-sm">
         <div className="px-4 py-3 space-y-0.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Track</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('trackBadge')}</p>
           <p className="font-medium">{draft.track?.artist} — {draft.track?.title}</p>
           {draft.track?.album && <p className="text-gray-500">{draft.track.album}</p>}
         </div>
@@ -100,7 +102,7 @@ export default function StepPublish({ draft, onBack }: Props) {
           type="text"
           value={title}
           onChange={e => setTitle(e.target.value)}
-          placeholder="e.g. 'Naim vs Rega — same source, different amps'"
+          placeholder={t('titlePlaceholder')}
           className="w-full border rounded px-3 py-2 text-sm"
         />
       </div>
@@ -119,7 +121,7 @@ export default function StepPublish({ draft, onBack }: Props) {
           onClick={handlePublish}
           className="flex-1 bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
         >
-          {loading ? 'Publishing…' : 'Publish test'}
+          {loading ? t('publishing') : t('publishButton')}
         </button>
       </div>
     </div>

@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useTranslations } from 'next-intl'
 
 export default function SignOutButton() {
   const router = useRouter()
+  const t = useTranslations('nav')
   const [signingOut, setSigningOut] = useState(false)
 
   async function handleSignOut() {
@@ -22,7 +24,7 @@ export default function SignOutButton() {
       disabled={signingOut}
       className="text-sm text-gray-500 hover:text-gray-900 disabled:opacity-40"
     >
-      {signingOut ? 'Signing out\u2026' : 'Sign out'}
+      {signingOut ? t('signingOut') : t('signOut')}
     </button>
   )
 }

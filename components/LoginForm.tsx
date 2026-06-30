@@ -4,8 +4,10 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useTranslations } from 'next-intl'
 
 export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
+  const t = useTranslations('auth')
   const [email, setEmail]     = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -30,14 +32,14 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
   }
 
   if (submitted) {
-    return <p className="text-sm">Check your email — a magic link is on its way.</p>
+    return <p className="text-sm">{t('magicLinkSent')}</p>
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm font-medium mb-1">
-          Email address
+          {t('emailLabel')}
         </label>
         <input
           id="email"
@@ -53,7 +55,7 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
         type="submit"
         className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium"
       >
-        Send magic link
+        {t('magicLinkButton')}
       </button>
     </form>
   )

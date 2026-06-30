@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 export type Technique = {
   id: string
@@ -39,6 +40,7 @@ export default function VoteForm({
   existingVotes,
 }: Props) {
   const router = useRouter()
+  const tr = useTranslations('tests.vote')
 
   const initialState: Record<string, TechVote> = {}
   for (const t of techniques) {
@@ -86,7 +88,7 @@ export default function VoteForm({
     }
 
     if (voteArray.length === 0) {
-      setError('Please vote on at least one technique before submitting.')
+      setError(tr('atLeastOneError'))
       return
     }
 
@@ -119,7 +121,7 @@ export default function VoteForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <h2 className="text-base sm:text-lg font-semibold">
-          {isUpdate ? 'Update your vote' : 'Cast your vote'}
+          {isUpdate ? tr('updateHeading') : tr('castHeading')}
         </h2>
         <p className="text-sm text-gray-500 mt-0.5">
           Choose which clip you preferred for each technique. You can vote on
@@ -191,7 +193,7 @@ export default function VoteForm({
                 <textarea
                   rows={2}
                   className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
-                  placeholder="What did you notice?"
+                  placeholder={tr('observationPlaceholder')}
                   value={v.observation}
                   onChange={e =>
                     setVoteField(t.id, 'observation', e.target.value)
@@ -211,10 +213,10 @@ export default function VoteForm({
         className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting
-          ? 'Submitting…'
+          ? tr('submitting')
           : isUpdate
-          ? 'Update votes'
-          : 'Submit votes'}
+          ? tr('updateButton')
+          : tr('saveButton')}
       </button>
     </form>
   )

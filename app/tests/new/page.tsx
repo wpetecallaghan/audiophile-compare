@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import CreateTestForm from '@/components/tests/CreateTestForm'
 import type { SystemWithSnapshots } from '@/lib/types/test-creation'
+import { getTranslations } from 'next-intl/server'
 
 export default async function NewTestPage() {
   const supabase = await createClient()
@@ -9,6 +10,8 @@ export default async function NewTestPage() {
 
   // Middleware handles unauthenticated users, but this is a safety net
   if (!user) redirect('/login?redirectTo=/tests/new')
+
+  const t = await getTranslations('tests')
 
   // Pre-fetch systems with snapshots server-side so the form has
   // data immediately — no loading state on step 2
@@ -27,7 +30,7 @@ export default async function NewTestPage() {
   return (
     <main className="min-h-screen px-4 py-12">
       <h1 className="text-2xl font-semibold mb-8 max-w-2xl mx-auto">
-        New test
+        {t('newHeading')}
       </h1>
       <CreateTestForm systems={(systems ?? []) as SystemWithSnapshots[]} />
     </main>

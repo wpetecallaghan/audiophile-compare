@@ -27,48 +27,14 @@ with your email. Copy your `id` (a UUID) — you will need it in step 2.
 
 ## Step 2 — Create a system and snapshots
 
-The systems UI is not yet built. Run the following in **Supabase → SQL Editor**,
-replacing `YOUR-USER-ID` with the UUID copied in step 1.
+1. Go to `http://localhost:3000/systems`
+2. Click **+ New system**
+3. Name: `Main system`, Description: `Living room setup`
+4. Click **Create system** — you should land on the system detail page
+5. Click **+ Add new snapshot**, enter label `Before — stock power cable`, click **Add snapshot**
+6. Click **+ Add new snapshot** again, enter label `After — upgraded power cable`, click **Add snapshot**
 
-```sql
--- Create a system
-insert into public.systems (owner_id, name, description)
-values (
-  'YOUR-USER-ID',
-  'Main system',
-  'Living room setup'
-)
-returning id;
-```
-
-Copy the returned system `id`, then run:
-
-```sql
--- Create two snapshots on that system
-insert into public.system_snapshots (system_id, version, label, notes, components)
-values
-  (
-    'YOUR-SYSTEM-ID',
-    1,
-    'Before — stock power cable',
-    'Baseline configuration',
-    '[{"role":"Source","make":"Rega","model":"Planar 3","notes":""},
-      {"role":"Amplifier","make":"Naim","model":"Nait 5si","notes":""},
-      {"role":"Speakers","make":"ProAc","model":"Tablette 10","notes":""}]'
-  ),
-  (
-    'YOUR-SYSTEM-ID',
-    2,
-    'After — upgraded power cable',
-    'With Furutech power cable on the amplifier',
-    '[{"role":"Source","make":"Rega","model":"Planar 3","notes":""},
-      {"role":"Amplifier","make":"Naim","model":"Nait 5si","notes":""},
-      {"role":"Speakers","make":"ProAc","model":"Tablette 10","notes":""}]'
-  );
-```
-
-**Verify in Supabase:** Table Editor → system_snapshots should show two rows,
-both linked to your system.
+**Verify:** Both snapshots appear in the list on the system detail page.
 
 ---
 
@@ -152,7 +118,7 @@ Check each of the following on the page you land on.
 2. In the "Cast your vote" form, select **Clip A** for **Tune Method**
 3. Add an optional observation in the textarea that appears — e.g. `Better pace`
 4. Select **Clip B** for **General preference** (leave all others blank)
-5. Click **Submit votes**
+5. Click **Save votes**
 
 - [ ] Page refreshes automatically
 - [ ] Heading changes to "Update your vote"

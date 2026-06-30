@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 type Props = {
   systemId: string
@@ -9,6 +10,7 @@ type Props = {
 
 export default function AddSnapshotForm({ systemId }: Props) {
   const router = useRouter()
+  const t = useTranslations('snapshots')
   const [open, setOpen] = useState(false)
   const [label, setLabel] = useState('')
   const [notes, setNotes] = useState('')
@@ -44,13 +46,13 @@ export default function AddSnapshotForm({ systemId }: Props) {
       })
       const body = await res.json()
       if (!res.ok) {
-        setError((body as { error?: string }).error ?? 'Failed to create snapshot')
+        setError((body as { error?: string }).error ?? t('failedToCreate'))
         return
       }
       setOpen(false)
       router.refresh()
     } catch {
-      setError('Network error — please try again')
+      setError(t('networkError'))
     } finally {
       setSubmitting(false)
     }
@@ -63,17 +65,17 @@ export default function AddSnapshotForm({ systemId }: Props) {
         onClick={handleOpen}
         className="text-sm text-blue-600 hover:underline"
       >
-        + Add new snapshot
+        {t('addButton')}
       </button>
     )
   }
 
   return (
     <div className="space-y-3 rounded border border-gray-200 p-4">
-      <p className="text-sm font-medium">New snapshot</p>
+      <p className="text-sm font-medium">{t('newHeading')}</p>
       <input
         type="text"
-        placeholder="Label (e.g. After — Furutech cable)"
+        placeholder={t('labelPlaceholder')}
         value={label}
         onChange={e => setLabel(e.target.value)}
         // eslint-disable-next-line jsx-a11y/no-autofocus
@@ -81,7 +83,7 @@ export default function AddSnapshotForm({ systemId }: Props) {
         className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       <textarea
-        placeholder="Notes (optional)"
+        placeholder={t('notesPlaceholder')}
         value={notes}
         onChange={e => setNotes(e.target.value)}
         rows={2}
@@ -97,7 +99,7 @@ export default function AddSnapshotForm({ systemId }: Props) {
           disabled={submitting || !label.trim()}
           className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
         >
-          {submitting ? 'Adding…' : 'Add snapshot'}
+          {submitting ? t('adding') : t('submitButton')}
         </button>
         <button
           type="button"
@@ -105,7 +107,7 @@ export default function AddSnapshotForm({ systemId }: Props) {
           disabled={submitting}
           className="text-xs text-gray-500 hover:underline"
         >
-          Cancel
+          {t('cancel')}
         </button>
       </div>
     </div>

@@ -294,23 +294,30 @@ Tests:       3 skipped, 207 passed, 210 total
 - ⏸️ Auth callback route (pending Next.js environment)
 - ⏸️ Systems PATCH route (placeholder, pending Next.js environment)
 
+## Phase 4: E2E Tests ✅
+
+Playwright end-to-end tests run against the live staging database and verify
+complete user flows from the browser through Next.js and into Supabase.
+
+See [end-to-end-testing.md](end-to-end-testing.md) for full coverage, design
+decisions, environment variables, and how to run the tests.
+
+**Specs implemented:**
+- `public-feed.spec.ts` — unauthenticated user: feed page, redirects
+- `auth.spec.ts` — session state, sign-out, `redirectTo` preservation
+- `systems.spec.ts` — create/edit system, add/edit snapshot
+- `test-creation.spec.ts` — full wizard: track → snapshots → clips → publish
+- `voting.spec.ts` — cast vote, update vote, reveal
+- `profile.spec.ts` — update display name
+
 ## Next Steps
 
 ### Phase 3: Integration Tests (Future)
 
 Future integration tests could cover:
-- Full authentication flow (E2E)
 - Database operations with test data
 - Protected route access patterns
-- Form submission workflows
-
-### Phase 4: E2E Tests (Future)
-
-Using Playwright for end-to-end testing:
-- Magic link authentication flow
-- Protected route navigation
-- User session persistence
-- Error scenarios
+- Form submission workflows at the API boundary
 
 ### Improving Middleware/Route Tests
 

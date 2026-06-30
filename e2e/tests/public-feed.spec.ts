@@ -5,6 +5,7 @@
  * Tests what anonymous users can and cannot do.
  */
 import { test, expect } from '@playwright/test'
+import m from '../../messages/en.json'
 
 test.describe('Public feed (unauthenticated)', () => {
   test('home page loads successfully', async ({ page }) => {
@@ -14,8 +15,8 @@ test.describe('Public feed (unauthenticated)', () => {
 
   test('header shows "Sign in" link and not authenticated nav', async ({ page }) => {
     await page.goto('/')
-    await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Systems' })).not.toBeVisible()
+    await expect(page.getByRole('link', { name: m.nav.signIn })).toBeVisible()
+    await expect(page.getByRole('link', { name: m.nav.systems })).not.toBeVisible()
   })
 
   test('test cards have expected structure when tests exist', async ({ page }) => {
@@ -25,7 +26,7 @@ test.describe('Public feed (unauthenticated)', () => {
 
     if (count === 0) {
       // Feed is empty — just verify the page itself is intact
-      await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible()
+      await expect(page.getByRole('link', { name: m.nav.signIn })).toBeVisible()
       return
     }
 
@@ -42,10 +43,10 @@ test.describe('Public feed (unauthenticated)', () => {
 
   test('login page shows magic link form and Google sign-in button', async ({ page }) => {
     await page.goto('/login')
-    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
-    await expect(page.getByRole('button', { name: /Continue with Google/i })).toBeVisible()
-    await expect(page.getByLabel(/Email address/i)).toBeVisible()
-    await expect(page.getByRole('button', { name: /Send magic link/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: m.auth.heading })).toBeVisible()
+    await expect(page.getByRole('button', { name: m.auth.googleButton })).toBeVisible()
+    await expect(page.getByLabel(m.auth.emailLabel)).toBeVisible()
+    await expect(page.getByRole('button', { name: m.auth.magicLinkButton })).toBeVisible()
   })
 
   test('visiting /profile redirects to /login', async ({ page }) => {

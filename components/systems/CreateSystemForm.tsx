@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 export default function CreateSystemForm() {
   const router = useRouter()
+  const t = useTranslations('systems')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -25,13 +27,13 @@ export default function CreateSystemForm() {
       })
       const body = await res.json()
       if (!res.ok) {
-        setError((body as { error?: string }).error ?? 'Failed to create system')
+        setError((body as { error?: string }).error ?? t('failedToCreate'))
         return
       }
       const { system } = body as { system: { id: string } }
       router.push(`/systems/${system.id}`)
     } catch {
-      setError('Network error — please try again')
+      setError(t('networkError'))
     } finally {
       setSubmitting(false)
     }
@@ -42,7 +44,7 @@ export default function CreateSystemForm() {
       <div className="space-y-3">
         <input
           type="text"
-          placeholder="System name (e.g. Living room rig)"
+          placeholder={t('namePlaceholder')}
           value={name}
           onChange={e => setName(e.target.value)}
           // eslint-disable-next-line jsx-a11y/no-autofocus
@@ -50,7 +52,7 @@ export default function CreateSystemForm() {
           className="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <textarea
-          placeholder="Description (optional)"
+          placeholder={t('descriptionPlaceholder')}
           value={description}
           onChange={e => setDescription(e.target.value)}
           rows={3}
@@ -67,14 +69,14 @@ export default function CreateSystemForm() {
           disabled={submitting || !name.trim()}
           className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40"
         >
-          {submitting ? 'Creating…' : 'Create system'}
+          {submitting ? t('creating') : t('createButton')}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
           className="text-sm text-gray-500 hover:underline"
         >
-          Cancel
+          {t('cancel')}
         </button>
       </div>
     </div>

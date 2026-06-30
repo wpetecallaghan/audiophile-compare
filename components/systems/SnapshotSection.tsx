@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 type ComponentDisplay = {
   role?: string
@@ -61,6 +62,7 @@ export default function SnapshotSection({
   children,
 }: Props) {
   const router = useRouter()
+  const t = useTranslations('snapshots')
   const hasRevealedTests = wins + losses + draws > 0
 
   const [editing, setEditing] = useState(false)
@@ -182,13 +184,13 @@ export default function SnapshotSection({
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 rows={2}
-                placeholder="Optional"
+                placeholder={t('notesEditPlaceholder')}
                 className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-medium text-gray-600">Components</p>
+              <p className="text-xs font-medium text-gray-600">{t('componentsLabel')}</p>
               {componentRows.map((row, i) => (
                 <div
                   key={i}
@@ -196,40 +198,40 @@ export default function SnapshotSection({
                 >
                   <input
                     type="text"
-                    placeholder="Role"
+                    placeholder={t('rolePlaceholder')}
                     value={row.role}
                     onChange={e => updateComponentRow(i, 'role', e.target.value)}
-                    aria-label={`Component ${i + 1} role`}
+                    aria-label={t('componentRoleAriaLabel', { n: i + 1 })}
                     className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <input
                     type="text"
-                    placeholder="Make"
+                    placeholder={t('makePlaceholder')}
                     value={row.make}
                     onChange={e => updateComponentRow(i, 'make', e.target.value)}
-                    aria-label={`Component ${i + 1} make`}
+                    aria-label={t('componentMakeAriaLabel', { n: i + 1 })}
                     className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <input
                     type="text"
-                    placeholder="Model"
+                    placeholder={t('modelPlaceholder')}
                     value={row.model}
                     onChange={e => updateComponentRow(i, 'model', e.target.value)}
-                    aria-label={`Component ${i + 1} model`}
+                    aria-label={t('componentModelAriaLabel', { n: i + 1 })}
                     className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <input
                     type="text"
-                    placeholder="Notes"
+                    placeholder={t('notesColumnPlaceholder')}
                     value={row.notes}
                     onChange={e => updateComponentRow(i, 'notes', e.target.value)}
-                    aria-label={`Component ${i + 1} notes`}
+                    aria-label={t('componentNotesAriaLabel', { n: i + 1 })}
                     className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <button
                     type="button"
                     onClick={() => removeComponentRow(i)}
-                    aria-label={`Remove component ${i + 1}`}
+                    aria-label={t('removeComponentAriaLabel', { n: i + 1 })}
                     className="text-gray-400 hover:text-red-500 text-xs px-1"
                   >
                     ×
@@ -241,7 +243,7 @@ export default function SnapshotSection({
                 onClick={addComponentRow}
                 className="text-xs text-blue-600 hover:underline"
               >
-                + Add component
+                {t('addComponentButton')}
               </button>
             </div>
           </div>
@@ -255,7 +257,7 @@ export default function SnapshotSection({
               disabled={submitting || !label.trim()}
               className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
             >
-              {submitting ? 'Saving…' : 'Save changes'}
+              {submitting ? t('saving') : t('saveButton')}
             </button>
             <button
               type="button"
@@ -263,7 +265,7 @@ export default function SnapshotSection({
               disabled={submitting}
               className="text-xs text-gray-500 hover:underline"
             >
-              Cancel
+              {t('cancel')}
             </button>
           </div>
         </div>
@@ -282,7 +284,7 @@ export default function SnapshotSection({
                   onClick={handleEdit}
                   className="text-xs text-gray-400 hover:text-blue-600 hover:underline"
                 >
-                  Edit
+                  {t('editButton')}
                 </button>
               )}
             </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { VerifiedClip, TestDraft } from '@/lib/types/test-creation'
+import { useTranslations } from 'next-intl'
 
 type Props = {
   draft: TestDraft
@@ -34,6 +35,9 @@ function ClipInput({
   onUrlChange,
   onVerify,
   verifying,
+  urlPlaceholder,
+  verifyLabel,
+  verifyingLabel,
 }: {
   label: string
   url: string
@@ -41,6 +45,9 @@ function ClipInput({
   onUrlChange: (v: string) => void
   onVerify: () => void
   verifying: boolean
+  urlPlaceholder: string
+  verifyLabel: string
+  verifyingLabel: string
 }) {
   return (
     <div className="space-y-2">
@@ -50,7 +57,7 @@ function ClipInput({
           type="url"
           value={url}
           onChange={e => { onUrlChange(e.target.value); }}
-          placeholder="YouTube, Vimeo, or direct audio/video URL"
+          placeholder={urlPlaceholder}
           className="flex-1 border rounded px-3 py-2 text-sm"
         />
         <button
@@ -59,7 +66,7 @@ function ClipInput({
           className="shrink-0 border rounded px-3 py-2 text-sm font-medium
             hover:bg-gray-50 disabled:opacity-40"
         >
-          {verifying ? 'Checking…' : 'Verify'}
+          {verifying ? verifyingLabel : verifyLabel}
         </button>
       </div>
       {verified && <VerificationBadge result={verified} />}
@@ -68,6 +75,8 @@ function ClipInput({
 }
 
 export default function StepClips({ draft, onComplete }: Props) {
+  const t = useTranslations('tests.clipsStep')
+  const tw = useTranslations('tests.wizard')
   const [urlA, setUrlA]           = useState(draft.clipAUrl)
   const [urlB, setUrlB]           = useState(draft.clipBUrl)
   const [verifiedA, setVerifiedA] = useState<VerifiedClip | null>(draft.clipAVerified)
@@ -96,7 +105,7 @@ export default function StepClips({ draft, onComplete }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Clips</h2>
+        <h2 className="text-lg font-semibold">{t('heading')}</h2>
         <p className="text-sm text-gray-500 mt-1">
           Enter the URL for each recording. Listeners will see these as Clip A
           and Clip B — the before/after identity stays hidden until you reveal.
@@ -110,6 +119,9 @@ export default function StepClips({ draft, onComplete }: Props) {
         onUrlChange={v => { setUrlA(v); setVerifiedA(null) }}
         onVerify={() => verify(urlA, setVerifyingA, setVerifiedA)}
         verifying={verifyingA}
+        urlPlaceholder={t('urlPlaceholder')}
+        verifyLabel={t('verifyButton')}
+        verifyingLabel={t('verifying')}
       />
 
       <ClipInput
@@ -119,13 +131,15 @@ export default function StepClips({ draft, onComplete }: Props) {
         onUrlChange={v => { setUrlB(v); setVerifiedB(null) }}
         onVerify={() => verify(urlB, setVerifyingB, setVerifiedB)}
         verifying={verifyingB}
+        urlPlaceholder={t('urlPlaceholder')}
+        verifyLabel={t('verifyButton')}
+        verifyingLabel={t('verifying')}
       />
 
       <div className="rounded border p-4 space-y-2">
-        <p className="text-sm font-medium">Which clip is the 'before' system?</p>
+        <p className="text-sm font-medium">{t('beforeQuestion')}</p>
         <p className="text-sm text-gray-500">
-          This is recorded now and revealed to listeners only when you choose to
-          reveal the test.
+          {t('beforeDescription')}
         </p>
         <div className="flex gap-4 mt-2">
           {(['A', 'B'] as const).map(side => (
@@ -153,7 +167,7 @@ export default function StepClips({ draft, onComplete }: Props) {
         })}
         className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
       >
-        Continue
+        {tw('continueButton')}
       </button>
     </div>
   )

@@ -7,15 +7,16 @@
 import { test, expect } from '@playwright/test'
 import { AUTH_FILE } from '../../playwright.config'
 import { routes } from '../helpers/routes'
+import m from '../../messages/en.json'
 
 test.describe('Authenticated session', () => {
   test('site header shows authenticated navigation links', async ({ page }) => {
     await page.goto(routes.home())
-    await expect(page.getByRole('link', { name: 'Systems' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Tracks' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Profile' })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Sign in' })).not.toBeVisible()
+    await expect(page.getByRole('link', { name: m.nav.systems })).toBeVisible()
+    await expect(page.getByRole('link', { name: m.nav.tracks })).toBeVisible()
+    await expect(page.getByRole('link', { name: m.nav.profile })).toBeVisible()
+    await expect(page.getByRole('button', { name: m.nav.signOut })).toBeVisible()
+    await expect(page.getByRole('link', { name: m.nav.signIn })).not.toBeVisible()
   })
 
   test('sign out clears the session and header reverts to unauthenticated', async ({
@@ -27,11 +28,11 @@ test.describe('Authenticated session', () => {
     const page = await context.newPage()
 
     await page.goto(routes.home())
-    await page.getByRole('button', { name: 'Sign out' }).click()
+    await page.getByRole('button', { name: m.nav.signOut }).click()
 
     await expect(page).toHaveURL(routes.home())
-    await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Systems' })).not.toBeVisible()
+    await expect(page.getByRole('link', { name: m.nav.signIn })).toBeVisible()
+    await expect(page.getByRole('link', { name: m.nav.systems })).not.toBeVisible()
 
     await context.close()
   })

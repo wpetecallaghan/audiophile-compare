@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 type Props = {
   initialDisplayName: string
 }
 
 export default function ProfileForm({ initialDisplayName }: Props) {
+  const t = useTranslations('profile')
   const [displayName, setDisplayName] = useState(initialDisplayName)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,19 +43,19 @@ export default function ProfileForm({ initialDisplayName }: Props) {
     <div className="space-y-4 max-w-lg">
       <div>
         <label htmlFor="display-name" className="block text-sm font-medium mb-1">
-          Display name
+          {t('displayNameLabel')}
         </label>
         <input
           id="display-name"
           type="text"
-          placeholder="Your display name"
+          placeholder={t('displayNamePlaceholder')}
           value={displayName}
           onChange={e => { setDisplayName(e.target.value); setSuccess(false) }}
           className="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
       {error && <p className="text-xs text-red-500">{error}</p>}
-      {success && <p className="text-xs text-green-600">Display name updated.</p>}
+      {success && <p className="text-xs text-green-600">{t('successMessage')}</p>}
       <div className="flex items-center gap-3">
         <button
           type="button"
@@ -61,10 +63,10 @@ export default function ProfileForm({ initialDisplayName }: Props) {
           disabled={submitting || !displayName.trim()}
           className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40"
         >
-          {submitting ? 'Saving\u2026' : 'Save'}
+          {submitting ? t('saving') : t('saveButton')}
         </button>
         <Link href="/" className="text-sm text-gray-500 hover:underline">
-          Cancel
+          {t('cancelButton')}
         </Link>
       </div>
     </div>

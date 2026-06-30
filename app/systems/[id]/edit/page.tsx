@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import EditSystemForm from '@/components/systems/EditSystemForm'
+import { getTranslations } from 'next-intl/server'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -25,16 +26,18 @@ export default async function EditSystemPage({ params }: Props) {
     notFound()
   }
 
+  const t = await getTranslations('systems')
+
   return (
     <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
       <nav className="text-xs text-gray-400">
-        <Link href="/systems" className="hover:underline">Systems</Link>
+        <Link href="/systems" className="hover:underline">{t('heading')}</Link>
         {' / '}
         <Link href={`/systems/${id}`} className="hover:underline">{system.name}</Link>
         {' / '}
-        <span>Edit</span>
+        <span>{t('editBreadcrumb')}</span>
       </nav>
-      <h1 className="text-xl sm:text-2xl font-semibold">Edit system</h1>
+      <h1 className="text-xl sm:text-2xl font-semibold">{t('editHeading')}</h1>
       <EditSystemForm
         systemId={id}
         initialName={system.name}

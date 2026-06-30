@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 type Snapshot = {
   id: string
@@ -30,6 +31,7 @@ type Props = {
 
 export default function CrossCheckSelector({ systemId, snapshots }: Props) {
   const router = useRouter()
+  const t = useTranslations('crosscheck')
 
   const [snapshotAId, setSnapshotAId] = useState('')
   const [snapshotBId, setSnapshotBId] = useState('')
@@ -126,9 +128,9 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
   return (
     <section className="space-y-4">
       <div className="pb-2 border-b border-gray-100">
-        <h2 className="text-base font-semibold">Cross-check</h2>
+        <h2 className="text-base font-semibold">{t('heading')}</h2>
         <p className="text-xs text-gray-400 mt-0.5">
-          Compare any two snapshots directly using recordings from existing tests —
+          {t('description')}
           no new recording needed. Addresses the risk of successive improvements
           that are locally good but globally suboptimal.
         </p>
@@ -149,7 +151,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
             onChange={e => setSnapshotAId(e.target.value)}
             className="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">— choose snapshot —</option>
+            <option value="">{t('choosePlaceholder')}</option>
             {snapshots.map(s => (
               <option key={s.id} value={s.id} disabled={s.id === snapshotBId}>
                 v{s.version} — {s.label}
@@ -171,7 +173,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
             onChange={e => setSnapshotBId(e.target.value)}
             className="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">— choose snapshot —</option>
+            <option value="">{t('choosePlaceholder')}</option>
             {snapshots.map(s => (
               <option key={s.id} value={s.id} disabled={s.id === snapshotAId}>
                 v{s.version} — {s.label}
@@ -194,8 +196,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
         <>
           {results.length === 0 ? (
             <p className="text-sm text-gray-400">
-              No shared tracks found — these snapshots haven&apos;t been tested on
-              the same recording yet.
+              {t('noSharedTracks')}
             </p>
           ) : (
             <div className="space-y-2">

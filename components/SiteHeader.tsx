@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import SignOutButton from './SignOutButton'
+import { getTranslations } from 'next-intl/server'
 
 export default async function SiteHeader() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const t = await getTranslations('nav')
 
   return (
     <header className="border-b border-gray-100">
@@ -14,28 +16,28 @@ export default async function SiteHeader() {
           href="/"
           className="text-sm font-semibold tracking-tight shrink-0 hover:text-gray-600"
         >
-          Audiophile Compare
+          {t('wordmark')}
         </Link>
 
         {user ? (
           <nav className="flex items-center gap-4 sm:gap-6">
             <Link href="/" className="text-sm text-gray-500 hover:text-gray-900">
-              Tests
+              {t('tests')}
             </Link>
             <Link href="/systems" className="text-sm text-gray-500 hover:text-gray-900">
-              Systems
+              {t('systems')}
             </Link>
             <Link href="/tracks" className="text-sm text-gray-500 hover:text-gray-900">
-              Tracks
+              {t('tracks')}
             </Link>
             <Link href="/profile" className="text-sm text-gray-500 hover:text-gray-900">
-              Profile
+              {t('profile')}
             </Link>
             <SignOutButton />
           </nav>
         ) : (
           <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900">
-            Sign in
+            {t('signIn')}
           </Link>
         )}
 

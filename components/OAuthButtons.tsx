@@ -1,8 +1,10 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
+import { useTranslations } from 'next-intl'
 
 export default function OAuthButtons({ redirectTo }: { redirectTo?: string }) {
+  const t = useTranslations('auth')
   const supabase = createClient()
 
   async function signInWithGoogle() {
@@ -22,7 +24,7 @@ export default function OAuthButtons({ redirectTo }: { redirectTo?: string }) {
         className="w-full flex items-center justify-center gap-3 border rounded px-4 py-2 text-sm font-medium hover:bg-gray-50"
       >
         <GoogleIcon />
-        Continue with Google
+        {t('googleButton')}
       </button>
     </div>
   )

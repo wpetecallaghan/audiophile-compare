@@ -20,6 +20,7 @@
     "@types/youtube": "^0.3.0",
     "@vimeo/player": "^2.30.4",
     "next": "^16.2.9",
+    "next-intl": "^4.13.0",
     "react": "^18",
     "react-dom": "^18"
   },

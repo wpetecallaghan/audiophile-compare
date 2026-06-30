@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -23,6 +24,8 @@ export default async function TrackDetailPage({ params }: Props) {
     .single()
 
   if (error || !track) notFound()
+
+  const t = await getTranslations('tracks')
 
   type TestRow = {
     id: string
@@ -52,7 +55,7 @@ export default async function TrackDetailPage({ params }: Props) {
       {/* Header */}
       <div className="space-y-1">
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-          Track
+          {t('trackBadge')}
         </p>
         <h1 className="text-xl sm:text-2xl font-semibold">
           {track.artist} — {track.title}
@@ -68,14 +71,14 @@ export default async function TrackDetailPage({ params }: Props) {
       {/* Tests */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-semibold">Tests</h2>
+          <h2 className="text-base sm:text-lg font-semibold">{t('testsHeading')}</h2>
           <span className="text-sm text-gray-400">
             {tests.length} {tests.length === 1 ? 'test' : 'tests'}
           </span>
         </div>
 
         {tests.length === 0 ? (
-          <p className="text-sm text-gray-400">No tests use this track yet.</p>
+          <p className="text-sm text-gray-400">{t('noTestsForTrack')}</p>
         ) : (
           <ul className="space-y-2">
             {tests.map(test => {
@@ -91,7 +94,7 @@ export default async function TrackDetailPage({ params }: Props) {
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{test.title}</p>
                       <p className="text-xs text-gray-400">
-                        by {creator?.display_name ?? 'Anonymous'} ·{' '}
+                        by {creator?.display_name ?? t('anonymous')} ·{' '}
                         {new Date(test.created_at).toLocaleDateString()}
                       </p>
                     </div>
@@ -102,7 +105,7 @@ export default async function TrackDetailPage({ params }: Props) {
                           : 'bg-gray-100 text-gray-500'
                       }`}
                     >
-                      {test.status === 'revealed' ? 'Revealed' : 'Blind'}
+                      {test.status === 'revealed' ? t('statusRevealed') : t('statusBlind')}
                     </span>
                   </Link>
                 </li>

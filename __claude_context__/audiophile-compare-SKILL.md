@@ -875,7 +875,7 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    the `?redirectTo=` query param). In Google Cloud Console: create OAuth 2.0
    credentials; add the Supabase callback URL as an Authorized Redirect URI.
    Tests: `__tests__/OAuthButtons.test.tsx`
-15. ⬜ Centralised string resources (i18n) — all user-facing strings moved to
+15. ✅ Centralised string resources (i18n) — all user-facing strings moved to
    `messages/en.json`, namespaced by feature area. Package: `next-intl` (App Router
    native; works with RSC). Mode: “without routing” — no URL locale prefix, locale
    fixed to `en` in `i18n/request.ts`; middleware.ts unchanged.
@@ -885,8 +885,10 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    `next.config.mjs` wraps config with `createNextIntlPlugin()`.
    Type safety: `types/next-intl.d.ts` extends `IntlMessages` from `en.json` —
    unknown keys are TypeScript errors.
-   Unit tests: `vitest.setup.ts` mocks `next-intl` to return the key as the value;
-   text assertions become key-based. E2E tests: import `messages/en.json` directly
+   Unit tests: `vitest.setup.ts` mocks `next-intl` and `next-intl/server` with async
+   factories that import `messages/en.json` and perform simple `{variable}` substitution;
+   text assertions remain human-readable (mock returns actual English values, not keys).
+   E2E tests: import `messages/en.json` directly
    and resolve selectors against it — if copy changes, E2E tests stay in sync
    automatically without edits to spec files.
    Namespaces: `common`, `nav`, `auth`, `systems`, `snapshots`, `tests`, `profile`,

@@ -53,6 +53,60 @@ if (typeof Headers === 'undefined') {
   } as any
 }
 
+// Mock next-intl — returns actual English strings so component tests work without a full provider
+vi.mock('next-intl', async () => {
+  const messages = (await import('./messages/en.json')).default as Record<string, unknown>
+
+  function getNamespace(obj: Record<string, unknown>, namespace: string): Record<string, unknown> {
+    return namespace.split('.').reduce((current, key) => {
+      const next = current?.[key]
+      return next && typeof next === 'object' ? (next as Record<string, unknown>) : {}
+    }, obj)
+  }
+
+  function makeT(namespace: string) {
+    return (key: string, values?: Record<string, string | number>): string => {
+      const ns = getNamespace(messages, namespace)
+      const val = ns[key]
+      const str = typeof val === 'string' ? val : key
+      if (!values) return str
+      return str.replace(/\{(\w+)\}/g, (_, k) => String(values[k] ?? k))
+    }
+  }
+
+  return {
+    useTranslations: (namespace: string) => makeT(namespace),
+    NextIntlClientProvider: ({ children }: { children: React.ReactNode }) => children,
+  }
+})
+
+vi.mock('next-intl/server', async () => {
+  const messages = (await import('./messages/en.json')).default as Record<string, unknown>
+
+  function getNamespace(obj: Record<string, unknown>, namespace: string): Record<string, unknown> {
+    return namespace.split('.').reduce((current, key) => {
+      const next = current?.[key]
+      return next && typeof next === 'object' ? (next as Record<string, unknown>) : {}
+    }, obj)
+  }
+
+  function makeT(namespace: string) {
+    return (key: string, values?: Record<string, string | number>): string => {
+      const ns = getNamespace(messages, namespace)
+      const val = ns[key]
+      const str = typeof val === 'string' ? val : key
+      if (!values) return str
+      return str.replace(/\{(\w+)\}/g, (_, k) => String(values[k] ?? k))
+    }
+  }
+
+  return {
+    getTranslations: async (namespace: string) => makeT(namespace),
+    getMessages: async () => messages,
+    getLocale: async () => 'en',
+  }
+})
+
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
   useRouter() {
