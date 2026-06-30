@@ -20,17 +20,14 @@ export default async function SiteHeader() {
         </Link>
 
         {user ? (
-          <nav className="flex items-center gap-4 sm:gap-6">
-            <Link href="/" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
-              {t('tests')}
-            </Link>
-            <Link href="/systems" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+          <nav className="flex items-center gap-3 sm:gap-6 min-w-0">
+            <Link href="/systems" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 shrink-0">
               {t('systems')}
             </Link>
-            <Link href="/tracks" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+            <Link href="/tracks" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 shrink-0">
               {t('tracks')}
             </Link>
-            <Link href="/profile" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+            <Link href="/profile" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 shrink-0">
               {t('profile')}
             </Link>
             <SignOutButton />
