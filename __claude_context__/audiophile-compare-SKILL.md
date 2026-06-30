@@ -819,44 +819,37 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
 ## 10. Build order (for orientation in new sessions)
 
 1. ✅ Supabase schema, RLS, seed data
-2. ✅ Auth (Supabase Auth, middleware, magic link, callback)
-3. ✅ Clip URL verification (`/api/clips/verify`)
-4. ✅ MediaPlayer component (all four cases, A/B coordination)
-5. ✅ Test creation flow
-   (refinement ✅) Inline snapshot creation from `StepSnapshots` —
-   `CreateTestForm` holds `systems` in local state; `StepSnapshots`
-   calls `onSnapshotCreated(systemId, snapshot)` after API success.
-   (refinement ✅) Inline system creation from `StepSnapshots` —
-   `StepSnapshots` has an `onSystemCreated(system)` prop; `CreateTestForm`
-   prepends the new system to its local state; inline form replaces the
-   old external link to `/systems` in the no-systems empty state.
+2. ✅ Auth — Supabase Auth, middleware, magic link, callback route
+3. ✅ Clip URL verification — `POST /api/clips/verify`
+4. ✅ MediaPlayer — YouTube / Vimeo / native / unknown; A/B coordination via `forwardRef`
+5. ✅ Test creation flow — multi-step wizard (`CreateTestForm`); `systems` held in local
+   `useState` so inline creations update both columns without a page reload.
+   Inline snapshot creation: `StepSnapshots` calls `onSnapshotCreated(systemId, snap)`;
+   `CreateTestForm` merges into local state. Steps do NOT call `router.refresh()`.
+   Inline system creation: `StepSnapshots` calls `onSystemCreated(system)`;
+   `CreateTestForm` prepends to local state; replaces the old external `/systems` link.
    Tests: `components/tests/__tests__/StepSnapshots.test.tsx`
 6. ✅ Test detail page + blind playback
-7. ✅ Voting
-8. ✅ Results by technique
-9. ✅ System catalogue views (tracks catalogue, track detail, systems list, system detail + win/loss, cross-check)
-   (refinement ✅) Inline snapshot creation from system detail page —
-   `AddSnapshotForm` (client) rendered owner-only; calls `router.refresh()` on success.
-   Tests: `components/systems/__tests__/AddSnapshotForm.test.tsx`
-   (refinement ✅) Snapshot editing from system detail page —
-   `SnapshotSection` (client-with-server-children) handles display + edit form
-   (label, notes, dynamic component rows); `PATCH /api/systems/[id]/snapshots/[snapshotId]`.
-   Tests: `components/systems/__tests__/SnapshotSection.test.tsx`
-10. ✅ URL health check cron — `GET /api/cron/check-urls`; checks `provider='direct'`
-   clips via HEAD request; updates `url_status` and `media_type` where changed;
-   uses service role client (no user session); scheduled daily at 02:00 UTC via
-   `vercel.json`; protected by `CRON_SECRET` env var.
-11. ✅ Public feed + pagination — `app/page.tsx` (server, public); `?page=N` searchParam;
-   `PAGE_SIZE=20`; `.range()` + `count: 'exact'`; `components/feed/FeedCard.tsx`;
-   normalises Supabase array/object join ambiguity before passing to FeedCard.
-12. ✅ Page header — `components/SiteHeader.tsx` (server: reads auth, renders nav);
-   `components/SignOutButton.tsx` (client: calls `supabase.auth.signOut()` then
-   `router.push('/')`); inserted into `app/layout.tsx` above `{children}`.
-   Unauthenticated: wordmark + "Sign in" link.
-   Authenticated: wordmark + "Tests" / "Systems" / "Tracks" links + SignOutButton.
-   Tests: `components/__tests__/SignOutButton.test.tsx`
-
-Update the checkboxes above as steps are completed.
+7. ✅ Voting — `POST /api/votes`; update via `PATCH /api/votes/[id]`
+8. ✅ Results by technique — `TallyDisplay` (server); `computeTally()` in `lib/votes/`
+9. ✅ System catalogue — tracks list, track detail, systems list, system detail +
+   win/loss per snapshot, cross-check selector.
+   Inline snapshot creation on system detail: `AddSnapshotForm` (client, owner-only)
+   calls `router.refresh()` on success — contrast with wizard which uses local state.
+   Snapshot editing: `SnapshotSection` (client-with-server-children pattern);
+   `PATCH /api/systems/[id]/snapshots/[snapshotId]`.
+   System create/edit: `POST /api/systems`, `PATCH /api/systems/[id]`;
+   `CreateSystemForm` and `EditSystemForm` client components; dedicated pages
+   `/systems/new` and `/systems/[id]/edit`.
+10. ✅ URL health check cron — `GET /api/cron/check-urls`; HEAD-checks `provider='direct'`
+   clips; uses service role client; daily at 02:00 UTC via `vercel.json`;
+   protected by `CRON_SECRET` env var.
+11. ✅ Public feed + pagination — `app/page.tsx` (server, public); `?page=N`;
+   `PAGE_SIZE=20`; `.range()` + `count: 'exact'`; `FeedCard` server component;
+   normalises Supabase array/object join ambiguity before passing typed props.
+12. ✅ Page header — `SiteHeader` (server, in layout); `SignOutButton` (client:
+   `supabase.auth.signOut()` → `router.push('/')`).
+   Unauthenticated: wordmark + "Sign in". Authenticated: Tests / Systems / Tracks + Sign out.
 
 ---
 
