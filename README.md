@@ -1,45 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Audiophile Compare
 
-## Getting Started
+A blind A/B comparison app for hi-fi audio systems. Listeners vote on whether
+they can hear a difference between two system snapshots on a shared recording,
+without knowing which clip is which until the test is revealed.
 
-First, run the development server:
+Built with Next.js 16 (App Router), Supabase (Postgres + Auth), Tailwind CSS,
+and deployed on Vercel.
+
+## Quick start
 
 ```bash
+npm install
+cp .env.local.example .env.local   # then fill in your Supabase keys
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+See [docs/dependencies.md](docs/dependencies.md) for full setup requirements
+including Node.js version, Playwright browsers, and the Supabase CLI.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Documentation
 
-## Learn More
+### Setup & deployment
 
-To learn more about Next.js, take a look at the following resources:
+| Document | Contents |
+|---|---|
+| [docs/dependencies.md](docs/dependencies.md) | All required tools, npm packages, and environment variables |
+| [docs/supabase-environments.md](docs/supabase-environments.md) | Two-project Supabase strategy (staging + production), schema deployment |
+| [docs/supabase-database-reset.md](docs/supabase-database-reset.md) | Database reset, recovery, and migration troubleshooting |
+| [docs/vercel-setup.md](docs/vercel-setup.md) | Vercel project configuration and branch-to-environment mapping |
+| [docs/google-oauth.md](docs/google-oauth.md) | Google OAuth setup for Supabase Auth |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Testing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Document | Contents |
+|---|---|
+| [docs/TESTING.md](docs/TESTING.md) | Unit test suite (Vitest): all test files, counts, and coverage commands |
+| [docs/end-to-end-testing.md](docs/end-to-end-testing.md) | E2E tests (Playwright): design decisions, spec coverage, CI strategy |
+| [docs/manual-testing-setup.md](docs/manual-testing-setup.md) | Step-by-step manual verification of the full app flow |
 
-## Testing
+## AI context
 
-For automated test documentation (Vitest, test suites, coverage), see [docs/TESTING.md](docs/TESTING.md).
+These files provide architectural context for AI coding assistants (Claude, Copilot, etc.):
 
-For manual testing instructions, see [docs/manual-testing-setup.md](docs/manual-testing-setup.md).
-
-For database reset and recovery steps, see [docs/supabase-database-reset.md](docs/supabase-database-reset.md).
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| File | Contents |
+|---|---|
+| [__claude_context__/audiophile-compare-SKILL.md](__claude_context__/audiophile-compare-SKILL.md) | Full build specification: technology choices, file layout, conventions, build plan |
+| [__claude_context__/audiophile-compare-schema.md](__claude_context__/audiophile-compare-schema.md) | Complete database schema, RLS policies, and data model |
 
