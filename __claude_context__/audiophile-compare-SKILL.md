@@ -824,6 +824,10 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    (refinement ✅) Inline snapshot creation from `StepSnapshots` —
    `CreateTestForm` holds `systems` in local state; `StepSnapshots`
    calls `onSnapshotCreated(systemId, snapshot)` after API success.
+   (refinement ✅) Inline system creation from `StepSnapshots` —
+   `StepSnapshots` has an `onSystemCreated(system)` prop; `CreateTestForm`
+   prepends the new system to its local state; inline form replaces the
+   old external link to `/systems` in the no-systems empty state.
    Tests: `components/tests/__tests__/StepSnapshots.test.tsx`
 6. ✅ Test detail page + blind playback
 7. ✅ Voting

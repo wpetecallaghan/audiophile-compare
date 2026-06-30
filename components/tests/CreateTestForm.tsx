@@ -43,6 +43,10 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
     ))
   }
 
+  function handleSystemCreated(system: SystemWithSnapshots) {
+    setSystems(prev => [system, ...prev])
+  }
+
   function advance(updates: Partial<TestDraft>) {
     setDraft(prev => ({ ...prev, ...updates }))
     setStep(s => (s + 1) as Step)
@@ -81,7 +85,7 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
         <StepTrack draft={draft} onComplete={advance} />
       )}
       {step === 1 && (
-        <StepSnapshots draft={draft} systems={systems} onComplete={advance} onSnapshotCreated={handleSnapshotCreated} />
+        <StepSnapshots draft={draft} systems={systems} onComplete={advance} onSnapshotCreated={handleSnapshotCreated} onSystemCreated={handleSystemCreated} />
       )}
       {step === 2 && (
         <StepClips draft={draft} onComplete={advance} />

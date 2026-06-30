@@ -8,6 +8,7 @@ type Props = {
   systems: SystemWithSnapshots[]
   onComplete: (updates: Partial<TestDraft>) => void
   onSnapshotCreated: (systemId: string, snap: Snapshot) => void
+  onSystemCreated: (system: SystemWithSnapshots) => void
 }
 
 // Shows a system's snapshots as radio options with an inline "Add new snapshot"
@@ -179,12 +180,114 @@ function SnapshotSelector({
   )
 }
 
-export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCreated }: Props) {
+export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCreated, onSystemCreated }: Props) {
   const [snapshotA, setSnapshotA] = useState<Snapshot | null>(draft.snapshotA)
   const [snapshotB, setSnapshotB] = useState<Snapshot | null>(draft.snapshotB)
 
+  // Inline system creation state
+  const [addingSystem, setAddingSystem]               = useState(false)
+  const [newSystemName, setNewSystemName]             = useState('')
+  const [newSystemDesc, setNewSystemDesc]             = useState('')
+  const [creatingSystem, setCreatingSystem]           = useState(false)
+  const [systemCreateError, setSystemCreateError]     = useState<string | null>(null)
+
   const noSystems = systems.length === 0
   const isDisabled = snapshotA === null || snapshotB === null
+
+  function startAddingSystem() {
+    setAddingSystem(true)
+    setNewSystemName('')
+    setNewSystemDesc('')
+    setSystemCreateError(null)
+  }
+
+  function cancelAddingSystem() {
+    setAddingSystem(false)
+    setNewSystemName('')
+    setNewSystemDesc('')
+    setSystemCreateError(null)
+  }
+
+  async function handleSystemSubmit() {
+    if (!newSystemName.trim()) return
+    setCreatingSystem(true)
+    setSystemCreateError(null)
+    try {
+      const res = await fetch('/api/systems', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newSystemName.trim(),
+          description: newSystemDesc.trim() || undefined,
+        }),
+      })
+      const body = await res.json()
+      if (!res.ok) {
+        setSystemCreateError((body as { error?: string }).error ?? 'Failed to create system')
+        return
+      }
+      const { system } = body as { system: { id: string; name: string; description: string | null } }
+      onSystemCreated({ ...system, system_snapshots: [] })
+      setAddingSystem(false)
+      setNewSystemName('')
+      setNewSystemDesc('')
+    } catch {
+      setSystemCreateError('Network error — please try again')
+    } finally {
+      setCreatingSystem(false)
+    }
+  }
+
+  const addSystemTrigger = addingSystem ? (
+    <div className="space-y-2 rounded border border-gray-200 p-3">
+      <p className="text-xs font-medium text-gray-500">New system</p>
+      <input
+        type="text"
+        placeholder="System name"
+        value={newSystemName}
+        onChange={e => setNewSystemName(e.target.value)}
+        // eslint-disable-next-line jsx-a11y/no-autofocus
+        autoFocus
+        className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <textarea
+        placeholder="Description (optional)"
+        value={newSystemDesc}
+        onChange={e => setNewSystemDesc(e.target.value)}
+        rows={2}
+        className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+      />
+      {systemCreateError && (
+        <p className="text-xs text-red-500">{systemCreateError}</p>
+      )}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSystemSubmit}
+          disabled={creatingSystem || !newSystemName.trim()}
+          className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
+        >
+          {creatingSystem ? 'Adding…' : 'Add system'}
+        </button>
+        <button
+          type="button"
+          onClick={cancelAddingSystem}
+          disabled={creatingSystem}
+          className="text-xs text-gray-500 hover:underline"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  ) : (
+    <button
+      type="button"
+      onClick={startAddingSystem}
+      className="text-xs text-blue-600 hover:underline"
+    >
+      + Add new system
+    </button>
+  )
 
   return (
     <div className="space-y-6">
@@ -196,31 +299,33 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
       </div>
 
       {noSystems ? (
-        <p className="text-sm text-gray-500">
-          You have no systems yet.{' '}
-          <a href="/systems" className="text-blue-600 hover:underline">
-            Create a system
-          </a>{' '}
-          before setting up a test.
-        </p>
+        <div className="space-y-3">
+          <p className="text-sm text-gray-500">
+            You have no systems yet. Add one below to continue.
+          </p>
+          {addSystemTrigger}
+        </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <SnapshotSelector
-            systems={systems}
-            selected={snapshotA}
-            exclude={snapshotB?.id ?? null}
-            label="Snapshot A"
-            onChange={setSnapshotA}
-            onSnapshotCreated={onSnapshotCreated}
-          />
-          <SnapshotSelector
-            systems={systems}
-            selected={snapshotB}
-            exclude={snapshotA?.id ?? null}
-            label="Snapshot B"
-            onChange={setSnapshotB}
-            onSnapshotCreated={onSnapshotCreated}
-          />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <SnapshotSelector
+              systems={systems}
+              selected={snapshotA}
+              exclude={snapshotB?.id ?? null}
+              label="Snapshot A"
+              onChange={setSnapshotA}
+              onSnapshotCreated={onSnapshotCreated}
+            />
+            <SnapshotSelector
+              systems={systems}
+              selected={snapshotB}
+              exclude={snapshotA?.id ?? null}
+              label="Snapshot B"
+              onChange={setSnapshotB}
+              onSnapshotCreated={onSnapshotCreated}
+            />
+          </div>
+          {addSystemTrigger}
         </div>
       )}
 

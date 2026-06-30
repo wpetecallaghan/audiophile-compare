@@ -20,6 +20,10 @@ const NEW_SNAP: Snapshot = {
   id: 'snap-new', version: 3, label: 'After — Townshend',
   notes: null, components: null, created_at: '2024-01-03T00:00:00Z',
 }
+const NEW_SYSTEM: SystemWithSnapshots = {
+  id: 'system-new', name: 'Bedroom rig', description: null,
+  system_snapshots: [],
+}
 
 const SYSTEM: SystemWithSnapshots = {
   id: SYSTEM_ID, name: 'Main system', description: null,
@@ -42,19 +46,22 @@ function renderStep(
   opts: {
     onComplete?: ReturnType<typeof vi.fn>
     onSnapshotCreated?: ReturnType<typeof vi.fn>
+    onSystemCreated?: ReturnType<typeof vi.fn>
   } = {},
 ) {
   const mockOnComplete        = opts.onComplete        ?? vi.fn()
   const mockOnSnapshotCreated = opts.onSnapshotCreated ?? vi.fn()
+  const mockOnSystemCreated   = opts.onSystemCreated   ?? vi.fn()
   render(
     <StepSnapshots
       draft={BLANK_DRAFT}
       systems={systems}
       onComplete={mockOnComplete}
       onSnapshotCreated={mockOnSnapshotCreated}
+      onSystemCreated={mockOnSystemCreated}
     />,
   )
-  return { mockOnComplete, mockOnSnapshotCreated }
+  return { mockOnComplete, mockOnSnapshotCreated, mockOnSystemCreated }
 }
 
 // --- Tests ---
@@ -93,12 +100,14 @@ describe('StepSnapshots', () => {
       ).toHaveLength(4)
     })
 
-    it('shows a "no systems" message with a link to /systems when the systems list is empty', () => {
+    it('shows a "no systems" message with a "+ Add new system" button when the systems list is empty', () => {
       renderStep([])
       expect(screen.getByText(/you have no systems yet/i)).toBeInTheDocument()
       expect(
-        screen.getByRole('link', { name: /create a system/i }),
-      ).toHaveAttribute('href', '/systems')
+        screen.getByRole('button', { name: '+ Add new system' }),
+      ).toBeInTheDocument()
+      // External link to /systems is gone — would lose wizard progress
+      expect(screen.queryByRole('link', { name: /create a system/i })).not.toBeInTheDocument()
     })
 
     it('disables the Continue button when no snapshots are selected', () => {
@@ -361,6 +370,189 @@ describe('StepSnapshots', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /continue/i })).not.toBeDisabled()
       })
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Inline system creation
+  // ---------------------------------------------------------------------------
+
+  describe('Inline system creation', () => {
+    it('renders "+ Add new system" button below the grid when systems exist', () => {
+      renderStep([SYSTEM])
+      expect(
+        screen.getByRole('button', { name: '+ Add new system' }),
+      ).toBeInTheDocument()
+    })
+
+    it('renders "+ Add new system" button in the no-systems empty state', () => {
+      renderStep([])
+      expect(
+        screen.getByRole('button', { name: '+ Add new system' }),
+      ).toBeInTheDocument()
+    })
+
+    it('shows the inline form when "+ Add new system" is clicked', async () => {
+      const user = userEvent.setup()
+      renderStep([SYSTEM])
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+
+      expect(screen.getByPlaceholderText('System name')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText(/description \(optional\)/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add system' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+    })
+
+    it('hides the form and restores the trigger button when Cancel is clicked', async () => {
+      const user = userEvent.setup()
+      renderStep([SYSTEM])
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+      await user.click(screen.getByRole('button', { name: /cancel/i }))
+
+      expect(screen.queryByPlaceholderText('System name')).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: '+ Add new system' }),
+      ).toBeInTheDocument()
+    })
+
+    it('clears fields when the form is reopened after a cancel', async () => {
+      const user = userEvent.setup()
+      renderStep([SYSTEM])
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+      await user.type(screen.getByPlaceholderText('System name'), 'Partial name')
+      await user.click(screen.getByRole('button', { name: /cancel/i }))
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+
+      expect(screen.getByPlaceholderText('System name')).toHaveValue('')
+    })
+
+    it('disables "Add system" when name is empty', async () => {
+      const user = userEvent.setup()
+      renderStep([SYSTEM])
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+
+      expect(screen.getByRole('button', { name: 'Add system' })).toBeDisabled()
+    })
+
+    it('treats a whitespace-only name as empty — button stays disabled', async () => {
+      const user = userEvent.setup()
+      renderStep([SYSTEM])
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+      await user.type(screen.getByPlaceholderText('System name'), '   ')
+
+      expect(screen.getByRole('button', { name: 'Add system' })).toBeDisabled()
+    })
+
+    it('POSTs to /api/systems with trimmed name and description', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({ system: { id: NEW_SYSTEM.id, name: NEW_SYSTEM.name, description: null } }),
+          { status: 201 },
+        ),
+      )
+      renderStep([SYSTEM])
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+      await user.type(screen.getByPlaceholderText('System name'), ' Bedroom rig ')
+      await user.type(screen.getByPlaceholderText(/description \(optional\)/i), 'Secondary')
+      await user.click(screen.getByRole('button', { name: 'Add system' }))
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          '/api/systems',
+          expect.objectContaining({
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: 'Bedroom rig', description: 'Secondary' }),
+          }),
+        )
+      })
+    })
+
+    it('calls onSystemCreated with the new system including empty system_snapshots', async () => {
+      const user = userEvent.setup()
+      const mockOnSystemCreated = vi.fn()
+      mockFetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({ system: { id: NEW_SYSTEM.id, name: NEW_SYSTEM.name, description: null } }),
+          { status: 201 },
+        ),
+      )
+      renderStep([SYSTEM], { onSystemCreated: mockOnSystemCreated })
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+      await user.type(screen.getByPlaceholderText('System name'), NEW_SYSTEM.name)
+      await user.click(screen.getByRole('button', { name: 'Add system' }))
+
+      await waitFor(() => {
+        expect(mockOnSystemCreated).toHaveBeenCalledWith({
+          id: NEW_SYSTEM.id,
+          name: NEW_SYSTEM.name,
+          description: null,
+          system_snapshots: [],
+        })
+      })
+    })
+
+    it('closes the form on success', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({ system: { id: NEW_SYSTEM.id, name: NEW_SYSTEM.name, description: null } }),
+          { status: 201 },
+        ),
+      )
+      renderStep([SYSTEM])
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+      await user.type(screen.getByPlaceholderText('System name'), NEW_SYSTEM.name)
+      await user.click(screen.getByRole('button', { name: 'Add system' }))
+
+      await waitFor(() => {
+        expect(screen.queryByPlaceholderText('System name')).not.toBeInTheDocument()
+      })
+      expect(
+        screen.getByRole('button', { name: '+ Add new system' }),
+      ).toBeInTheDocument()
+    })
+
+    it('shows the server error and keeps the form open on a failed API response', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockResolvedValue(
+        new Response(JSON.stringify({ error: 'name is required' }), { status: 400 }),
+      )
+      renderStep([SYSTEM])
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+      await user.type(screen.getByPlaceholderText('System name'), 'Any name')
+      await user.click(screen.getByRole('button', { name: 'Add system' }))
+
+      await waitFor(() => {
+        expect(screen.getByText('name is required')).toBeInTheDocument()
+      })
+      expect(screen.getByPlaceholderText('System name')).toBeInTheDocument()
+    })
+
+    it('shows a network error and keeps the form open when fetch throws', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockRejectedValue(new Error('network failure'))
+      renderStep([SYSTEM])
+
+      await user.click(screen.getByRole('button', { name: '+ Add new system' }))
+      await user.type(screen.getByPlaceholderText('System name'), 'Any name')
+      await user.click(screen.getByRole('button', { name: 'Add system' }))
+
+      await waitFor(() => {
+        expect(screen.getByText(/network error/i)).toBeInTheDocument()
+      })
+      expect(screen.getByPlaceholderText('System name')).toBeInTheDocument()
     })
   })
 })
