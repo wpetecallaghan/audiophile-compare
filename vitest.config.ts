@@ -33,6 +33,7 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/.next/**',
+      '**/e2e/**',          // Playwright specs — run via `npm run test:e2e`, not Vitest
     ],
   },
   resolve: {

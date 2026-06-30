@@ -56,7 +56,7 @@ Unit tests have been implemented for core business logic components.
 ### Implemented Tests
 
 #### ✅ LoginForm Component Tests
-**File:** `__tests__/LoginForm.test.tsx` (9 tests)
+**File:** `__tests__/LoginForm.test.tsx` (12 tests)
 
 Tests cover:
 - **Rendering** - Email input, submit button, accessibility, initial state
@@ -157,14 +157,75 @@ Tests cover:
 - Duplicate track in one list: first (most recent) entry used
 
 #### ✅ StepSnapshots Component Tests
-**File:** `components/tests/__tests__/StepSnapshots.test.tsx` (16 tests)
+**File:** `components/tests/__tests__/StepSnapshots.test.tsx` (28 tests)
 
 Tests cover:
-- **Rendering** — system name and snapshot labels, “+ Add new snapshot” on every system (including empty), “no systems” message with link, Continue disabled initially
+- **Rendering** — system name and snapshot labels, "+ Add new snapshot" on every system (including empty), "no systems" message with link, Continue disabled initially
 - **Form open/close** — clicking add shows mini-form; Cancel hides it and restores link; fields cleared on reopen
 - **Validation** — submit button disabled when label empty; whitespace-only label treated as empty
 - **Submission** — `onSnapshotCreated` called with systemId and snapshot; correct POST URL and body; form hidden on success; server error message shown; network error shown
 - **Selection** — Continue enabled after selecting both sides; inline creation auto-selects and enables Continue
+- **Inline system creation** — trigger button shows/hides form; validation; POST submission; `onSystemCreated` callback invoked with new system; server and network error handling (12 tests)
+
+#### ✅ OAuthButtons Component Tests
+**File:** `__tests__/OAuthButtons.test.tsx` (5 tests)
+
+Tests cover:
+- **Rendering** — "Continue with Google" button present
+- **OAuth call** — `signInWithOAuth` called with `provider: 'google'` on click
+- **Redirect URL** — options include `/auth/callback`; `redirectTo` prop appended; falls back to `/` when prop omitted
+
+#### ✅ SignOutButton Component Tests
+**File:** `components/__tests__/SignOutButton.test.tsx` (4 tests)
+
+Tests cover:
+- **Rendering** — "Sign out" button present
+- **Sign-out behaviour** — `supabase.auth.signOut()` called on click; `router.push('/')` called after; shows "Signing out…" and disables the button while in flight
+
+#### ✅ ProfileForm Component Tests
+**File:** `components/__tests__/ProfileForm.test.tsx` (13 tests)
+
+Tests cover:
+- **Rendering** — pre-populates display name from props; empty input when prop is empty string; Save and Cancel controls; Cancel links to `/`
+- **Validation** — Save disabled when name cleared; enabled when non-empty
+- **Submission** — PATCHes `/api/profile` with trimmed display_name; shows "Display name updated." on success; clears success message on subsequent edit; server error handling; fallback error; network error; loading state ("Saving…"/disabled)
+
+#### ✅ AddSnapshotForm Component Tests
+**File:** `components/systems/__tests__/AddSnapshotForm.test.tsx` (14 tests)
+
+Tests cover:
+- **Rendering** — shows trigger button, no form initially
+- **Open/close** — form shown on trigger click; Cancel restores trigger button; fields cleared on reopen
+- **Validation** — submit disabled when label empty; enabled when non-empty; whitespace-only label treated as empty
+- **Submission** — POSTs to correct URL with trimmed label and notes; `router.refresh()` on success; form hidden after success; server error shown; fallback error; network error; notes omitted from body when field empty
+
+#### ✅ CreateSystemForm Component Tests
+**File:** `components/systems/__tests__/CreateSystemForm.test.tsx` (11 tests)
+
+Tests cover:
+- **Rendering** — name input, description textarea, action buttons present
+- **Validation** — submit disabled when name empty; enabled when non-empty; whitespace-only name treated as empty
+- **Submission** — POSTs to `/api/systems` with trimmed name and description; redirects to new system detail page on success; server error handling; fallback error; network error; loading state
+- **Cancel** — calls `router.back()`
+
+#### ✅ EditSystemForm Component Tests
+**File:** `components/systems/__tests__/EditSystemForm.test.tsx` (12 tests)
+
+Tests cover:
+- **Rendering** — pre-populates name and description from props; empty description when prop is null; Save changes and Cancel controls present
+- **Validation** — Save disabled when name cleared; enabled when non-empty
+- **Submission** — PATCHes `/api/systems/[id]` with trimmed name and description; redirects to system detail page on success; server error handling; fallback error; network error; loading state
+- **Cancel** — Cancel link points to the system detail page
+
+#### ✅ SnapshotSection Component Tests
+**File:** `components/systems/__tests__/SnapshotSection.test.tsx` (20 tests)
+
+Tests cover:
+- **Display mode** — version badge, label, notes, children rendered; component list shown when present, hidden when null; win/loss/draw counts; win/loss row hidden when all zero; Edit button visibility gated by `isOwner`
+- **Edit mode open/close** — edit form shows pre-filled label and notes; pre-fills component rows; Cancel restores display mode with original label; keeps original label if edit cancelled after typing
+- **Component row management** — "+ Add component" appends empty row; "Remove component" deletes row and re-indexes remaining rows
+- **Validation** — Save disabled when label cleared; whitespace-only label treated as empty
+- **Submission** — PATCHes to correct URL; sends null for notes when field cleared; `router.refresh()` and closes edit mode on success; server error shown and edit mode kept open; network error shown
 
 ### Pending Tests (Next.js Environment Required)
 
@@ -195,16 +256,24 @@ Would test:
 
 **Status:** Requires Next.js route handler runtime environment
 
+#### ⏸️ Systems PATCH Route Tests
+**File:** `__tests__/systems-patch-route.test.ts` (1 placeholder - skipped)
+
+**Status:** Skipped placeholder; follows the same pattern as middleware and auth-callback tests. Full tests deferred pending Next.js route handler environment setup.
+
 ### Test Coverage Summary
 
 ```
-Test Suites: 2 skipped, 12 passed, 14 total
-Tests:       2 skipped, 116 passed, 118 total
+Test Suites: 3 skipped, 19 passed, 22 total
+Tests:       3 skipped, 207 passed, 210 total
 ```
 
 **Passing Tests:**
 - ✅ Setup verification (3 tests)
-- ✅ LoginForm component (9 tests)
+- ✅ LoginForm component (12 tests)
+- ✅ OAuthButtons component (5 tests)
+- ✅ SignOutButton component (4 tests)
+- ✅ ProfileForm component (13 tests)
 - ✅ Supabase browser client (7 tests)
 - ✅ Supabase server client (10 tests)
 - ✅ Clip provider detection (9 tests)
@@ -212,13 +281,18 @@ Tests:       2 skipped, 116 passed, 118 total
 - ✅ Shared clip finder (9 tests)
 - ✅ ABPlayer component (1 test)
 - ✅ VoteForm component (20 tests)
-- ✅ StepSnapshots component (16 tests)
+- ✅ StepSnapshots component (28 tests)
+- ✅ AddSnapshotForm component (14 tests)
+- ✅ CreateSystemForm component (11 tests)
+- ✅ EditSystemForm component (12 tests)
+- ✅ SnapshotSection component (20 tests)
 - ✅ Vote tally computation (16 tests)
 - ✅ Snapshot outcome computation (8 tests)
 
 **Skipped Tests:**
 - ⏸️ Middleware (pending Next.js environment)
 - ⏸️ Auth callback route (pending Next.js environment)
+- ⏸️ Systems PATCH route (placeholder, pending Next.js environment)
 
 ## Next Steps
 
@@ -256,8 +330,8 @@ npm test
 
 You should see:
 ```
- Test Files  12 passed | 2 skipped (14)
-      Tests  116 passed | 2 skipped (118)
+ Test Files  19 passed | 3 skipped (22)
+      Tests  207 passed | 3 skipped (210)
 ```
 
 Run tests in watch mode during development:
