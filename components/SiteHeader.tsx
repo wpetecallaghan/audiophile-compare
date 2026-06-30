@@ -28,6 +28,9 @@ export default async function SiteHeader() {
             <Link href="/tracks" className="text-sm text-gray-500 hover:text-gray-900">
               Tracks
             </Link>
+            <Link href="/profile" className="text-sm text-gray-500 hover:text-gray-900">
+              Profile
+            </Link>
             <SignOutButton />
           </nav>
         ) : (

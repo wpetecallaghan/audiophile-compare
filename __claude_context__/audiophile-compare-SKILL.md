@@ -849,7 +849,12 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    normalises Supabase array/object join ambiguity before passing typed props.
 12. ✅ Page header — `SiteHeader` (server, in layout); `SignOutButton` (client:
    `supabase.auth.signOut()` → `router.push('/')`).
-   Unauthenticated: wordmark + "Sign in". Authenticated: Tests / Systems / Tracks + Sign out.
+   Unauthenticated: wordmark + "Sign in". Authenticated: Tests / Systems / Tracks / Profile + Sign out.
+13. ✅ Display name / profile — migration `20260630000001_set_display_name_from_email.sql`
+   updates trigger to derive `display_name` from email local-part on sign-up and
+   backfills existing null rows. `PATCH /api/profile` updates `display_name` (RLS:
+   own row only). `ProfileForm` client component; `app/profile/page.tsx` server page.
+   Tests: `components/__tests__/ProfileForm.test.tsx`
 
 ---
 
