@@ -50,5 +50,5 @@ export default async function globalSetup() {
   })
 
   await browser.close()
-  console.log(`[E2E] Auth session saved for ${email}`)
+  console.log(`[E2E setup] Auth session saved for ${email}`)
 }

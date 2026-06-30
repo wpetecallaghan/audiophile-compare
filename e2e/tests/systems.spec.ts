@@ -7,6 +7,7 @@
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
 import { seedSystem, seedSnapshot } from '../helpers/admin'
+import { E2E_PREFIX } from '../helpers/constants'
 
 const SYSTEM_NAME = `System ${Date.now()}`
 const UPDATED_NAME = `${SYSTEM_NAME} (edited)`
@@ -16,13 +17,13 @@ test.describe('System management', () => {
     await page.goto(routes.systemNew())
     await expect(page.getByRole('heading', { name: 'New system' })).toBeVisible()
 
-    await page.getByPlaceholder(/System name/i).fill(`[E2E] ${SYSTEM_NAME}`)
+    await page.getByPlaceholder(/System name/i).fill(`${E2E_PREFIX} ${SYSTEM_NAME}`)
     await page.getByPlaceholder(/Description/i).fill('Created by E2E test')
     await page.getByRole('button', { name: 'Create system' }).click()
 
     // After creation, should redirect to the system detail page
     await expect(page).toHaveURL(/\/systems\/[a-f0-9-]{36}$/)
-    await expect(page.getByText(`[E2E] ${SYSTEM_NAME}`)).toBeVisible()
+    await expect(page.getByText(`${E2E_PREFIX} ${SYSTEM_NAME}`)).toBeVisible()
   })
 
   test('edit the system name and description', async ({ page }) => {
@@ -30,12 +31,12 @@ test.describe('System management', () => {
     await page.goto(routes.systemEdit(system.id))
 
     await page.getByPlaceholder(/System name/i).clear()
-    await page.getByPlaceholder(/System name/i).fill(`[E2E] ${UPDATED_NAME}`)
+    await page.getByPlaceholder(/System name/i).fill(`${E2E_PREFIX} ${UPDATED_NAME}`)
     await page.getByRole('button', { name: 'Save changes' }).click()
 
     // Should redirect to system detail with updated name
     await expect(page).toHaveURL(routes.system(system.id))
-    await expect(page.getByText(`[E2E] ${UPDATED_NAME}`)).toBeVisible()
+    await expect(page.getByText(`${E2E_PREFIX} ${UPDATED_NAME}`)).toBeVisible()
   })
 
   test('add a snapshot to a system and see it in the list', async ({ page }) => {
@@ -81,7 +82,7 @@ test.describe('System management', () => {
     await page.goto(routes.systems())
 
     await expect(page.getByRole('heading', { name: 'My systems' })).toBeVisible()
-    await expect(page.getByText(`[E2E] ${SYSTEM_NAME} list`)).toBeVisible()
+    await expect(page.getByText(`${E2E_PREFIX} ${SYSTEM_NAME} list`)).toBeVisible()
 
     void system
   })

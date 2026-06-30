@@ -7,6 +7,7 @@
  */
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
+import { E2E_PREFIX } from '../helpers/constants'
 import {
   seedTrack,
   seedSystem,
@@ -41,7 +42,7 @@ test.describe('Test creation wizard', () => {
     await expect(page.getByText('Track').first()).toBeVisible()
 
     // Search for the seeded track by its title prefix
-    await page.getByPlaceholder(/Search by artist/i).fill('[E2E] Wizard Track')
+    await page.getByPlaceholder(/Search by artist/i).fill(`${E2E_PREFIX} Wizard Track`)
     await expect(page.getByText(track.title)).toBeVisible({ timeout: 5_000 })
   })
 
@@ -51,7 +52,7 @@ test.describe('Test creation wizard', () => {
     await page.goto(routes.testNew())
 
     // ── Step 1: Select track ─────────────────────────────────────────────────
-    await page.getByPlaceholder(/Search by artist/i).fill('[E2E] Wizard Track')
+    await page.getByPlaceholder(/Search by artist/i).fill(`${E2E_PREFIX} Wizard Track`)
     await page.getByText(track.title).click()
     await page.getByRole('button', { name: 'Continue' }).click()
 
@@ -92,7 +93,7 @@ test.describe('Test creation wizard', () => {
     const titleInput = page.getByLabel(/Title/i).or(page.locator('input[type="text"]').first())
     const currentTitle = await titleInput.inputValue()
     await titleInput.clear()
-    await titleInput.fill(`[E2E] ${currentTitle}`)
+    await titleInput.fill(`${E2E_PREFIX} ${currentTitle}`)
 
     await page.getByRole('button', { name: 'Publish test' }).click()
 

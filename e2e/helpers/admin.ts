@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { E2E_PREFIX } from './constants'
 
 // ---------------------------------------------------------------------------
 // Admin client — bypasses RLS; use only in test setup/teardown
@@ -34,7 +35,7 @@ export async function getTestUserId(): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// Seed helpers — all names prefixed with [E2E] so teardown can find them
+// Seed helpers — all names prefixed with E2E_PREFIX so teardown can find them
 // ---------------------------------------------------------------------------
 
 export type SeededSystem = { id: string; name: string }
@@ -48,7 +49,7 @@ export async function seedSystem(name: string): Promise<SeededSystem> {
   const userId = await getTestUserId()
   const { data, error } = await admin
     .from('systems')
-    .insert({ name: `[E2E] ${name}`, owner_id: userId, description: 'Created by E2E tests' })
+    .insert({ name: `${E2E_PREFIX} ${name}`, owner_id: userId, description: 'Created by E2E tests' })
     .select('id, name')
     .single()
   if (error) throw new Error(`seedSystem: ${error.message}`)
@@ -75,7 +76,7 @@ export async function seedTrack(artist: string, title: string): Promise<SeededTr
   const userId = await getTestUserId()
   const { data, error } = await admin
     .from('tracks')
-    .insert({ artist, title: `[E2E] ${title}`, created_by: userId })
+    .insert({ artist, title: `${E2E_PREFIX} ${title}`, created_by: userId })
     .select('id, artist, title')
     .single()
   if (error) throw new Error(`seedTrack: ${error.message}`)
@@ -97,7 +98,7 @@ export async function seedTest(
       track_id: trackId,
       snapshot_a_id: snapshotAId,
       snapshot_b_id: snapshotBId,
-      title: `[E2E] ${title}`,
+      title: `${E2E_PREFIX} ${title}`,
       status: 'open',
     })
     .select('id, title')

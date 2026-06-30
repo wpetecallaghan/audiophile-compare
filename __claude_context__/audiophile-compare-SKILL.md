@@ -162,6 +162,12 @@ components/
       StepPublish.tsx
   LoginForm.tsx             ← Client: magic link form
 
+messages/
+  en.json                   ← All English UI strings, namespaced by feature area (build step 15)
+
+i18n/
+  request.ts                ← next-intl config: returns locale + loads messages/en.json (build step 15)
+
 lib/
   supabase/
     server.ts               ← createClient() for server components + API routes
@@ -869,6 +875,22 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
    the `?redirectTo=` query param). In Google Cloud Console: create OAuth 2.0
    credentials; add the Supabase callback URL as an Authorized Redirect URI.
    Tests: `__tests__/OAuthButtons.test.tsx`
+15. ⬜ Centralised string resources (i18n) — all user-facing strings moved to
+   `messages/en.json`, namespaced by feature area. Package: `next-intl` (App Router
+   native; works with RSC). Mode: “without routing” — no URL locale prefix, locale
+   fixed to `en` in `i18n/request.ts`; middleware.ts unchanged.
+   Server components use `getTranslations(namespace)` (async, no bundle cost).
+   Client components use `useTranslations(namespace)` hook.
+   `app/layout.tsx` wraps tree with `NextIntlClientProvider messages={messages}`.
+   `next.config.mjs` wraps config with `createNextIntlPlugin()`.
+   Type safety: `types/next-intl.d.ts` extends `IntlMessages` from `en.json` —
+   unknown keys are TypeScript errors.
+   Unit tests: `vitest.setup.ts` mocks `next-intl` to return the key as the value;
+   text assertions become key-based. E2E tests: import `messages/en.json` directly
+   and resolve selectors against it — if copy changes, E2E tests stay in sync
+   automatically without edits to spec files.
+   Namespaces: `common`, `nav`, `auth`, `systems`, `snapshots`, `tests`, `profile`,
+   `feed`, `tracks`.
 
 ---
 
