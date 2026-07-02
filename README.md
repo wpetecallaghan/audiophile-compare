@@ -40,6 +40,10 @@ including Node.js version, Playwright browsers, and the Supabase CLI.
 | [docs/end-to-end-testing.md](docs/end-to-end-testing.md) | E2E tests (Playwright): design decisions, spec coverage, CI strategy |
 | [docs/manual-testing-setup.md](docs/manual-testing-setup.md) | Step-by-step manual verification of the full app flow |
 
+## Background
+
+[docs/audiophile-compare-app-specification.md](docs/audiophile-compare-app-specification.md) describes the rationale and design decisions behind the service: the problem being solved, user personas, user stories, the BYOS media model, system catalogue and track navigation concepts, listening technique governance, and a log of key architectural decisions.
+
 ## AI context
 
 These files provide architectural context for AI coding assistants (Claude, Copilot, etc.):
