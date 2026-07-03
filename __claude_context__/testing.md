@@ -15,13 +15,20 @@ description: >
 
 - Pure logic (`lib/**/*.ts`) → `*.test.ts` → Vitest `node` environment
 - React components (`components/**/*.tsx`) → `*.test.tsx` → Vitest `jsdom` environment (default)
-- Tests live in a `__tests__/` folder adjacent to the file under test
+- Tests live in a `__tests__/` folder adjacent to the file under test; `.spec.ts(x)` files placed directly next to the source file also work — both conventions are supported
 - API routes are not unit-tested — they are covered by E2E tests against staging
 
 **Override environment for a single file** (first line of the file):
 ```typescript
 // @vitest-environment node
 ```
+
+**Available test utilities** (all installed — use without adding dependencies):
+- `vitest` — test runner
+- `@testing-library/react` + `@testing-library/user-event` — component rendering and interaction
+- `@testing-library/jest-dom` — custom DOM matchers (`toBeInTheDocument`, `toBeDisabled`, etc.)
+- `msw` (Mock Service Worker) — intercept `fetch` calls at the network level; use when a component or utility makes real HTTP requests that can't be injected as props
+- `jsdom` — DOM implementation for component tests
 
 **Test commands:**
 ```bash
@@ -123,6 +130,17 @@ votes → clip_mapping → clips → tests → system_snapshots → systems → 
 | `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared |
 
 Gaps pending (step 17): cross-check selector flow, reveal flow from voting spec, feed vote-count display.
+
+---
+
+## 7. Future — integration tests
+
+Not yet implemented. When added, integration tests would cover:
+- Database operations via a dedicated test Supabase project (not staging)
+- Protected route access patterns at the API boundary
+- Form submission workflows end-to-end through API routes
+
+Unit tests mock Supabase internals; E2E tests run against the live staging DB. Integration tests would sit between them — testing API routes against a real (but disposable) database without a browser. No timeline set.
 
 ---
 
