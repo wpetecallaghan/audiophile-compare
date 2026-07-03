@@ -132,6 +132,7 @@ comments (
 --   (1) the forum ingestion pipeline — authenticated as a dedicated ingestion_bot user
 --   (2) the mobile app — authenticated as the end user via Supabase Auth
 -- No general-purpose API key infrastructure is planned.
+-- See api-conventions.md §5 — Programmatic access.
 
 -- FUTURE (not yet implemented): owned blob storage for recordings
 -- When added, clips.provider gains 'supabase' and 'r2' as valid values,
@@ -144,7 +145,7 @@ comments (
 --
 -- ALTER TABLE public.clips ADD COLUMN storage_key text;
 --
--- See SKILL.md section 15 for full storage and mobile expansion plan.
+-- See core.md §1 notes and docs/audiophile-compare-app-specification.md for storage expansion rationale.
 ```
 
 ---

@@ -46,10 +46,16 @@ including Node.js version, Playwright browsers, and the Supabase CLI.
 
 ## AI context
 
-These files provide architectural context for AI coding assistants (Claude, Copilot, etc.):
+These files in `__claude_context__/` provide architectural context for AI coding assistants.
+Load `core.md` first, then the file for your task:
 
 | File | Contents |
 |---|---|
-| [__claude_context__/audiophile-compare-SKILL.md](__claude_context__/audiophile-compare-SKILL.md) | Full build specification: technology choices, file layout, conventions, build plan |
-| [__claude_context__/audiophile-compare-schema.md](__claude_context__/audiophile-compare-schema.md) | Complete database schema, RLS policies, and data model |
+| [__claude_context__/core.md](__claude_context__/core.md) | Stack, file layout, deployment topology, server/client rules, skill routing guide |
+| [__claude_context__/api-conventions.md](__claude_context__/api-conventions.md) | API route patterns, auth checks, security rules, response format, programmatic access |
+| [__claude_context__/components.md](__claude_context__/components.md) | Component patterns, MediaPlayer contracts, wizard state, mobile responsiveness, error boundaries |
+| [__claude_context__/testing.md](__claude_context__/testing.md) | Unit and E2E conventions, test inventory, vitest mocks, Playwright strategy |
+| [__claude_context__/audiophile-compare-schema.md](__claude_context__/audiophile-compare-schema.md) | Complete database schema, RLS policies, query patterns, auth triggers |
+| [__claude_context__/build-history.md](__claude_context__/build-history.md) | Build step log (1–18 with implementation notes), deferred feature notes (owned storage, mobile app) |
+| [__claude_context__/build-history.md](__claude_context__/build-history.md) | Build step log (1–18), deferred feature notes (owned storage, mobile app) |
 
