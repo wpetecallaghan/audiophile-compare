@@ -5,31 +5,33 @@
  */
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
+import { ROLE } from '../helpers/constants'
+import m from '../../messages/en.json'
 
 test.describe('Profile', () => {
   test('profile page loads and shows the display name field', async ({ page }) => {
     await page.goto(routes.profile())
-    await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible()
-    await expect(page.getByLabel('Display name')).toBeVisible()
+    await expect(page.getByRole(ROLE.heading, { name: m.profile.heading })).toBeVisible()
+    await expect(page.getByLabel(m.profile.displayNameLabel)).toBeVisible()
   })
 
   test('update display name and see confirmation', async ({ page }) => {
     await page.goto(routes.profile())
 
-    const input = page.getByLabel('Display name')
+    const input = page.getByLabel(m.profile.displayNameLabel)
     await input.clear()
     await input.fill('E2E Test User')
 
-    await page.getByRole('button', { name: 'Save' }).click()
+    await page.getByRole(ROLE.button, { name: m.profile.saveButton }).click()
 
-    await expect(page.getByText('Display name updated.')).toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText(m.profile.successMessage)).toBeVisible({ timeout: 5_000 })
   })
 
   test('Save button is disabled when display name is cleared', async ({ page }) => {
     await page.goto(routes.profile())
 
-    await page.getByLabel('Display name').clear()
+    await page.getByLabel(m.profile.displayNameLabel).clear()
 
-    await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled()
+    await expect(page.getByRole(ROLE.button, { name: m.profile.saveButton })).toBeDisabled()
   })
 })

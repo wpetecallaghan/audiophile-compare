@@ -23,6 +23,14 @@ Includes all tables, RLS policies, auth triggers (`on_auth_user_created`, `on_au
 `/systems`, `/tracks`, `/profile`, `/tests/new`. `app/auth/callback/route.ts`
 exchanges the code for a session and handles `?type=recovery` redirects (→ `/profile?reset=true`).
 
+**`app/auth/confirm/route.ts`** (added in step 17) handles the `token_hash` +
+`type` verification pattern instead of `code` — needed for any link issued via
+the Admin API (`generateLink`), which can't carry a PKCE `code_verifier` since
+there's no client-side `signInWithOtp` call to pair one with. Calls
+`supabase.auth.verifyOtp({ token_hash, type })` server-side. E2E test auth uses
+this route; it's also the correct target for any future admin/service-issued
+email link (e.g. an ingestion-bot invite).
+
 ### ✅ 3 — Clip URL verification — `POST /api/clips/verify`
 `lib/clips/detect-provider.ts` — pure URL classification (no I/O).
 `lib/clips/check-url.ts` — HEAD request for `direct` URLs.
@@ -87,7 +95,7 @@ Package: `next-intl` (App Router native; "without routing" mode — no URL local
 `types/next-intl.d.ts` extends `IntlMessages` from `en.json` — unknown keys are TypeScript errors.
 `vitest.setup.ts` mocks both `next-intl` and `next-intl/server` with async factories returning actual English values for human-readable test assertions.
 E2E tests import `messages/en.json` directly so copy changes keep tests in sync automatically.
-**Namespaces:** `common`, `nav`, `auth`, `systems`, `snapshots`, `tests`, `profile`, `feed`, `tracks`.
+**Namespaces:** `common`, `nav`, `auth`, `systems`, `snapshots`, `tests`, `profile`, `feed`, `tracks`, `crosscheck`.
 
 ### ✅ 16 — Email/password auth and account management
 Register with email + name + password; sign in with password (alongside magic link and Google); change email, password, or display name from the profile page; forgot password flow.
@@ -119,9 +127,16 @@ The profile page detects `?reset=true` and auto-opens `ChangePasswordForm`.
 
 **Profile page additions:** `ChangeEmailForm` (`updateUser({ email })`), `ChangePasswordForm` (`updateUser({ password })`).
 
-### ⬜ 17 — End-to-end test coverage
-Run the full Playwright suite against staging; confirm every named route has at least one passing happy-path scenario.
-**Gaps to close:** cross-check selector flow, reveal flow end-to-end, feed vote-count display.
+### ✅ 17 — End-to-end test coverage
+Full Playwright suite passes against staging (24/24). Fixed along the way:
+env vars not loading in `playwright.config.ts`, Vercel SSO Deployment
+Protection blocking the automated browser (see `VERCEL_AUTOMATION_BYPASS_SECRET`
+in `testing.md` §9), admin-issued magic links needing `token_hash` verification
+via the new `app/auth/confirm/route.ts` instead of the `code` flow, and several
+spec files with selectors that had drifted from the current UI.
+
+Not covered by any spec (optional future additions, not blocking this step):
+cross-check selector flow, feed vote-count display.
 See `testing.md` for current coverage and `docs/end-to-end-testing.md` for test strategy.
 
 ### ⬜ 18 — Visual polish

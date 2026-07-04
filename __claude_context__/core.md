@@ -3,12 +3,12 @@ name: audiophile-compare-core
 description: >
   Technology stack, file layout, deployment topology, and server/client rules
   for the audiophile A/B comparison app. Read this first before any coding
-  task, then load the skill file that matches your work category (see §5).
+  task, then load the context file that matches your work category (see §5).
 ---
 
 # Audiophile Compare — Core Reference
 
-Read this file first. Then load the skill file for your task (§5).
+Read this file first. Then load the context file for your task (§5).
 
 ---
 
@@ -73,6 +73,7 @@ app/
     votes/route.ts
     votes/[id]/route.ts
   auth/callback/route.ts                    ← Magic link + OAuth code exchange
+  auth/confirm/route.ts                     ← token_hash verification (admin/service-issued links)
   global-error.tsx                          ← Required for Next.js 16 + Turbopack
   layout.tsx
   page.tsx                                  ← Public feed (server, paginated)
@@ -159,7 +160,7 @@ types/
 
 **Public paths** (no login required to view; login required for play/vote — enforced in API routes):
 ```
-/, /tests/[id], /login, /register, /auth/callback
+/, /tests/[id], /login, /register, /auth/callback, /auth/confirm
 ```
 
 ---
@@ -170,7 +171,7 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ---
 
-## 5. Which skill file to load
+## 5. Which context file to load
 
 | Task | Load |
 |---|---|
@@ -179,9 +180,10 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 | Writing or modifying tests | `testing.md` |
 | Writing queries, migrations, or RLS policies | `audiophile-compare-schema.md` |
 | Any task touching the data model | `audiophile-compare-schema.md` |
+| Writing or reviewing code (app or test) that repeats a string literal | `repeated-string-constants.md` |
 
 ---
 
 ## 6. Build status
 
-All 18 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ⬜ 18 visual polish). The current unit test suite is 24 files / 249 tests passing. See `testing.md` for the full inventory.
+17 of 18 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ⬜ 18 visual polish remaining). The current unit test suite is 24 files / 249 tests passing. See `testing.md` for the full inventory.

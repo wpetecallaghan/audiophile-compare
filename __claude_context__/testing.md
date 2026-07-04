@@ -99,10 +99,15 @@ indirectly through the step tests.
 
 - Framework: Playwright; Chromium only
 - `workers: 1` — staging DB cannot handle concurrent writes safely
-- Auth: `global-setup.ts` uses the Supabase Admin API to generate a magic link URL directly,
-  navigates headlessly, saves session cookies to `playwright/.auth/user.json`.
-  Auth happens **once per test run**, not once per test.
+- Auth: `global-setup.ts` uses the Supabase Admin API to generate a magic link, then
+  verifies it via `token_hash` against `app/auth/confirm/route.ts` (not the `code` flow —
+  admin-issued links can't carry a PKCE `code_verifier`), saving session cookies to
+  `playwright/.auth/user.json`. This shared session is reused by every authenticated
+  spec **except** `zz-sign-out.spec.ts`, which needs its own disposable session — see
+  that file for why.
 - Google OAuth is not E2E-tested — `OAuthButtons` unit tests cover the API call.
+- Staging/preview deployments sit behind Vercel SSO Deployment Protection —
+  `VERCEL_AUTOMATION_BYPASS_SECRET` (§9) lets the automated browser through.
 
 **Test data rules (all three are mandatory):**
 1. A dedicated `E2E_TEST_USER_EMAIL` account must exist in the staging Supabase project (create once via dashboard — Authentication → Users → Invite user).
@@ -123,17 +128,20 @@ votes → clip_mapping → clips → tests → system_snapshots → systems → 
 | Spec | Scenarios |
 |---|---|
 | `public-feed.spec.ts` | Feed loads; unauthenticated header; test card structure; `/systems` → login redirect with redirectTo; `/profile` → login redirect; `/tracks` → login redirect |
-| `auth.spec.ts` | Authenticated nav links (Tests / Systems / Tracks / Profile); sign-out clears session; redirectTo preserved through login flow |
+| `auth.spec.ts` | Authenticated nav links (Tests / Systems / Tracks / Profile); redirectTo preserved through login flow |
 | `systems.spec.ts` | Create system; edit name and description; add snapshot; edit snapshot label; systems list shows test user's systems |
 | `test-creation.spec.ts` | Track search; full wizard (select track → snapshots → verify clips → publish) |
 | `voting.spec.ts` | Tally hidden before voting; vote count visible; cast vote; update existing vote; creator can reveal |
 | `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared |
+| `zz-sign-out.spec.ts` | Sign out clears the session; header reverts to unauthenticated. Runs last — see file for why |
 
-Gaps pending (step 17): cross-check selector flow, reveal flow from voting spec, feed vote-count display.
+Step 17 is complete (24/24 passing against staging). Not covered by any spec
+(optional future additions, not blocking): cross-check selector flow, feed
+vote-count display.
 
 ---
 
-## 8. Future — integration tests
+## 7. Future — integration tests
 
 Not yet implemented. When added, integration tests would cover:
 - Database operations via a dedicated test Supabase project (not staging)
@@ -144,20 +152,27 @@ Unit tests mock Supabase internals; E2E tests run against the live staging DB. I
 
 ---
 
-## 9. E2E environment variables
+## 8. E2E environment variables
 
 ```bash
 SUPABASE_SERVICE_ROLE_KEY=<staging service role key>
 E2E_TEST_USER_EMAIL=e2e-tests@example.com
 E2E_BASE_URL=http://localhost:3000              # local dev
 # E2E_BASE_URL=https://your-preview.vercel.app # CI / staging
+VERCEL_AUTOMATION_BYPASS_SECRET=<protection bypass secret>  # required if E2E_BASE_URL is Vercel-protected
 ```
 
 `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` must also be set, pointing to staging.
 
+`VERCEL_AUTOMATION_BYPASS_SECRET` is only needed when `E2E_BASE_URL` points at a
+Vercel deployment with SSO Deployment Protection enabled (any staging/preview
+URL, typically). Generate via `vercel project protection enable <project> --protection-bypass`,
+then read the secret back with `vercel project protection <project>`. Not needed
+for `http://localhost:3000`.
+
 ---
 
-## 10. E2E trigger strategy
+## 9. E2E trigger strategy
 
 - **On merge to `staging`** — verifies the staging Vercel deployment; set `E2E_BASE_URL` to the staging Vercel URL.
 - **On demand** (`workflow_dispatch`) — run before merging to `main`.
@@ -165,7 +180,7 @@ E2E_BASE_URL=http://localhost:3000              # local dev
 
 ---
 
-## 11. E2E test commands
+## 10. E2E test commands
 
 ```bash
 npm run dev                                           # start dev server first (or use E2E_BASE_URL)

@@ -290,7 +290,7 @@ export default function GlobalError({
 All user-facing strings live in `messages/en.json`, namespaced by feature area.
 **Never hardcode strings directly in components** — always add them to `en.json` first.
 
-**Namespaces:** `common`, `nav`, `auth`, `systems`, `snapshots`, `tests`, `profile`, `feed`, `tracks`
+**Namespaces:** `common`, `nav`, `auth`, `systems`, `snapshots`, `tests`, `profile`, `feed`, `tracks`, `crosscheck`
 
 **Server components** (async — no bundle cost):
 ```typescript

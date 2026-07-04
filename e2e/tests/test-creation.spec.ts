@@ -7,7 +7,7 @@
  */
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
-import { E2E_PREFIX } from '../helpers/constants'
+import { E2E_PREFIX, ROLE } from '../helpers/constants'
 import m from '../../messages/en.json'
 import {
   seedTrack,
@@ -37,13 +37,13 @@ test.beforeAll(async () => {
 test.describe('Test creation wizard', () => {
   test('step 1: navigate to wizard and search for the seeded track', async ({ page }) => {
     await page.goto(routes.testNew())
-    await expect(page.getByRole('heading', { name: /New listening test/i })).toBeVisible()
+    await expect(page.getByRole(ROLE.heading, { name: m.tests.newHeading })).toBeVisible()
 
     // Step indicator should show Track as the active step
-    await expect(page.getByText('Track').first()).toBeVisible()
+    await expect(page.getByText(m.tests.wizard.stepTrack).first()).toBeVisible()
 
     // Search for the seeded track by its title prefix
-    await page.getByPlaceholder(/Search by artist/i).fill(`${E2E_PREFIX} Wizard Track`)
+    await page.getByPlaceholder(m.tests.trackStep.searchPlaceholder).fill(`${E2E_PREFIX} Wizard Track`)
     await expect(page.getByText(track.title)).toBeVisible({ timeout: 5_000 })
   })
 
@@ -53,50 +53,51 @@ test.describe('Test creation wizard', () => {
     await page.goto(routes.testNew())
 
     // ── Step 1: Select track ─────────────────────────────────────────────────
-    await page.getByPlaceholder(/Search by artist/i).fill(`${E2E_PREFIX} Wizard Track`)
+    await page.getByPlaceholder(m.tests.trackStep.searchPlaceholder).fill(`${E2E_PREFIX} Wizard Track`)
     await page.getByText(track.title).click()
-    await page.getByRole('button', { name: m.tests.wizard.continueButton }).click()
+    await page.getByRole(ROLE.button, { name: m.tests.wizard.continueButton }).click()
 
     // ── Step 2: Select snapshots ─────────────────────────────────────────────
-    // Snapshot A selector
-    const snapASelect = page.getByLabel(/Snapshot A/i)
-    await snapASelect.selectOption({ label: snapshotA.label })
+    // Each side is a radio group (not a <select>), grouped by name and keyed
+    // by snapshot id — select by the seeded snapshot's id to avoid ambiguity
+    // with the same snapshot label appearing in both groups.
+    await page.locator(
+      `input[type="radio"][name="snapshot-${m.tests.snapshotsStep.snapshotALabel}"][value="${snapshotA.id}"]`,
+    ).check()
+    await page.locator(
+      `input[type="radio"][name="snapshot-${m.tests.snapshotsStep.snapshotBLabel}"][value="${snapshotB.id}"]`,
+    ).check()
 
-    // Snapshot B selector
-    const snapBSelect = page.getByLabel(/Snapshot B/i)
-    await snapBSelect.selectOption({ label: snapshotB.label })
-
-    await page.getByRole('button', { name: m.tests.wizard.continueButton }).click()
+    await page.getByRole(ROLE.button, { name: m.tests.wizard.continueButton }).click()
 
     // ── Step 3: Enter and verify clip URLs ───────────────────────────────────
+    // Both clip inputs share the same placeholder (m.tests.clipsStep.urlPlaceholder),
+    // so they aren't distinguishable by text — select by position instead.
     // Clip A
-    const clipAInput = page.getByPlaceholder(/Clip A/i).or(
-      page.locator('input[type="url"]').first(),
-    )
+    const clipAInput = page.locator('input[type="url"]').first()
     await clipAInput.fill(CLIP_URL_A)
-    await page.getByRole('button', { name: 'Verify' }).first().click()
+    await page.getByRole(ROLE.button, { name: m.tests.clipsStep.verifyButton }).first().click()
     await expect(page.getByText(/youtube/i).first()).toBeVisible({ timeout: 10_000 })
 
     // Clip B
-    const clipBInput = page.getByPlaceholder(/Clip B/i).or(
-      page.locator('input[type="url"]').nth(1),
-    )
+    const clipBInput = page.locator('input[type="url"]').nth(1)
     await clipBInput.fill(CLIP_URL_B)
-    await page.getByRole('button', { name: 'Verify' }).nth(1).click()
+    await page.getByRole(ROLE.button, { name: m.tests.clipsStep.verifyButton }).nth(1).click()
     await expect(page.getByText(/youtube/i).nth(1)).toBeVisible({ timeout: 10_000 })
 
-    await page.getByRole('button', { name: m.tests.wizard.continueButton }).click()
+    await page.getByRole(ROLE.button, { name: m.tests.wizard.continueButton }).click()
 
     // ── Step 4: Publish ──────────────────────────────────────────────────────
-    await expect(page.getByRole('heading', { name: 'Publish' })).toBeVisible()
+    await expect(page.getByRole(ROLE.heading, { name: m.tests.publishStep.heading })).toBeVisible()
 
-    // The title field should be auto-filled; prefix it with [E2E]
-    const titleInput = page.getByLabel(/Title/i).or(page.locator('input[type="text"]').first())
+    // The title field's label ("Test title") is hardcoded in StepPublish.tsx,
+    // not sourced from messages/en.json — select by input type instead
+    const titleInput = page.locator('input[type="text"]').first()
     const currentTitle = await titleInput.inputValue()
     await titleInput.clear()
     await titleInput.fill(`${E2E_PREFIX} ${currentTitle}`)
 
-    await page.getByRole('button', { name: m.tests.publishStep.publishButton }).click()
+    await page.getByRole(ROLE.button, { name: m.tests.publishStep.publishButton }).click()
 
     // Should land on the test detail page
     await expect(page).toHaveURL(/\/tests\/[a-f0-9-]{36}$/, { timeout: 15_000 })
