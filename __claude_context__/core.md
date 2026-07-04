@@ -166,17 +166,7 @@ types/
 
 ## 4. Server vs client — decision rule
 
-Default is **server**. Add `'use client'` only when the component needs:
-- `useState`, `useReducer`, `useRef`, `useEffect`, `useImperativeHandle`
-- Browser event handlers (`onClick`, `onChange`, `onPlay`, etc.)
-- Browser APIs (`window`, `document`, `localStorage`)
-- Third-party SDKs that require a DOM (YouTube, Vimeo SDKs)
-
-**Pattern for pages with data + interactivity:**
-- Page (`app/**/page.tsx`) — server component; queries Supabase; passes typed props to client children
-- Interactive children — client components receiving props
-
-A server component can render a client component. A client component **cannot** import `lib/supabase/server.ts`.
+See `components.md §1` for the full rule and code patterns. Summary: default is **server**. Add `'use client'` only for `useState`/`useEffect`/`useRef`, browser event handlers, browser APIs, or third-party DOM SDKs (YouTube, Vimeo). A client component **cannot** import `lib/supabase/server.ts`.
 
 ---
 

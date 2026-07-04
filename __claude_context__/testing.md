@@ -133,7 +133,7 @@ Gaps pending (step 17): cross-check selector flow, reveal flow from voting spec,
 
 ---
 
-## 7. Future — integration tests
+## 8. Future — integration tests
 
 Not yet implemented. When added, integration tests would cover:
 - Database operations via a dedicated test Supabase project (not staging)
@@ -144,7 +144,7 @@ Unit tests mock Supabase internals; E2E tests run against the live staging DB. I
 
 ---
 
-## 7. E2E environment variables
+## 9. E2E environment variables
 
 ```bash
 SUPABASE_SERVICE_ROLE_KEY=<staging service role key>
@@ -157,7 +157,7 @@ E2E_BASE_URL=http://localhost:3000              # local dev
 
 ---
 
-## 8. E2E trigger strategy
+## 10. E2E trigger strategy
 
 - **On merge to `staging`** — verifies the staging Vercel deployment; set `E2E_BASE_URL` to the staging Vercel URL.
 - **On demand** (`workflow_dispatch`) — run before merging to `main`.
@@ -165,7 +165,7 @@ E2E_BASE_URL=http://localhost:3000              # local dev
 
 ---
 
-## 9. E2E test commands
+## 11. E2E test commands
 
 ```bash
 npm run dev                                           # start dev server first (or use E2E_BASE_URL)

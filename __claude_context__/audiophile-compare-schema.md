@@ -1,3 +1,11 @@
+---
+name: audiophile-compare-schema
+description: >
+  Complete database schema, RLS policies, auth triggers, and common query patterns
+  for the audiophile A/B comparison app. Load when writing queries, migrations, or
+  RLS policies, or for any task touching the data model.
+---
+
 # Schema Reference
 
 Full database schema, RLS policies, and data model notes for the audiophile

@@ -1,11 +1,34 @@
 ---
 name: audiophile-compare
 description: >
-  MIGRATED — this file has been split into focused skill files. Do not read
-  further. Load core.md first, then the skill file for your task: api-conventions.md
-  for API routes, components.md for components and pages, testing.md for tests,
-  audiophile-compare-schema.md for the data model and RLS policies,
-  build-history.md for the build step log, deferred-features.md for deferred
-  feature notes.
+  Entry point for any coding task on the Audiophile Compare project. Provides
+  project orientation and routes to the right context file for your task.
+  Invoke this at the start of any session before loading task-specific files.
 ---
 
+# Audiophile Compare — Project Skill
+
+Blind A/B comparison app for hi-fi audio systems. Next.js 15+ App Router, Supabase (Postgres + Auth), Tailwind CSS, Vercel. 16 of 18 build steps complete; 249 unit tests passing.
+
+## Step 1 — Always read core.md first
+
+`__claude_context__/core.md` has the full file layout, deployment topology, and build status. Read it before any coding task.
+
+## Step 2 — Load the context file for your task
+
+| Task | Load |
+|---|---|
+| API routes | `api-conventions.md` + `audiophile-compare-schema.md` |
+| Components / pages | `components.md` |
+| Tests | `testing.md` |
+| Queries / migrations / RLS | `audiophile-compare-schema.md` |
+| Build history / orientation | `build-history.md` |
+| Deferred features (ingestion, storage, mobile) | `deferred-features.md` |
+
+## Key invariants (apply to every task)
+
+- Default to server components. Add `'use client'` only when required — see `components.md §1`.
+- Client components **cannot** import `lib/supabase/server.ts`.
+- `clip_mapping` is never returned to the client until `tests.status = 'revealed'` or the caller is the test creator — see `api-conventions.md §4`.
+- All user-facing strings go in `messages/en.json` — never hardcoded in components.
+- Migrations apply to staging first, then production.
