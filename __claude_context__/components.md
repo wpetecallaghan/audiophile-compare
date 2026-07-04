@@ -401,3 +401,32 @@ amber confirm/trigger buttons in `RevealButton.tsx`) can stay as raw classes
 — don't add a variant to `Button`/`Badge` for something used exactly once;
 that's the same "don't force an abstraction for its own sake" rule as
 everywhere else in this codebase.
+
+**Links — use `<Link variant size />` (`components/ui/Link.tsx`), never
+raw `text-gray-500`/`text-blue-600`/border classes on a `next/link` `Link`:**
+```tsx
+import { Link } from '@/components/ui/Link'
+<Link href="/about" variant="nav" className="shrink-0">About</Link>          {/* header nav */}
+<Link href={`/systems/${id}`} variant="card" className="block">...</Link>    {/* bordered row card */}
+<Link href="/register">Create a free account</Link>                          {/* variant="inline" is the default */}
+<Link href={`/tests/${id}`} size="compact">Test exists →</Link>              {/* smaller inline CTA, e.g. dense lists */}
+```
+Three roles (`nav | card | inline`, `inline` default) — see `Link.tsx`'s
+`cva` config for the exact classes per variant, and `build-history.md` step
+21 for the audit behind them. `card`'s `block` vs `flex items-center
+justify-between` is a real per-page layout difference, not part of the
+variant — pass it via `className`. `size` (`standard` default `| compact`)
+only affects `variant="inline"`; don't rely on a plain `className` override
+to shrink text size on a `Link` — `cn()`/`clsx` won't reliably make a later
+class win over an earlier conflicting one from the variant (that needs
+`tailwind-merge`, which this codebase doesn't use).
+
+Breadcrumb links (bare `hover:underline`, no other classes) are deliberately
+**not** componentized — one utility class repeated a handful of times
+doesn't clear the bar that justified `Button`/`Badge`/`Link`. Keep using
+plain `next/link`'s `Link` with `className="hover:underline"` for those.
+
+Always import `Link` from `@/components/ui/Link`, not `next/link`, unless
+the link doesn't fit any of the three roles above (e.g. a breadcrumb, or one
+already styled via `buttonVariants()`) — in that case import `next/link`
+directly (often aliased `NextLink` in files that need both).

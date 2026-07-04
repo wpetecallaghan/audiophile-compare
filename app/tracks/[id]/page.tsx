@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import NextLink from 'next/link'
+import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/Badge'
 
@@ -46,9 +47,9 @@ export default async function TrackDetailPage({ params }: Props) {
     <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       {/* Breadcrumb */}
       <nav className="text-xs text-gray-500 dark:text-gray-400">
-        <Link href="/tracks" className="hover:underline">
+        <NextLink href="/tracks" className="hover:underline">
           Tracks
-        </Link>
+        </NextLink>
         {' / '}
         <span>{track.artist} — {track.title}</span>
       </nav>
@@ -90,7 +91,8 @@ export default async function TrackDetailPage({ params }: Props) {
                 <li key={test.id}>
                   <Link
                     href={`/tests/${test.id}`}
-                    className="flex items-center justify-between rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    variant="card"
+                    className="flex items-center justify-between"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{test.title}</p>

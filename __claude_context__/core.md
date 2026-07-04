@@ -95,6 +95,7 @@ components/
   ui/
     Button.tsx                               ← cva-based; variant (primary/secondary) × size (standard/compact)
     Badge.tsx                                ← cva-based; status (win/loss/draw/blind/revealed)
+    Link.tsx                                 ← cva-based; wraps next/link; variant (nav/card/inline) × size (inline only)
     cn.ts                                    ← clsx wrapper for merging conditional class lists
   media/
     ABPlayer.tsx                            ← Client: owns refs, coordinates pause
@@ -197,4 +198,4 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-All 20 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ✅ 19 about page; ✅ 20 visual polish). The current unit test suite is 25 files / 256 tests passing. See `testing.md` for the full inventory.
+All 21 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ✅ 19 about page; ✅ 20 visual polish; ✅ 21 Link component). The current unit test suite is 25 files / 256 tests passing. See `testing.md` for the full inventory.

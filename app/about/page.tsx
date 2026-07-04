@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 
 export default async function AboutPage() {
@@ -32,10 +32,10 @@ export default async function AboutPage() {
         <h2 className="text-base sm:text-lg font-semibold">{t('gettingStartedHeading')}</h2>
         <p className="text-sm text-gray-600 dark:text-gray-300">{t('gettingStartedBody')}</p>
         <div className="flex items-center gap-4">
-          <Link href="/register" className="text-sm text-blue-600 hover:underline">
+          <Link href="/register">
             {t('registerCta')}
           </Link>
-          <Link href="/login" className="text-sm text-blue-600 hover:underline">
+          <Link href="/login">
             {t('signInCta')}
           </Link>
         </div>

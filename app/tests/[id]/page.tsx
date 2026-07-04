@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import { Link } from '@/components/ui/Link'
 import ABPlayer from '@/components/media/ABPlayer'
 import RevealButton from '@/components/tests/RevealButton'
 import MappingBadge from '@/components/tests/MappingBadge'
@@ -159,7 +160,7 @@ export default async function TestDetailPage({ params }: Props) {
           <ABPlayer clipA={clipA} clipB={clipB} />
         ) : (
           <div className="rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 sm:p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            <a href="/login" className="text-blue-600 underline">{t('signIn')}</a>
+            <Link href="/login">{t('signIn')}</Link>
             {' '}{t('signInToListen')}
           </div>
         )}

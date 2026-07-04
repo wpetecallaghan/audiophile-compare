@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import NextLink from 'next/link'
+import { Link } from '@/components/ui/Link'
 import { computeOutcome } from '@/lib/votes/compute-outcome'
 import type { Outcome } from '@/lib/votes/compute-outcome'
 import CrossCheckSelector from '@/components/tests/CrossCheckSelector'
@@ -150,7 +151,7 @@ export default async function SystemDetailPage({ params }: Props) {
 
       {/* Breadcrumb */}
       <nav className="text-xs text-gray-500 dark:text-gray-400">
-        <Link href="/systems" className="hover:underline">Systems</Link>
+        <NextLink href="/systems" className="hover:underline">Systems</NextLink>
         {' / '}
         <span>{system.name}</span>
       </nav>
@@ -163,12 +164,12 @@ export default async function SystemDetailPage({ params }: Props) {
         <div className="flex items-start justify-between gap-4">
           <h1 className="text-xl sm:text-2xl font-semibold">{system.name}</h1>
           {isOwner && (
-            <Link
+            <NextLink
               href={`/systems/${id}/edit`}
               className={buttonVariants({ variant: 'secondary', size: 'compact', className: 'shrink-0' })}
             >
               Edit
-            </Link>
+            </NextLink>
           )}
         </div>
         {system.description && (
@@ -231,7 +232,8 @@ export default async function SystemDetailPage({ params }: Props) {
                         <li key={test.id}>
                           <Link
                             href={`/tests/${test.id}`}
-                            className="flex items-center justify-between rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            variant="card"
+                            className="flex items-center justify-between"
                           >
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate">

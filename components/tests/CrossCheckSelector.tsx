@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
+import { Link } from '@/components/ui/Link'
 
 type Snapshot = {
   id: string
@@ -235,12 +236,12 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                   {/* Action */}
                   <div className="shrink-0">
                     {item.existingTestId ? (
-                      <a
+                      <Link
                         href={`/tests/${item.existingTestId}`}
-                        className="text-xs text-blue-600 hover:underline"
+                        size="compact"
                       >
                         Test exists →
-                      </a>
+                      </Link>
                     ) : (
                       <Button
                         size="compact"

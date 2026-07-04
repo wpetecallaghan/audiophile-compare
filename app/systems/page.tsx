@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import NextLink from 'next/link'
+import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { buttonVariants } from '@/components/ui/Button'
 
@@ -37,19 +38,19 @@ export default async function SystemsPage() {
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {systems.length} {systems.length === 1 ? 'system' : 'systems'}
           </span>
-          <Link
+          <NextLink
             href="/systems/new"
             className={buttonVariants({ size: 'compact' })}
           >
             {t('newButton')}
-          </Link>
+          </NextLink>
         </div>
       </div>
 
       {systems.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('empty')}{' '}
-          <Link href="/tests/new" className="text-blue-600 underline">
+          <Link href="/tests/new">
             {t('createTestLink')}
           </Link>{' '}
           to add your first system.
@@ -63,7 +64,8 @@ export default async function SystemsPage() {
               <li key={system.id}>
                 <Link
                   href={`/systems/${system.id}`}
-                  className="block rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  variant="card"
+                  className="block"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">

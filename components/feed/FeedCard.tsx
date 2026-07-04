@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/Badge'
 
@@ -39,7 +39,8 @@ export default async function FeedCard({ test }: { test: FeedTest }) {
     <li>
       <Link
         href={`/tests/${test.id}`}
-        className="block rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        variant="card"
+        className="block"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-0.5">

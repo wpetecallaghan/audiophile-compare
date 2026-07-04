@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import { Link } from '@/components/ui/Link'
 import FeedCard from '@/components/feed/FeedCard'
 import type { FeedTest } from '@/components/feed/FeedCard'
 import { getTranslations } from 'next-intl/server'
@@ -115,12 +115,12 @@ export default async function HomePage({ searchParams }: Props) {
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('noTests')}{' '}
           {user ? (
-            <Link href="/tests/new" className="text-blue-600 underline">
+            <Link href="/tests/new">
               {t('createFirst')}
             </Link>
           ) : (
             <>
-              <Link href="/login" className="text-blue-600 underline">{t('signIn')}</Link>
+              <Link href="/login">{t('signIn')}</Link>
               {' '}{t('toCreateFirst')}
             </>
           )}
@@ -139,7 +139,6 @@ export default async function HomePage({ searchParams }: Props) {
           {hasPrev ? (
             <Link
               href={`/?page=${page - 1}`}
-              className="text-sm text-blue-600 hover:underline"
             >
               {t('previousPage')}
             </Link>
@@ -152,7 +151,6 @@ export default async function HomePage({ searchParams }: Props) {
           {hasNext ? (
             <Link
               href={`/?page=${page + 1}`}
-              className="text-sm text-blue-600 hover:underline"
             >
               {t('nextPage')}
             </Link>

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 
 export default async function TracksPage() {
@@ -32,7 +32,7 @@ export default async function TracksPage() {
       {tracks.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('empty')}{' '}
-          <Link href="/tests/new" className="text-blue-600 underline">
+          <Link href="/tests/new">
             {t('createTestLink')}
           </Link>{' '}
           {t('toAddFirst')}
@@ -43,7 +43,8 @@ export default async function TracksPage() {
             <li key={track.id}>
               <Link
                 href={`/tracks/${track.id}`}
-                className="flex items-center justify-between rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                variant="card"
+                className="flex items-center justify-between"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
