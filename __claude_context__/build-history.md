@@ -565,6 +565,87 @@ since the page already has the child count in hand — `app/systems/[id]/
 page.tsx` already fetches each snapshot's tests, and each system's
 snapshots, to render the existing lists.
 
+### ⬜ 24 — Handle verified-broken clip URLs (planned, not yet built)
+**The gap this closes:** the URL health-check cron (step 10) already writes
+`url_status` (`ok`/`degraded`/`dead`) to `clips` daily, but nothing
+downstream ever reads it — a dead end, not a feature. `lib/clips/
+to-clip-data.ts` fetches `url_status` off the raw row and drops it before
+building the `ClipData` the player receives; `NativePlayer.tsx` has no
+concept of it. Today, a dead clip just fails silently in the `<audio>`/
+`<video>` element with zero explanation, and the creator has no way to find
+out short of noticing it themselves. Plan only — no code written yet.
+
+**Known limitation to document, not solve here:** detection is inherently
+partial. The cron only HEAD-checks `provider='direct'` clips — YouTube/
+Vimeo embeds return 200 regardless of whether the specific video still
+exists (see the comment in `app/api/cron/check-urls/route.ts`), so a
+removed YouTube video is invisible to this system. Whatever UI ships here
+must not imply "not flagged broken" means "definitely works." Building
+embed-specific liveness checking (e.g. oEmbed lookups) is out of scope for
+this step.
+
+**Also found while investigating, worth a one-line fix at build time:** step
+10's description above says the cron checks clips "in open tests" — the
+actual query has no test-status filter at all; it checks every
+`provider='direct'` clip regardless of test status. Doc inaccuracy, not a
+behavior change.
+
+**Decisions:**
+
+1. **Visibility — all three surfaces, not just one:**
+   - Listener-facing: on the test detail page, a `Callout tone="warning"`
+     in place of/alongside the player for a `dead` clip (e.g. "Clip A is
+     currently unreachable"). Safe to say which *label* (A/B) is broken
+     without leaking `clip_mapping` before/after identity, since
+     `url_status` lives on the raw clip row, independent of the mapping.
+     `degraded` gets a lighter-touch note; the player still renders (may be
+     transient — a 5xx or timeout, not necessarily gone for good).
+   - Creator-facing: no dedicated "my tests" page exists today, so the
+     natural creator-scoped surfaces are the test detail page itself
+     (already `isCreator`-aware) and `app/systems/[id]/page.tsx`, which
+     already lists the creator's own tests per snapshot with outcome
+     badges — the new badge in the next point covers this for free, no new
+     page needed.
+   - Public feed/list badges: a new `Badge` `status` variant, `broken`,
+     added to `components/ui/Badge.tsx`'s existing union (`win | loss |
+     draw | blind | revealed | broken`). `FeedCard.tsx`, `app/tracks/[id]/
+     page.tsx`'s test list, and `app/systems/[id]/page.tsx`'s per-snapshot
+     test list all need their queries extended to embed `clips(url_status)`
+     (none of the three fetch clips today) so they can compute "has a dead
+     clip" per row.
+
+2. **Vote gating — blocks only on `dead`, not `degraded`:** the test detail
+   page computes `hasDeadClip` from the already-fetched clip rows and
+   passes it to `VoteForm`, which hides the form and shows an explanatory
+   message instead of the normal vote controls when true. Server-side,
+   `POST /api/votes` re-checks clip status before accepting and returns 409
+   if a chosen clip is dead — defense in depth against a direct API call
+   bypassing the UI gate, same pattern as step 23's DB-level backstop on
+   vote-blocked test deletion. `degraded` alone never blocks voting — it
+   may be transient (a 5xx or a timeout), and blocking on it would punish
+   listeners for a possibly-temporary failure.
+
+3. **Remediation — creator can replace a dead clip's URL, but only if the
+   test has zero votes, mirroring step 23's "once voted, frozen forever"
+   principle exactly.** Replacing a clip's URL changes what's being
+   compared; on a voted test that risks retroactively misrepresenting what
+   earlier listeners actually heard, the same integrity concern that
+   blocks deleting a voted test. New route (`PATCH /api/clips/[id]` or
+   similar — no clip mutation route exists today, only `POST /api/clips/
+   verify` for validation at creation time) — creator-only, own test only,
+   409 if the test has any vote. Reuses the existing verify-then-persist
+   flow already built for test creation (`app/api/clips/verify/route.ts`,
+   and `StepClips.tsx`'s `ClipInput` UI pattern — URL input + Verify button
+   + inline verified/dead message — is a natural fit to extract and reuse
+   as an inline "Replace URL" action on the test detail page). If the test
+   has votes, no replace action is shown at all — just the permanent
+   warning from point 1.
+
+**Not yet decided, to resolve at build time:** whether the cron should
+skip re-checking clips on tests that are already `dead` *and* have votes
+(nothing can act on that result once frozen) — a minor efficiency
+improvement, not a correctness requirement.
+
 ---
 
 Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`.
