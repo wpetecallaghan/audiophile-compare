@@ -4,7 +4,10 @@ import fs from 'fs'
 import path from 'path'
 
 export default async function globalSetup() {
-  const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
+  // Strip any trailing slash — raw string concatenation below (`${baseURL}/...`)
+  // would otherwise produce double-slash URLs that Next.js normalizes away,
+  // making the final waitForURL target never match the real landing URL.
+  const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
   const email = process.env.E2E_TEST_USER_EMAIL
 
   if (!email) throw new Error('E2E_TEST_USER_EMAIL is not set')
