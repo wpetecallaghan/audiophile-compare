@@ -227,5 +227,13 @@
     "description": "Compare any two snapshots directly using recordings from existing tests —",
     "choosePlaceholder": "— choose snapshot —",
     "noSharedTracks": "No shared tracks found — these snapshots haven't been tested on the same recording yet."
+  },
+  "version": {
+    "heading": "Deployment info",
+    "commitLabel": "Commit",
+    "messageLabel": "Message",
+    "branchLabel": "Branch",
+    "environmentLabel": "Environment",
+    "unavailable": "Not available (local development)"
   }
 }

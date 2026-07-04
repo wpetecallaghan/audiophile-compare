@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (24 files · 249 tests · all passing)
+## 4. Unit test inventory (25 files · 256 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -92,6 +92,7 @@ indirectly through the step tests.
 | `lib/clips/__tests__/find-shared-clips.test.ts` | 9 | Shared track finder; side A/B selection; no shared tracks |
 | `lib/votes/__tests__/compute-tally.test.ts` | 16 | Grouping, percentages, divergence detection, Other routing |
 | `lib/votes/__tests__/compute-outcome.test.ts` | 8 | Win/loss/draw/no-votes/open per snapshot |
+| `lib/admin/__tests__/is-admin-email.test.ts` | 7 | ADMIN_EMAILS allowlist: unset, null/undefined email, match, no match, case-insensitivity, whitespace, empty entries |
 
 ---
 

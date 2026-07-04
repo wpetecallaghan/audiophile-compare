@@ -130,6 +130,9 @@ SUPABASE_SERVICE_ROLE_KEY=<staging-service-role-key>
 
 # Cron endpoint protection (any secret string)
 CRON_SECRET=<random-secret>
+
+# /version page access — comma-separated allowlist, no schema/role involved
+ADMIN_EMAILS=you@example.com
 ```
 
 Obtain the Supabase values from **Settings → API** in the staging project
@@ -160,6 +163,7 @@ Environment Variables**:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production → production anon key; Preview → staging anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Production → production service role key; Preview → staging service role key |
 | `CRON_SECRET` | Both |
+| `ADMIN_EMAILS` | Both — comma-separated list of addresses allowed to view `/version` |
 
 See [vercel-setup.md](vercel-setup.md) for step-by-step Vercel configuration.
 

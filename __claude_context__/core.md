@@ -88,6 +88,7 @@ app/
   tests/[id]/page.tsx
   tracks/page.tsx
   tracks/[id]/page.tsx
+  version/page.tsx                          ← Admin-only: deployed commit info
 
 components/
   media/
@@ -141,6 +142,10 @@ lib/
   votes/
     compute-outcome.ts                      ← computeOutcome(); Outcome type
     compute-tally.ts                        ← computeTally(); RawVoteRow, CuratedResult types
+  admin/
+    is-admin-email.ts                       ← isAdminEmail(); ADMIN_EMAILS allowlist check for /version
+                                               (unrelated to lib/supabase/admin.ts's service-role client —
+                                               "admin" here means privileged user, not DB access level)
   types/
     test-creation.ts                        ← TestDraft, Snapshot, SystemWithSnapshots types
   youtube-api.ts                            ← Singleton YouTube IFrame API loader
@@ -155,8 +160,9 @@ types/
 
 **Protected paths** (middleware redirects unauthenticated users to `/login`):
 ```
-/systems, /tracks, /profile, /tests/new
+/systems, /tracks, /profile, /tests/new, /version
 ```
+`/version` is also gated by an `ADMIN_EMAILS` allowlist beyond just auth — see `build-history.md` step 18.
 
 **Public paths** (no login required to view; login required for play/vote — enforced in API routes):
 ```
@@ -186,4 +192,4 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-17 of 18 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ⬜ 18 visual polish remaining). The current unit test suite is 24 files / 249 tests passing. See `testing.md` for the full inventory.
+18 of 19 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ⬜ 19 visual polish remaining). The current unit test suite is 25 files / 256 tests passing. See `testing.md` for the full inventory.
