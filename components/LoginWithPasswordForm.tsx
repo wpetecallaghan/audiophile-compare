@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 export default function LoginWithPasswordForm({ redirectTo }: { redirectTo?: string }) {
   const t = useTranslations('auth')
@@ -62,13 +63,9 @@ export default function LoginWithPasswordForm({ redirectTo }: { redirectTo?: str
         />
       </div>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full rounded bg-black dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
-      >
+      <Button type="submit" disabled={submitting} className="w-full">
         {submitting ? t('loggingIn') : t('loginButton')}
-      </button>
+      </Button>
     </form>
   )
 }

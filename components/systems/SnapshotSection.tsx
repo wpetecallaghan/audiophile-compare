@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 type ComponentDisplay = {
   role?: string
@@ -238,35 +239,32 @@ export default function SnapshotSection({
                   </button>
                 </div>
               ))}
-              <button
-                type="button"
-                onClick={addComponentRow}
-                className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-              >
+              <Button type="button" variant="secondary" size="compact" onClick={addComponentRow}>
                 {t('addComponentButton')}
-              </button>
+              </Button>
             </div>
           </div>
 
           {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
           <div className="flex items-center gap-3">
-            <button
+            <Button
               type="button"
+              size="compact"
               onClick={handleSave}
               disabled={submitting || !label.trim()}
-              className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
             >
               {submitting ? t('saving') : t('saveButton')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
+              size="compact"
               onClick={handleCancel}
               disabled={submitting}
-              className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               {t('cancel')}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -279,13 +277,9 @@ export default function SnapshotSection({
               </span>
               <h2 className="text-base sm:text-lg font-semibold">{snapshot.label}</h2>
               {isOwner && (
-                <button
-                  type="button"
-                  onClick={handleEdit}
-                  className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
+                <Button type="button" variant="secondary" size="compact" onClick={handleEdit}>
                   {t('editButton')}
-                </button>
+                </Button>
               )}
             </div>
             {snapshot.notes && (

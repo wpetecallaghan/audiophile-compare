@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 export default function ChangeEmailForm() {
   const t = useTranslations('profile')
@@ -31,7 +32,7 @@ export default function ChangeEmailForm() {
   }
 
   if (sent) {
-    return <p className="text-sm text-green-600">{t('emailConfirmationSent')}</p>
+    return <p className="text-sm text-green-600 dark:text-green-400">{t('emailConfirmationSent')}</p>
   }
 
   return (
@@ -51,13 +52,9 @@ export default function ChangeEmailForm() {
         />
       </div>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-      <button
-        type="submit"
-        disabled={submitting || !newEmail.trim()}
-        className="rounded bg-black dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
-      >
+      <Button type="submit" disabled={submitting || !newEmail.trim()}>
         {submitting ? t('sendingConfirmation') : t('sendConfirmationButton')}
-      </button>
+      </Button>
     </form>
   )
 }

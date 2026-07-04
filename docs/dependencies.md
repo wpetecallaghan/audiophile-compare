@@ -37,6 +37,8 @@ npm install
 | `@supabase/ssr` | Server-side Supabase client for Next.js (cookie handling) |
 | `@vimeo/player` | Vimeo embed player SDK |
 | `@types/youtube` | TypeScript types for the YouTube IFrame API |
+| `class-variance-authority` | Defines the shared `Button`/`Badge` style variants (`components/ui/`) — see `components.md §12` |
+| `clsx` | Merges conditional class lists; used by `components/ui/cn.ts` alongside `class-variance-authority` |
 
 ### Dev / test dependencies
 

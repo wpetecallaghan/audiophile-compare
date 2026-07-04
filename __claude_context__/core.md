@@ -92,6 +92,10 @@ app/
   version/page.tsx                          ← Admin-only: deployed commit info
 
 components/
+  ui/
+    Button.tsx                               ← cva-based; variant (primary/secondary) × size (standard/compact)
+    Badge.tsx                                ← cva-based; status (win/loss/draw/blind/revealed)
+    cn.ts                                    ← clsx wrapper for merging conditional class lists
   media/
     ABPlayer.tsx                            ← Client: owns refs, coordinates pause
     MediaPlayer.tsx                         ← Client: routes to correct player

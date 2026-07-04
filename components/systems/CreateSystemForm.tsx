@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 export default function CreateSystemForm() {
   const router = useRouter()
@@ -63,21 +64,12 @@ export default function CreateSystemForm() {
         <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
       )}
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting || !name.trim()}
-          className="rounded bg-black dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
-        >
+        <Button type="button" onClick={handleSubmit} disabled={submitting || !name.trim()}>
           {submitting ? t('creating') : t('createButton')}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-        >
+        </Button>
+        <Button type="button" variant="secondary" onClick={() => router.back()}>
           {t('cancel')}
-        </button>
+        </Button>
       </div>
     </div>
   )

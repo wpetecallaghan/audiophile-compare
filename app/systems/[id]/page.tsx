@@ -6,18 +6,22 @@ import type { Outcome } from '@/lib/votes/compute-outcome'
 import CrossCheckSelector from '@/components/tests/CrossCheckSelector'
 import AddSnapshotForm from '@/components/systems/AddSnapshotForm'
 import SnapshotSection from '@/components/systems/SnapshotSection'
+import { Badge } from '@/components/ui/Badge'
+import { buttonVariants } from '@/components/ui/Button'
 
 type Props = {
   params: Promise<{ id: string }>
 }
 
+// Canonical status → Badge mapping — the color pairing itself now lives in
+// components/ui/Badge.tsx, not duplicated here.
 function outcomeLabel(outcome: Outcome) {
   switch (outcome) {
-    case 'win':      return { text: 'Win',      cls: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' }
-    case 'loss':     return { text: 'Loss',     cls: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' }
-    case 'draw':     return { text: 'Draw',     cls: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' }
-    case 'open':     return { text: 'Blind',    cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' }
-    case 'no-votes': return { text: 'Revealed', cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' }
+    case 'win':      return { text: 'Win',      status: 'win' as const }
+    case 'loss':     return { text: 'Loss',     status: 'loss' as const }
+    case 'draw':     return { text: 'Draw',     status: 'draw' as const }
+    case 'open':     return { text: 'Blind',    status: 'blind' as const }
+    case 'no-votes': return { text: 'Revealed', status: 'revealed' as const }
   }
 }
 
@@ -161,7 +165,7 @@ export default async function SystemDetailPage({ params }: Props) {
           {isOwner && (
             <Link
               href={`/systems/${id}/edit`}
-              className="shrink-0 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+              className={buttonVariants({ variant: 'secondary', size: 'compact', className: 'shrink-0' })}
             >
               Edit
             </Link>
@@ -242,11 +246,9 @@ export default async function SystemDetailPage({ params }: Props) {
                                 {new Date(test.created_at).toLocaleDateString()}
                               </p>
                             </div>
-                            <span
-                              className={`ml-4 shrink-0 text-xs px-2 py-0.5 rounded-full ${badge.cls}`}
-                            >
+                            <Badge status={badge.status} className="ml-4 shrink-0">
                               {badge.text}
-                            </span>
+                            </Badge>
                           </Link>
                         </li>
                       )

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import { Button, buttonVariants } from '@/components/ui/Button'
 
 type Props = {
   initialDisplayName: string
@@ -55,17 +56,16 @@ export default function ProfileForm({ initialDisplayName }: Props) {
         />
       </div>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-      {success && <p className="text-xs text-green-600">{t('successMessage')}</p>}
+      {success && <p className="text-xs text-green-600 dark:text-green-400">{t('successMessage')}</p>}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="button"
           onClick={handleSubmit}
           disabled={submitting || !displayName.trim()}
-          className="rounded bg-black dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
         >
           {submitting ? t('saving') : t('saveButton')}
-        </button>
-        <Link href="/" className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
+        </Button>
+        <Link href="/" className={buttonVariants({ variant: 'secondary' })}>
           {t('cancelButton')}
         </Link>
       </div>

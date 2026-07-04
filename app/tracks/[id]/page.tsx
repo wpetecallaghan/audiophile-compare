@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
+import { Badge } from '@/components/ui/Badge'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -98,15 +99,12 @@ export default async function TrackDetailPage({ params }: Props) {
                         {new Date(test.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <span
-                      className={`ml-4 shrink-0 text-xs px-2 py-0.5 rounded-full ${
-                        test.status === 'revealed'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                      }`}
+                    <Badge
+                      status={test.status === 'revealed' ? 'revealed' : 'blind'}
+                      className="ml-4 shrink-0"
                     >
                       {test.status === 'revealed' ? t('statusRevealed') : t('statusBlind')}
-                    </span>
+                    </Badge>
                   </Link>
                 </li>
               )

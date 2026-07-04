@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
+import { buttonVariants } from '@/components/ui/Button'
 
 export default async function SystemsPage() {
   const supabase = await createClient()
@@ -38,7 +39,7 @@ export default async function SystemsPage() {
           </span>
           <Link
             href="/systems/new"
-            className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+            className={buttonVariants({ size: 'compact' })}
           >
             {t('newButton')}
           </Link>

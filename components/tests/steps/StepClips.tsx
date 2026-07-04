@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { VerifiedClip, TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 type Props = {
   draft: TestDraft
@@ -19,7 +20,7 @@ function VerificationBadge({ result }: { result: VerifiedClip }) {
     )
   }
   return (
-    <p className="text-sm text-green-700">
+    <p className="text-sm text-green-700 dark:text-green-400">
       Verified — {result.provider}
       {result.media_type !== 'unknown' && `, ${result.media_type}`}
       {result.url_status === 'degraded' && ' (server responded slowly — may be intermittent)'}
@@ -60,14 +61,14 @@ function ClipInput({
           placeholder={urlPlaceholder}
           className="flex-1 border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
-        <button
+        <Button
+          variant="secondary"
           onClick={onVerify}
           disabled={!url.trim() || verifying}
-          className="shrink-0 border dark:border-gray-700 rounded px-3 py-2 text-sm font-medium
-            hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40"
+          className="shrink-0"
         >
           {verifying ? verifyingLabel : verifyLabel}
-        </button>
+        </Button>
       </div>
       {verified && <VerificationBadge result={verified} />}
     </div>
@@ -156,7 +157,7 @@ export default function StepClips({ draft, onComplete }: Props) {
         </div>
       </div>
 
-      <button
+      <Button
         disabled={!canContinue}
         onClick={() => onComplete({
           clipAUrl: urlA,
@@ -165,10 +166,10 @@ export default function StepClips({ draft, onComplete }: Props) {
           clipBVerified: verifiedB,
           beforeIsA,
         })}
-        className="w-full bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
+        className="w-full"
       >
         {tw('continueButton')}
-      </button>
+      </Button>
     </div>
   )
 }

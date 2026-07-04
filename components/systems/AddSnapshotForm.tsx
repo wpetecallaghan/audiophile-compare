@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 type Props = {
   systemId: string
@@ -60,13 +61,9 @@ export default function AddSnapshotForm({ systemId }: Props) {
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={handleOpen}
-        className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-      >
+      <Button type="button" variant="secondary" onClick={handleOpen}>
         {t('addButton')}
-      </button>
+      </Button>
     )
   }
 
@@ -93,22 +90,23 @@ export default function AddSnapshotForm({ systemId }: Props) {
         <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
       )}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="button"
+          size="compact"
           onClick={handleSubmit}
           disabled={submitting || !label.trim()}
-          className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
         >
           {submitting ? t('adding') : t('submitButton')}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
+          size="compact"
           onClick={handleCancel}
           disabled={submitting}
-          className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
         >
           {t('cancel')}
-        </button>
+        </Button>
       </div>
     </div>
   )

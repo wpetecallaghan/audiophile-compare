@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 type Snapshot = {
   id: string
@@ -241,13 +242,13 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                         Test exists →
                       </a>
                     ) : (
-                      <button
+                      <Button
+                        size="compact"
                         onClick={() => handleCreate(item)}
                         disabled={creating === item.trackId}
-                        className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
                       >
                         {creating === item.trackId ? 'Creating…' : 'Create test'}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

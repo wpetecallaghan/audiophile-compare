@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { Snapshot, SystemWithSnapshots, TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 type Props = {
   draft: TestDraft
@@ -148,32 +149,29 @@ function SnapshotSelector({
                 Components can be filled in on the Systems page after creation.
               </p>
               <div className="flex items-center gap-3">
-                <button
+                <Button
                   type="button"
+                  size="compact"
                   onClick={() => handleSubmit(system.id)}
                   disabled={creating || !newLabel.trim()}
-                  className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
                 >
                   {creating ? 'Adding…' : 'Add snapshot'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="compact"
                   onClick={cancelAdding}
                   disabled={creating}
-                  className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => startAdding(system.id)}
-              className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
+            <Button type="button" variant="secondary" size="compact" onClick={() => startAdding(system.id)}>
               + Add new snapshot
-            </button>
+            </Button>
           )}
         </div>
       ))}
@@ -264,32 +262,29 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
         <p className="text-xs text-red-600 dark:text-red-400">{systemCreateError}</p>
       )}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="button"
+          size="compact"
           onClick={handleSystemSubmit}
           disabled={creatingSystem || !newSystemName.trim()}
-          className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
         >
           {creatingSystem ? 'Adding…' : 'Add system'}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
+          size="compact"
           onClick={cancelAddingSystem}
           disabled={creatingSystem}
-          className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   ) : (
-    <button
-      type="button"
-      onClick={startAddingSystem}
-      className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-    >
+    <Button type="button" variant="secondary" size="compact" onClick={startAddingSystem}>
       + Add new system
-    </button>
+    </Button>
   )
 
   return (
@@ -332,14 +327,14 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
         </div>
       )}
 
-      <button
+      <Button
         disabled={isDisabled ? true : undefined}
         onClick={() => onComplete({ snapshotA, snapshotB })}
-        className="w-full bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
+        className="w-full"
         suppressHydrationWarning
       >
         {tw('continueButton')}
-      </button>
+      </Button>
     </div>
   )
 }

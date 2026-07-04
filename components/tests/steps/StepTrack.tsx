@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { Track, TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 type Props = {
   draft: TestDraft
@@ -77,12 +78,9 @@ export default function StepTrack({ draft, onComplete }: Props) {
           {selected.passage_note && (
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">{selected.passage_note}</p>
           )}
-          <button
-            onClick={() => setSelected(null)}
-            className="mt-2 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
+          <Button variant="secondary" onClick={() => setSelected(null)} className="mt-2">
             Change track
-          </button>
+          </Button>
         </div>
       ) : creating ? (
         <div className="space-y-4 rounded border dark:border-gray-700 p-4">
@@ -118,18 +116,12 @@ export default function StepTrack({ draft, onComplete }: Props) {
           </div>
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <div className="flex gap-3">
-            <button
-              onClick={handleCreate}
-              className="bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200"
-            >
+            <Button onClick={handleCreate}>
               {t('createButton')}
-            </button>
-            <button
-              onClick={() => setCreating(false)}
-              className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-            >
+            </Button>
+            <Button variant="secondary" onClick={() => setCreating(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
@@ -164,23 +156,20 @@ export default function StepTrack({ draft, onComplete }: Props) {
           {!loading && query.trim() && results.length === 0 && (
             <p className="text-sm text-gray-500 dark:text-gray-400">{t('noResults')}</p>
           )}
-          <button
-            onClick={() => setCreating(true)}
-            className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
+          <Button variant="secondary" onClick={() => setCreating(true)}>
             {t('addTrackLink')}
-          </button>
+          </Button>
         </div>
       )}
 
-      <button
+      <Button
         disabled={isDisabled ? true : undefined}
         onClick={() => onComplete({ track: selected })}
-        className="w-full bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
+        className="w-full"
         suppressHydrationWarning
       >
         {tw('continueButton')}
-      </button>
+      </Button>
     </div>
   )
 }

@@ -332,8 +332,14 @@ warning can be safely ignored. `middleware.ts` continues to work in Next.js 16+.
 ## 12. Visual design system (established in build step 20)
 
 Established by an audit of actual class usage, not arbitrary rules — see
-`build-history.md` step 20 for the full rationale. Follow these roles for any
-new UI; don't introduce new shades or one-off combinations.
+`build-history.md` step 20 for the full rationale. Buttons and status badges
+are now real components (`components/ui/Button.tsx`, `Badge.tsx`, built on
+`class-variance-authority` — see `docs/dependencies.md`) specifically because
+hand-copying the same class string into 15+ files is how the drift this step
+cleaned up happened in the first place. Type scale, text color, and border
+roles below aren't (yet) componentized — they're conventions to follow by
+hand — but don't introduce new shades or one-off combinations for those
+either.
 
 **Type scale:** `text-xs` (metadata/badges/timestamps), `text-sm` (body,
 inputs, buttons, nav), `text-base sm:text-lg font-semibold` (h2 section
@@ -352,25 +358,46 @@ dark-mode-only color unpaired — always specify both, since `darkMode: 'media'`
 **Border roles:** exactly two — default (`border-gray-200 dark:border-gray-700`)
 and subtle/divider (`border-gray-100 dark:border-gray-800`).
 
-**Status badges:** win/loss/draw/blind/revealed all reuse the exact pairing
-from `outcomeLabel()` in `app/systems/[id]/page.tsx` — e.g.
-`bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300` for
-win. Don't invent a new shade for a new status; add it to that pattern.
+**Status badges — use `<Badge status="..." />` (`components/ui/Badge.tsx`),
+never raw `bg-*/text-*` classes:**
+```tsx
+import { Badge } from '@/components/ui/Badge'
+<Badge status="win">Win</Badge>   {/* status: win | loss | draw | blind | revealed */}
+```
+The color pairing for each status (e.g. `bg-green-100 text-green-700
+dark:bg-green-900/40 dark:text-green-300` for `win`) lives in exactly one
+place, `badgeVariants` inside `Badge.tsx`. Need a new status? Add a variant
+there — don't invent a `bg-*`/`text-*` pair at the call site.
 
-**Buttons — two roles, each with two size tiers:**
-- Primary (`bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800
-  dark:hover:bg-gray-200`) — standard tier adds `rounded px-4 py-2 text-sm
-  font-medium`; compact tier (inline/header actions) adds `rounded px-3 py-1.5
-  text-xs font-medium`. **Always pair `bg-black` with `dark:bg-white` and
-  `text-white` with `dark:text-black`** — the page background is `#0a0a0a`
-  in dark mode (see `app/globals.css`), so an unpaired `bg-black` button is
-  invisible against it. This was a real bug found via manual dark-mode
-  screenshot verification, not just code review — visual changes need an
-  actual rendered check, not just a class-name audit.
-- Secondary/inline (edit, cancel, back, add-snapshot-style triggers) —
-  `border border-gray-200 dark:border-gray-700 rounded font-medium
-  hover:bg-gray-50 dark:hover:bg-gray-800`, sized to match whichever primary
-  button tier it sits next to (`px-3 py-2 text-sm` standard /
-  `px-2 py-1 text-xs` compact). Reserve unstyled/underlined links for real
-  page-to-page navigation (breadcrumbs, pagination, CTAs to `/login` or
-  `/register`) — not in-place actions.
+**Buttons — use `<Button variant size />` (`components/ui/Button.tsx`),
+never raw `bg-black`/`border` classes:**
+```tsx
+import { Button, buttonVariants } from '@/components/ui/Button'
+<Button onClick={...}>Save</Button>                              {/* primary, standard — the default */}
+<Button variant="secondary" onClick={...}>Cancel</Button>
+<Button size="compact" onClick={...}>+ Add snapshot</Button>      {/* inline/header actions */}
+
+{/* Non-<button> elements styled as a button (e.g. a Next.js <Link>) use the
+    exported variant function directly instead of wrapping in <Button>: */}
+<Link href="/systems" className={buttonVariants({ variant: 'secondary' })}>Cancel</Link>
+```
+Two roles (`primary` default / `secondary`) × two size tiers (`standard`
+default / `compact`, for inline/header actions) — that's the full matrix, see
+`Button.tsx`'s `cva` config for the exact classes per combination. **Primary
+always pairs `bg-black` with `dark:bg-white`** (and `text-white` with
+`dark:text-black`) — the page background is `#0a0a0a` in dark mode (see
+`app/globals.css`), so an unpaired `bg-black` button is invisible against it.
+This was a real bug found via manual dark-mode screenshot verification, not
+code review — visual changes need an actual rendered check, not just a
+class-name audit, which is exactly why this is now a component instead of
+copy-pasted classes: get the pairing right once, everywhere inherits it.
+
+Reserve unstyled/underlined links for real page-to-page navigation
+(breadcrumbs, pagination, CTAs to `/login`/`/register`) — not in-place
+actions like edit/cancel/back, which use `Button`.
+
+A one-off, single-use special case that doesn't fit either role (e.g. the
+amber confirm/trigger buttons in `RevealButton.tsx`) can stay as raw classes
+— don't add a variant to `Button`/`Badge` for something used exactly once;
+that's the same "don't force an abstraction for its own sake" rule as
+everywhere else in this codebase.

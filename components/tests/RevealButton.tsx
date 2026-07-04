@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 type Props = {
   testId: string
@@ -52,12 +53,9 @@ export default function RevealButton({ testId }: Props) {
           >
             {loading ? t('revealing') : t('confirmButton')}
           </button>
-          <button
-            onClick={() => setConfirming(false)}
-            className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
+          <Button variant="secondary" onClick={() => setConfirming(false)}>
             {t('cancelButton')}
-          </button>
+          </Button>
         </div>
       </div>
     )

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 export default function ChangePasswordForm({ autoOpen = false }: { autoOpen?: boolean }) {
   const t = useTranslations('profile')
@@ -71,7 +72,7 @@ export default function ChangePasswordForm({ autoOpen = false }: { autoOpen?: bo
     <div className="space-y-4 max-w-lg">
       <h2 className="text-sm font-semibold">{t('changePasswordHeading')}</h2>
       {success ? (
-        <p className="text-sm text-green-600">{t('passwordUpdated')}</p>
+        <p className="text-sm text-green-600 dark:text-green-400">{t('passwordUpdated')}</p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -101,13 +102,9 @@ export default function ChangePasswordForm({ autoOpen = false }: { autoOpen?: bo
             />
           </div>
           {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded bg-black dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
-          >
+          <Button type="submit" disabled={submitting}>
             {submitting ? t('updatingPassword') : t('updatePasswordButton')}
-          </button>
+          </Button>
         </form>
       )}
     </div>

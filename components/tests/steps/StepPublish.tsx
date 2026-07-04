@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
 
 type Props = {
   draft: TestDraft
@@ -110,19 +111,12 @@ export default function StepPublish({ draft, onBack }: Props) {
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="flex gap-3">
-        <button
-          onClick={onBack}
-          className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-        >
+        <Button variant="secondary" onClick={onBack}>
           Back
-        </button>
-        <button
-          disabled={!title.trim() || loading}
-          onClick={handlePublish}
-          className="flex-1 bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
-        >
+        </Button>
+        <Button disabled={!title.trim() || loading} onClick={handlePublish} className="flex-1">
           {loading ? t('publishing') : t('publishButton')}
-        </button>
+        </Button>
       </div>
     </div>
   )

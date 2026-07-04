@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import { Button, buttonVariants } from '@/components/ui/Button'
 
 type Props = {
   systemId: string
@@ -69,18 +70,10 @@ export default function EditSystemForm({ systemId, initialName, initialDescripti
         <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
       )}
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting || !name.trim()}
-          className="rounded bg-black dark:bg-white px-4 py-2 text-sm font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
-        >
+        <Button type="button" onClick={handleSubmit} disabled={submitting || !name.trim()}>
           {submitting ? t('saving') : t('saveButton')}
-        </button>
-        <Link
-          href={`/systems/${systemId}`}
-          className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-        >
+        </Button>
+        <Link href={`/systems/${systemId}`} className={buttonVariants({ variant: 'secondary' })}>
           {t('cancel')}
         </Link>
       </div>

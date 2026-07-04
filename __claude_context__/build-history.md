@@ -279,6 +279,22 @@ whole rest of this pass would have shipped broken.
 of home, about, login, systems list, and system detail pages in both light
 and dark mode.
 
+**Follow-up — componentized the pattern (post-step-20):** the manual class
+consolidation above still meant hand-editing the same button/badge class
+string in 15+ files — exactly the kind of drift that caused this step in the
+first place. Added `components/ui/Button.tsx` and `Badge.tsx`
+(`class-variance-authority` + `clsx`, see `docs/dependencies.md`) holding
+each pairing in one place, then migrated every remaining raw `bg-black`
+button and status-badge `<span>` across the app to them (`outcomeLabel()` in
+`app/systems/[id]/page.tsx` now returns a `status` key instead of a `cls`
+string). See `components.md §12` for usage. One-off single-use styles (the
+amber confirm/trigger buttons in `RevealButton.tsx`) were deliberately left
+as raw classes rather than forcing them into a variant used exactly once.
+Also fixed a few unpaired dark-mode colors turned up along the way (green
+success-message text, a stray `border` missing its light-mode shade). Full
+unit suite, full E2E suite, and light/dark screenshots verified again after
+migration — all green, pixel-identical to before.
+
 ---
 
 Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`.

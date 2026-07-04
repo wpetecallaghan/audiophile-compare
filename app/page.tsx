@@ -3,6 +3,7 @@ import Link from 'next/link'
 import FeedCard from '@/components/feed/FeedCard'
 import type { FeedTest } from '@/components/feed/FeedCard'
 import { getTranslations } from 'next-intl/server'
+import { buttonVariants } from '@/components/ui/Button'
 
 const PAGE_SIZE = 20
 
@@ -102,7 +103,7 @@ export default async function HomePage({ searchParams }: Props) {
         {user && (
           <Link
             href="/tests/new"
-            className="shrink-0 rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
+            className={buttonVariants({ size: 'compact', className: 'shrink-0' })}
           >
             {t('newTestButton')}
           </Link>

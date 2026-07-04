@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
+import { Badge } from '@/components/ui/Badge'
 
 export type FeedTest = {
   id: string
@@ -15,8 +16,8 @@ export type FeedTest = {
 
 function statusBadge(status: string, t: Awaited<ReturnType<typeof getTranslations<'feed'>>>) {
   return status === 'revealed'
-    ? { text: t('statusRevealed'), cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' }
-    : { text: t('statusBlind'),    cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' }
+    ? { text: t('statusRevealed'), status: 'revealed' as const }
+    : { text: t('statusBlind'),    status: 'blind' as const }
 }
 
 export default async function FeedCard({ test }: { test: FeedTest }) {
@@ -62,11 +63,9 @@ export default async function FeedCard({ test }: { test: FeedTest }) {
               {test.vote_count} {test.vote_count === 1 ? 'vote' : 'votes'}
             </p>
           </div>
-          <span
-            className={`shrink-0 mt-0.5 text-xs px-2 py-0.5 rounded-full ${badge.cls}`}
-          >
+          <Badge status={badge.status} className="shrink-0 mt-0.5">
             {badge.text}
-          </span>
+          </Badge>
         </div>
       </Link>
     </li>
