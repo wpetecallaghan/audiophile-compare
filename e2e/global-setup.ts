@@ -18,17 +18,20 @@ export default async function globalSetup() {
   )
 
   // Generate a one-time magic link for the test user.
-  // This bypasses the email inbox entirely — Playwright navigates directly to
-  // the link URL, which Supabase verifies and redirects to the app callback.
+  // This bypasses the email inbox entirely. Admin-issued links can't carry a
+  // PKCE code_verifier (only a client-initiated signInWithOtp call sets one
+  // up), so they always verify via token_hash rather than the `code` flow
+  // used by real user sign-ins — Playwright navigates to /auth/confirm
+  // (not /auth/callback) with that token_hash to complete the session.
   const { data, error } = await adminClient.auth.admin.generateLink({
     type: 'magiclink',
     email,
     options: {
-      redirectTo: `${baseURL}/auth/callback`,
+      redirectTo: `${baseURL}/auth/confirm`,
     },
   })
 
-  if (error || !data?.properties?.action_link) {
+  if (error || !data?.properties?.hashed_token) {
     throw new Error(`Could not generate magic link for ${email}: ${error?.message}`)
   }
 
@@ -37,15 +40,28 @@ export default async function globalSetup() {
   fs.mkdirSync(authDir, { recursive: true })
 
   const browser = await chromium.launch()
-  const page = await browser.newPage()
+  // Remote targets (staging/preview) sit behind Vercel SSO Deployment
+  // Protection — this header lets the automated browser through without
+  // disabling protection for everyone else.
+  const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+  const context = await browser.newContext(
+    bypassSecret ? { extraHTTPHeaders: { 'x-vercel-protection-bypass': bypassSecret } } : {},
+  )
+  const page = await context.newPage()
 
-  // Navigate to the magic link — Supabase verifies, redirects to /auth/callback,
-  // which exchanges the code and redirects to /
-  await page.goto(data.properties.action_link)
+  // Navigate straight to our own token_hash verification endpoint — this
+  // skips Supabase's /auth/v1/verify redirect, which would otherwise send
+  // back an implicit-style #access_token fragment that this PKCE-based app
+  // has no client-side code to consume.
+  const confirmUrl = new URL(`${baseURL}/auth/confirm`)
+  confirmUrl.searchParams.set('token_hash', data.properties.hashed_token)
+  confirmUrl.searchParams.set('type', 'magiclink')
+
+  await page.goto(confirmUrl.toString())
   await page.waitForURL(`${baseURL}/`, { timeout: 15_000 })
 
   // Save session cookies so every authenticated test starts pre-signed-in
-  await page.context().storageState({
+  await context.storageState({
     path: path.join(authDir, 'user.json'),
   })
 
