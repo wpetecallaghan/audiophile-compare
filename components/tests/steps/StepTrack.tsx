@@ -62,8 +62,8 @@ export default function StepTrack({ draft, onComplete }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Track</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <h2 className="text-base sm:text-lg font-semibold">Track</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Find the recording used in this test, or add it if it's not listed.
         </p>
       </div>
@@ -75,11 +75,11 @@ export default function StepTrack({ draft, onComplete }: Props) {
             <p className="text-sm text-gray-600 dark:text-gray-300">{selected.album}</p>
           )}
           {selected.passage_note && (
-            <p className="text-sm text-gray-500 italic">{selected.passage_note}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 italic">{selected.passage_note}</p>
           )}
           <button
             onClick={() => setSelected(null)}
-            className="text-sm text-blue-600 underline mt-2 block"
+            className="mt-2 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             Change track
           </button>
@@ -105,7 +105,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
           <div>
             <label className="block text-sm font-medium mb-1">
               {t('passageNoteLabel')}
-              <span className="text-gray-400 font-normal ml-1">
+              <span className="text-gray-500 dark:text-gray-400 font-normal ml-1">
                 (e.g. "Opening bars, track 3")
               </span>
             </label>
@@ -116,17 +116,17 @@ export default function StepTrack({ draft, onComplete }: Props) {
               className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           <div className="flex gap-3">
             <button
               onClick={handleCreate}
-              className="bg-black text-white rounded px-4 py-2 text-sm font-medium"
+              className="bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200"
             >
               {t('createButton')}
             </button>
             <button
               onClick={() => setCreating(false)}
-              className="text-sm text-gray-600 dark:text-gray-300 underline"
+              className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               Cancel
             </button>
@@ -141,7 +141,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
             onChange={e => setQuery(e.target.value)}
             className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
           />
-          {loading && <p className="text-sm text-gray-400">{t('searching')}</p>}
+          {loading && <p className="text-sm text-gray-500 dark:text-gray-400">{t('searching')}</p>}
           {results.length > 0 && (
             <ul className="border dark:border-gray-700 rounded divide-y dark:divide-gray-700">
               {results.map(track => (
@@ -154,7 +154,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
                     {' — '}
                     {track.title}
                     {track.album && (
-                      <span className="text-gray-500 ml-1">({track.album})</span>
+                      <span className="text-gray-500 dark:text-gray-400 ml-1">({track.album})</span>
                     )}
                   </button>
                 </li>
@@ -162,11 +162,11 @@ export default function StepTrack({ draft, onComplete }: Props) {
             </ul>
           )}
           {!loading && query.trim() && results.length === 0 && (
-            <p className="text-sm text-gray-500">{t('noResults')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('noResults')}</p>
           )}
           <button
             onClick={() => setCreating(true)}
-            className="text-sm text-blue-600 underline"
+            className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             {t('addTrackLink')}
           </button>
@@ -176,7 +176,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
       <button
         disabled={isDisabled ? true : undefined}
         onClick={() => onComplete({ track: selected })}
-        className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
+        className="w-full bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
         suppressHydrationWarning
       >
         {tw('continueButton')}

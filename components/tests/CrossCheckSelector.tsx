@@ -128,8 +128,8 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
   return (
     <section className="space-y-4">
       <div className="pb-2 border-b border-gray-100 dark:border-gray-800">
-        <h2 className="text-base font-semibold">{t('heading')}</h2>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <h2 className="text-base sm:text-lg font-semibold">{t('heading')}</h2>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {t('description')}
           no new recording needed. Addresses the risk of successive improvements
           that are locally good but globally suboptimal.
@@ -185,29 +185,29 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
 
       {/* Status / results */}
       {loading && (
-        <p className="text-sm text-gray-400">Finding shared tracks…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Finding shared tracks…</p>
       )}
 
       {fetchError && (
-        <p className="text-sm text-red-500">{fetchError}</p>
+        <p className="text-sm text-red-600 dark:text-red-400">{fetchError}</p>
       )}
 
       {results !== null && !loading && (
         <>
           {results.length === 0 ? (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {t('noSharedTracks')}
             </p>
           ) : (
             <div className="space-y-2">
               {createError && (
-                <p className="text-sm text-red-500">{createError}</p>
+                <p className="text-sm text-red-600 dark:text-red-400">{createError}</p>
               )}
 
               {results.map(item => (
                 <div
                   key={item.trackId}
-                  className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 dark:border-gray-800 px-4 py-3"
+                  className="flex items-center justify-between gap-4 rounded border border-gray-100 dark:border-gray-800 px-4 py-3"
                 >
                   {/* Track info */}
                   <div className="space-y-0.5 min-w-0">
@@ -217,7 +217,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                         : item.trackId}
                     </p>
                     {item.track?.album && (
-                      <p className="text-xs text-gray-400 truncate">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {item.track.album}
                       </p>
                     )}
@@ -244,7 +244,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                       <button
                         onClick={() => handleCreate(item)}
                         disabled={creating === item.trackId}
-                        className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                        className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
                       >
                         {creating === item.trackId ? 'Creating…' : 'Create test'}
                       </button>

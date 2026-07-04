@@ -63,8 +63,8 @@ export default function StepPublish({ draft, onBack }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">{t('heading')}</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <h2 className="text-base sm:text-lg font-semibold">{t('heading')}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Review your test, give it a title, then publish.
         </p>
       </div>
@@ -72,9 +72,9 @@ export default function StepPublish({ draft, onBack }: Props) {
       {/* Summary */}
       <div className="rounded border dark:border-gray-700 divide-y dark:divide-gray-700 text-sm">
         <div className="px-4 py-3 space-y-0.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('trackBadge')}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('trackBadge')}</p>
           <p className="font-medium">{draft.track?.artist} — {draft.track?.title}</p>
-          {draft.track?.album && <p className="text-gray-500">{draft.track.album}</p>}
+          {draft.track?.album && <p className="text-gray-500 dark:text-gray-400">{draft.track.album}</p>}
         </div>
         <div className="px-4 py-3 grid grid-cols-2 gap-4">
           {(['A', 'B'] as const).map(side => {
@@ -83,11 +83,11 @@ export default function StepPublish({ draft, onBack }: Props) {
             const isBefore = side === 'A' ? draft.beforeIsA : !draft.beforeIsA
             return (
               <div key={side} className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   Clip {side} {isBefore ? '(before)' : '(after)'}
                 </p>
                 <p className="font-medium">v{snap?.version} — {snap?.label}</p>
-                <p className="text-gray-500 break-all">{url}</p>
+                <p className="text-gray-500 dark:text-gray-400 break-all">{url}</p>
               </div>
             )
           })}
@@ -107,19 +107,19 @@ export default function StepPublish({ draft, onBack }: Props) {
         />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="flex gap-3">
         <button
           onClick={onBack}
-          className="text-sm text-gray-600 dark:text-gray-300 underline"
+          className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
         >
           Back
         </button>
         <button
           disabled={!title.trim() || loading}
           onClick={handlePublish}
-          className="flex-1 bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
+          className="flex-1 bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
         >
           {loading ? t('publishing') : t('publishButton')}
         </button>

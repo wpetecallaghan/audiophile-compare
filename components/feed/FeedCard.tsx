@@ -44,14 +44,14 @@ export default async function FeedCard({ test }: { test: FeedTest }) {
           <div className="min-w-0 space-y-0.5">
             <p className="text-sm font-medium truncate">{test.title}</p>
             {test.track && (
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                 {test.track.artist} — {test.track.title}
               </p>
             )}
             {snapshotLine && (
-              <p className="text-xs text-gray-400 truncate">{snapshotLine}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{snapshotLine}</p>
             )}
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {test.creator?.display_name ?? t('anonymous')}
               {' · '}
               {/* suppressHydrationWarning: toLocaleDateString() may differ between Node.js and browser locale */}

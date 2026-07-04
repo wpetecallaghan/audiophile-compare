@@ -50,10 +50,10 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
           className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <button
         type="submit"
-        className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium"
+        className="w-full bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200"
       >
         {t('magicLinkButton')}
       </button>

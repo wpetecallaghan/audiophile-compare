@@ -20,7 +20,7 @@ export default function SignOutButton() {
       type="button"
       onClick={handleSignOut}
       disabled={signingOut}
-      className="text-sm text-gray-500 hover:text-gray-900 disabled:opacity-40"
+      className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 disabled:opacity-40"
     >
       {signingOut ? t('signingOut') : t('signOut')}
     </button>

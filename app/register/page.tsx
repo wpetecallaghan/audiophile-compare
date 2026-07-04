@@ -10,7 +10,7 @@ export default async function RegisterPage() {
       <div className="w-full max-w-sm space-y-6 p-8">
         <h1 className="text-2xl font-semibold">{t('registerHeading')}</h1>
         <RegisterForm />
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-gray-500 dark:text-gray-400">
           <Link href="/login" className="hover:underline">
             {t('backToSignIn')}
           </Link>

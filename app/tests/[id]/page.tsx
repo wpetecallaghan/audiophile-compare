@@ -122,22 +122,22 @@ export default async function TestDetailPage({ params }: Props) {
   const creator = Array.isArray(test.creator) ? test.creator[0] : test.creator
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
       {/* Header */}
       <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           {isRevealed ? t('revealedStatus') : t('blindStatus')}
         </p>
         <h1 className="text-xl sm:text-2xl font-semibold">{test.title}</h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {track?.artist} — {track?.title}
           {track?.album && ` (${track.album})`}
         </p>
         {track?.passage_note && (
-          <p className="text-sm text-gray-400 italic">{track.passage_note}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 italic">{track.passage_note}</p>
         )}
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           by {creator?.display_name ?? t('anonymous')} ·{' '}
           {new Date(test.created_at).toLocaleDateString()} ·{' '}
           {voteCount} {voteCount === 1 ? 'vote' : 'votes'}

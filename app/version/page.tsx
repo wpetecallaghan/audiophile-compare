@@ -29,13 +29,13 @@ export default async function VersionPage() {
   ]
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
+    <main className="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
 
       <dl className="space-y-3">
         {rows.map(({ label, value }) => (
           <div key={label} className="space-y-0.5">
-            <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               {label}
             </dt>
             <dd className="text-sm break-words whitespace-pre-wrap">

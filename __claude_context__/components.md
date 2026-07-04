@@ -61,7 +61,7 @@ Suppress on the element:
 
 ```tsx
 {/* suppressHydrationWarning: toLocaleDateString() may differ between Node.js and browser */}
-<p className="text-xs text-gray-400" suppressHydrationWarning>
+<p className="text-xs text-gray-500 dark:text-gray-400" suppressHydrationWarning>
   {new Date(createdAt).toLocaleDateString()}
 </p>
 ```
@@ -229,7 +229,7 @@ Every layout must prevent horizontal scroll on small screens.
 ```
 
 Use `sm:` and `lg:` breakpoints for padding, gaps, and text sizes:
-`py-6 sm:py-10` · `gap-4 sm:gap-6` · `text-xl sm:text-2xl`
+`py-4 sm:py-6` · `gap-4 sm:gap-6` · `text-xl sm:text-2xl`
 
 Global styles (`app/globals.css`):
 ```css
@@ -326,3 +326,51 @@ requires middleware for session refresh and has not yet published a `proxy.ts` m
 
 **Do NOT migrate to `proxy.ts`** — wait for official Supabase support. The deprecation
 warning can be safely ignored. `middleware.ts` continues to work in Next.js 16+.
+
+---
+
+## 12. Visual design system (established in build step 20)
+
+Established by an audit of actual class usage, not arbitrary rules — see
+`build-history.md` step 20 for the full rationale. Follow these roles for any
+new UI; don't introduce new shades or one-off combinations.
+
+**Type scale:** `text-xs` (metadata/badges/timestamps), `text-sm` (body,
+inputs, buttons, nav), `text-base sm:text-lg font-semibold` (h2 section
+headings — always this exact pair, never plain `text-lg` or plain
+`text-base`), `text-xl sm:text-2xl font-semibold` (h1 page headings).
+
+**Text color roles:** primary = default/inherit (or `gray-900`/`gray-100`
+dark for emphasis); muted/secondary = `text-gray-500 dark:text-gray-400`
+(metadata, labels, timestamps); readable secondary body copy (About-page-style
+prose, not metadata) = `text-gray-600 dark:text-gray-300` — a deliberate
+second, higher-contrast tier, not a mistake if you see both. Error messages:
+`text-red-600 dark:text-red-400`. Never leave a light-mode-only or
+dark-mode-only color unpaired — always specify both, since `darkMode: 'media'`
+(see `tailwind.config.ts`) means both render for real users.
+
+**Border roles:** exactly two — default (`border-gray-200 dark:border-gray-700`)
+and subtle/divider (`border-gray-100 dark:border-gray-800`).
+
+**Status badges:** win/loss/draw/blind/revealed all reuse the exact pairing
+from `outcomeLabel()` in `app/systems/[id]/page.tsx` — e.g.
+`bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300` for
+win. Don't invent a new shade for a new status; add it to that pattern.
+
+**Buttons — two roles, each with two size tiers:**
+- Primary (`bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800
+  dark:hover:bg-gray-200`) — standard tier adds `rounded px-4 py-2 text-sm
+  font-medium`; compact tier (inline/header actions) adds `rounded px-3 py-1.5
+  text-xs font-medium`. **Always pair `bg-black` with `dark:bg-white` and
+  `text-white` with `dark:text-black`** — the page background is `#0a0a0a`
+  in dark mode (see `app/globals.css`), so an unpaired `bg-black` button is
+  invisible against it. This was a real bug found via manual dark-mode
+  screenshot verification, not just code review — visual changes need an
+  actual rendered check, not just a class-name audit.
+- Secondary/inline (edit, cancel, back, add-snapshot-style triggers) —
+  `border border-gray-200 dark:border-gray-700 rounded font-medium
+  hover:bg-gray-50 dark:hover:bg-gray-800`, sized to match whichever primary
+  button tier it sits next to (`px-3 py-2 text-sm` standard /
+  `px-2 py-1 text-xs` compact). Reserve unstyled/underlined links for real
+  page-to-page navigation (breadcrumbs, pagination, CTAs to `/login` or
+  `/register`) — not in-place actions.

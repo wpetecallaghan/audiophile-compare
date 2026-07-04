@@ -123,7 +123,7 @@ export default function VoteForm({
         <h2 className="text-base sm:text-lg font-semibold">
           {isUpdate ? tr('updateHeading') : tr('castHeading')}
         </h2>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
           Choose which clip you preferred for each technique. You can vote on
           any or all of them.
         </p>
@@ -140,7 +140,7 @@ export default function VoteForm({
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-sm font-medium">{t.name}</p>
-                <p className="text-xs text-gray-400">{t.description}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t.description}</p>
               </div>
               <div className="flex gap-4 shrink-0">
                 {(['A', 'B'] as const).map(label => {
@@ -167,13 +167,13 @@ export default function VoteForm({
             {/* Other: required description */}
             {t.is_other && v.chosen && (
               <div>
-                <label className="block text-xs text-gray-500 mb-1">
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
                   Describe your criterion{' '}
-                  <span className="text-red-500">*</span>
+                  <span className="text-red-600 dark:text-red-400">*</span>
                 </label>
                 <input
                   type="text"
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                  className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
                   placeholder="e.g. Low-level detail retrieval"
                   value={v.otherDescription}
                   onChange={e =>
@@ -186,13 +186,13 @@ export default function VoteForm({
             {/* Optional observation — shown once a clip is chosen */}
             {v.chosen && (
               <div>
-                <label className="block text-xs text-gray-500 mb-1">
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
                   Observation{' '}
-                  <span className="text-gray-400">(optional)</span>
+                  <span className="text-gray-500 dark:text-gray-400">(optional)</span>
                 </label>
                 <textarea
                   rows={2}
-                  className="w-full rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
+                  className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
                   placeholder={tr('observationPlaceholder')}
                   value={v.observation}
                   onChange={e =>
@@ -205,7 +205,7 @@ export default function VoteForm({
         )
       })}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <button
         type="submit"

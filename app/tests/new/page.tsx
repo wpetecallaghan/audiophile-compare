@@ -28,8 +28,8 @@ export default async function NewTestPage() {
     .order('version', { referencedTable: 'system_snapshots', ascending: false })
 
   return (
-    <main className="min-h-screen px-4 py-12">
-      <h1 className="text-2xl font-semibold mb-8 max-w-2xl mx-auto">
+    <main className="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+      <h1 className="text-xl sm:text-2xl font-semibold">
         {t('newHeading')}
       </h1>
       <CreateTestForm systems={(systems ?? []) as SystemWithSnapshots[]} />

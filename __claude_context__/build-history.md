@@ -7,7 +7,7 @@ description: >
   deferred-features.md. Not needed for routine coding tasks.
 ---
 
-# Audiophile Compare — Build History & Deferred Features
+# Audiophile Compare — Build History 
 
 ---
 
@@ -234,12 +234,50 @@ assertions still pass unaffected. Full E2E: `public-feed.spec.ts` (8/8) and
 `auth.spec.ts` (2/2) both green against the live dev server; full unit suite
 still 25 files / 256 tests.
 
-### ⬜ 20 — Visual polish
-Tighten the UI for a modern, compact look. No layout or feature changes — purely presentation.
-- **Font scale:** reduce to two body sizes — `text-sm` for body, `text-xs` for metadata/badges; reserve `text-base`+ for headings.
-- **Whitespace:** cut vertical padding/spacing by ~30% across cards, list items, sections, form fields.
-- **Buttons vs links:** replace plain `<a>`/`<Link>` inline actions (edit, cancel, back, reveal, add snapshot, sign out) with small button-styled elements (`border rounded px-2 py-1 text-xs`); reserve unstyled links for navigation only.
-- **Consistency:** audit all pages for one-off sizing, colour, or spacing deviations and align to a single set of Tailwind utility patterns.
+### ✅ 20 — Visual polish
+Denser, more consistent, higher-contrast, modern look. No layout or feature
+changes — purely presentation. Grounded in an audit of actual class usage,
+not guesswork. Full design system reference now lives in `components.md §12`
+— read that before touching any styling. Summary of what changed:
+
+- **Type:** h2 section headings had three competing variants (`text-lg`,
+  `text-base`, `text-base sm:text-lg`) — standardized on
+  `text-base sm:text-lg font-semibold` everywhere. h1/body/metadata sizes
+  were already consistent.
+- **Color:** collapsed text-gray sprawl (7+ shades) to two roles — muted
+  (`gray-500 dark:gray-400`) and a separate higher-contrast "readable body
+  copy" tier (`gray-600 dark:gray-300`, e.g. `/about`'s prose — kept
+  deliberately, not a bug). Fixed `gray-400` used unpaired in light mode
+  (borderline-failing contrast on white, 73 occurrences). Collapsed borders
+  to two roles (`gray-200/700` default, `gray-100/800` subtle). Unified all
+  status badges to `outcomeLabel()`'s exact pairing (amber alone had 9
+  different shades in use before). Fixed one component using `yellow-*`
+  instead of the established `amber-*` warning color, and one blue "primary"
+  button where every other primary action uses black.
+- **Density:** page container padding `py-6 sm:py-10` → `py-4 sm:py-6`
+  everywhere (11 files) plus one page on a divergent `py-12` pattern.
+  Reduced `space-y-8`/`space-y-10` section gaps to `space-y-6`.
+- **Buttons:** standardized to two roles × two size tiers (primary/secondary
+  × standard/compact) — see `components.md §12`. Converted ~15 bare
+  `<a>`/`<Link>`/`<button>` inline actions (edit, cancel, back, add-snapshot,
+  add-component) to the bordered secondary style; left real page-navigation
+  links (breadcrumbs, pagination, register/login CTAs) and the header's
+  "Sign out" (grouped with nav links, not a form action) unstyled.
+
+**Dark-mode contrast bug found via manual screenshot verification** (not
+caught by code review or typecheck): every primary `bg-black` button was
+invisible against the `#0a0a0a` dark-mode page background (`app/globals.css`).
+Fixed by pairing every `bg-black`/`text-white` with `dark:bg-white
+dark:text-black` (inverting on dark mode) — the same pattern already used in
+`CreateTestForm.tsx`'s step indicator, now applied consistently everywhere.
+This is why the plan explicitly calls for a real rendered check, not just a
+class-name audit — screenshots in both color schemes caught something the
+whole rest of this pass would have shipped broken.
+
+**Verified:** full unit suite (25 files / 256 tests) and full E2E suite
+(25/25) both green against a live dev server; manual Playwright screenshots
+of home, about, login, systems list, and system detail pages in both light
+and dark mode.
 
 ---
 

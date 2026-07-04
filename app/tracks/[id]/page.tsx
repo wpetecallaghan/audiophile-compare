@@ -42,9 +42,9 @@ export default async function TrackDetailPage({ params }: Props) {
   )
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       {/* Breadcrumb */}
-      <nav className="text-xs text-gray-400">
+      <nav className="text-xs text-gray-500 dark:text-gray-400">
         <Link href="/tracks" className="hover:underline">
           Tracks
         </Link>
@@ -54,17 +54,17 @@ export default async function TrackDetailPage({ params }: Props) {
 
       {/* Header */}
       <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           {t('trackBadge')}
         </p>
         <h1 className="text-xl sm:text-2xl font-semibold">
           {track.artist} — {track.title}
         </h1>
         {track.album && (
-          <p className="text-sm text-gray-500">{track.album}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{track.album}</p>
         )}
         {track.passage_note && (
-          <p className="text-sm text-gray-400 italic">{track.passage_note}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 italic">{track.passage_note}</p>
         )}
       </div>
 
@@ -72,13 +72,13 @@ export default async function TrackDetailPage({ params }: Props) {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base sm:text-lg font-semibold">{t('testsHeading')}</h2>
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-gray-500 dark:text-gray-400">
             {tests.length} {tests.length === 1 ? 'test' : 'tests'}
           </span>
         </div>
 
         {tests.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('noTestsForTrack')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('noTestsForTrack')}</p>
         ) : (
           <ul className="space-y-2">
             {tests.map(test => {
@@ -93,7 +93,7 @@ export default async function TrackDetailPage({ params }: Props) {
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{test.title}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         by {creator?.display_name ?? t('anonymous')} ·{' '}
                         {new Date(test.created_at).toLocaleDateString()}
                       </p>
@@ -102,7 +102,7 @@ export default async function TrackDetailPage({ params }: Props) {
                       className={`ml-4 shrink-0 text-xs px-2 py-0.5 rounded-full ${
                         test.status === 'revealed'
                           ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                          : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
                       }`}
                     >
                       {test.status === 'revealed' ? t('statusRevealed') : t('statusBlind')}

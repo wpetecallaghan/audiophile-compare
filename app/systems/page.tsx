@@ -29,16 +29,16 @@ export default async function SystemsPage() {
   const systems = data ?? []
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-gray-500 dark:text-gray-400">
             {systems.length} {systems.length === 1 ? 'system' : 'systems'}
           </span>
           <Link
             href="/systems/new"
-            className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
+            className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200"
           >
             {t('newButton')}
           </Link>
@@ -46,7 +46,7 @@ export default async function SystemsPage() {
       </div>
 
       {systems.length === 0 ? (
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('empty')}{' '}
           <Link href="/tests/new" className="text-blue-600 underline">
             {t('createTestLink')}
@@ -68,17 +68,17 @@ export default async function SystemsPage() {
                     <div className="min-w-0">
                       <p className="text-sm font-medium">{system.name}</p>
                       {system.description && (
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           {system.description}
                         </p>
                       )}
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {snapshots.length}{' '}
                         {snapshots.length === 1 ? 'snapshot' : 'snapshots'}
                         {latest && ` · latest: v${latest.version} — ${latest.label}`}
                       </p>
                     </div>
-                    <span className="shrink-0 text-xs text-gray-400">
+                    <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
                       {new Date(system.created_at).toLocaleDateString()}
                     </span>
                   </div>

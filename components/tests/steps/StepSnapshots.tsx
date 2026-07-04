@@ -90,7 +90,7 @@ function SnapshotSelector({
       <p className="text-sm font-medium">{label}</p>
       {systems.map(system => (
         <div key={system.id} className="border dark:border-gray-700 rounded p-3 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             {system.name}
           </p>
 
@@ -115,7 +115,7 @@ function SnapshotSelector({
               <div>
                 <span className="font-medium">v{snap.version} — {snap.label}</span>
                 {snap.notes && (
-                  <p className="text-gray-500 mt-0.5">{snap.notes}</p>
+                  <p className="text-gray-500 dark:text-gray-400 mt-0.5">{snap.notes}</p>
                 )}
               </div>
             </label>
@@ -124,7 +124,7 @@ function SnapshotSelector({
           {/* Inline mini-form or add button */}
           {addingForSystemId === system.id ? (
             <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800 mt-1">
-              <p className="text-xs font-medium text-gray-500">New snapshot</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">New snapshot</p>
               <input
                 type="text"
                 placeholder="Label (e.g. After — Furutech cable)"
@@ -132,19 +132,19 @@ function SnapshotSelector({
                 onChange={e => setNewLabel(e.target.value)}
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
-                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <textarea
                 placeholder="Notes (optional)"
                 value={newNotes}
                 onChange={e => setNewNotes(e.target.value)}
                 rows={2}
-                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               {createError && (
-                <p className="text-xs text-red-500">{createError}</p>
+                <p className="text-xs text-red-600 dark:text-red-400">{createError}</p>
               )}
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Components can be filled in on the Systems page after creation.
               </p>
               <div className="flex items-center gap-3">
@@ -152,7 +152,7 @@ function SnapshotSelector({
                   type="button"
                   onClick={() => handleSubmit(system.id)}
                   disabled={creating || !newLabel.trim()}
-                  className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
+                  className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
                 >
                   {creating ? 'Adding…' : 'Add snapshot'}
                 </button>
@@ -160,7 +160,7 @@ function SnapshotSelector({
                   type="button"
                   onClick={cancelAdding}
                   disabled={creating}
-                  className="text-xs text-gray-500 hover:underline"
+                  className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   Cancel
                 </button>
@@ -170,7 +170,7 @@ function SnapshotSelector({
             <button
               type="button"
               onClick={() => startAdding(system.id)}
-              className="text-xs text-blue-600 hover:underline"
+              className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               + Add new snapshot
             </button>
@@ -243,7 +243,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
 
   const addSystemTrigger = addingSystem ? (
     <div className="space-y-2 rounded border border-gray-200 dark:border-gray-700 p-3">
-      <p className="text-xs font-medium text-gray-500">New system</p>
+      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">New system</p>
       <input
         type="text"
         placeholder="System name"
@@ -251,24 +251,24 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
         onChange={e => setNewSystemName(e.target.value)}
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       <textarea
         placeholder="Description (optional)"
         value={newSystemDesc}
         onChange={e => setNewSystemDesc(e.target.value)}
         rows={2}
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
       />
       {systemCreateError && (
-        <p className="text-xs text-red-500">{systemCreateError}</p>
+        <p className="text-xs text-red-600 dark:text-red-400">{systemCreateError}</p>
       )}
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={handleSystemSubmit}
           disabled={creatingSystem || !newSystemName.trim()}
-          className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
+          className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
         >
           {creatingSystem ? 'Adding…' : 'Add system'}
         </button>
@@ -276,7 +276,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
           type="button"
           onClick={cancelAddingSystem}
           disabled={creatingSystem}
-          className="text-xs text-gray-500 hover:underline"
+          className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
         >
           Cancel
         </button>
@@ -286,7 +286,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
     <button
       type="button"
       onClick={startAddingSystem}
-      className="text-xs text-blue-600 hover:underline"
+      className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
     >
       + Add new system
     </button>
@@ -295,15 +295,15 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Systems</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <h2 className="text-base sm:text-lg font-semibold">Systems</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           {t('description')}
         </p>
       </div>
 
       {noSystems ? (
         <div className="space-y-3">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             You have no systems yet. Add one below to continue.
           </p>
           {addSystemTrigger}
@@ -335,7 +335,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
       <button
         disabled={isDisabled ? true : undefined}
         onClick={() => onComplete({ snapshotA, snapshotB })}
-        className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
+        className="w-full bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
         suppressHydrationWarning
       >
         {tw('continueButton')}

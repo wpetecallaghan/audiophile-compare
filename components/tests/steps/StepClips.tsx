@@ -13,7 +13,7 @@ type Props = {
 function VerificationBadge({ result }: { result: VerifiedClip }) {
   if (result.url_status === 'dead') {
     return (
-      <p className="text-sm text-red-600">
+      <p className="text-sm text-red-600 dark:text-red-400">
         This URL could not be reached. Check the link and try again.
       </p>
     )
@@ -63,7 +63,7 @@ function ClipInput({
         <button
           onClick={onVerify}
           disabled={!url.trim() || verifying}
-          className="shrink-0 border dark:border-gray-600 rounded px-3 py-2 text-sm font-medium
+          className="shrink-0 border dark:border-gray-700 rounded px-3 py-2 text-sm font-medium
             hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40"
         >
           {verifying ? verifyingLabel : verifyLabel}
@@ -105,8 +105,8 @@ export default function StepClips({ draft, onComplete }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">{t('heading')}</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <h2 className="text-base sm:text-lg font-semibold">{t('heading')}</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Enter the URL for each recording. Listeners will see these as Clip A
           and Clip B — the before/after identity stays hidden until you reveal.
         </p>
@@ -138,7 +138,7 @@ export default function StepClips({ draft, onComplete }: Props) {
 
       <div className="rounded border p-4 space-y-2">
         <p className="text-sm font-medium">{t('beforeQuestion')}</p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('beforeDescription')}
         </p>
         <div className="flex gap-4 mt-2">
@@ -165,7 +165,7 @@ export default function StepClips({ draft, onComplete }: Props) {
           clipBVerified: verifiedB,
           beforeIsA,
         })}
-        className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
+        className="w-full bg-black dark:bg-white text-white dark:text-black rounded px-4 py-2 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
       >
         {tw('continueButton')}
       </button>

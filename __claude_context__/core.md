@@ -193,4 +193,4 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-19 of 20 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ✅ 19 about page; ⬜ 20 visual polish remaining). The current unit test suite is 25 files / 256 tests passing. See `testing.md` for the full inventory.
+All 20 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ✅ 19 about page; ✅ 20 visual polish). The current unit test suite is 25 files / 256 tests passing. See `testing.md` for the full inventory.

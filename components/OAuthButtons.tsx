@@ -21,7 +21,7 @@ export default function OAuthButtons({ redirectTo }: { redirectTo?: string }) {
       <button
         type="button"
         onClick={signInWithGoogle}
-        className="w-full flex items-center justify-center gap-3 border dark:border-gray-600 rounded px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+        className="w-full flex items-center justify-center gap-3 border border-gray-200 dark:border-gray-700 rounded px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
       >
         <GoogleIcon />
         {t('googleButton')}

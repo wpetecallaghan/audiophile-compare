@@ -63,7 +63,7 @@ export default function AddSnapshotForm({ systemId }: Props) {
       <button
         type="button"
         onClick={handleOpen}
-        className="text-sm text-blue-600 hover:underline"
+        className="border border-gray-200 dark:border-gray-700 rounded px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
       >
         {t('addButton')}
       </button>
@@ -80,24 +80,24 @@ export default function AddSnapshotForm({ systemId }: Props) {
         onChange={e => setLabel(e.target.value)}
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
       <textarea
         placeholder={t('notesPlaceholder')}
         value={notes}
         onChange={e => setNotes(e.target.value)}
         rows={2}
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
       />
       {error && (
-        <p className="text-xs text-red-500">{error}</p>
+        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
       )}
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={handleSubmit}
           disabled={submitting || !label.trim()}
-          className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
+          className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
         >
           {submitting ? t('adding') : t('submitButton')}
         </button>
@@ -105,7 +105,7 @@ export default function AddSnapshotForm({ systemId }: Props) {
           type="button"
           onClick={handleCancel}
           disabled={submitting}
-          className="text-xs text-gray-500 hover:underline"
+          className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
         >
           {t('cancel')}
         </button>

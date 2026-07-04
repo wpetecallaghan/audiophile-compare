@@ -142,10 +142,10 @@ export default async function SystemDetailPage({ params }: Props) {
   })
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8">
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
 
       {/* Breadcrumb */}
-      <nav className="text-xs text-gray-400">
+      <nav className="text-xs text-gray-500 dark:text-gray-400">
         <Link href="/systems" className="hover:underline">Systems</Link>
         {' / '}
         <span>{system.name}</span>
@@ -153,7 +153,7 @@ export default async function SystemDetailPage({ params }: Props) {
 
       {/* System header */}
       <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           System
         </p>
         <div className="flex items-start justify-between gap-4">
@@ -161,16 +161,16 @@ export default async function SystemDetailPage({ params }: Props) {
           {isOwner && (
             <Link
               href={`/systems/${id}/edit`}
-              className="shrink-0 text-xs text-blue-600 hover:underline"
+              className="shrink-0 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               Edit
             </Link>
           )}
         </div>
         {system.description && (
-          <p className="text-sm text-gray-500">{system.description}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{system.description}</p>
         )}
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           {snapshots.length} {snapshots.length === 1 ? 'snapshot' : 'snapshots'}
         </p>
       </div>
@@ -186,9 +186,9 @@ export default async function SystemDetailPage({ params }: Props) {
 
       {/* Per-snapshot sections */}
       {snapshotsWithHistory.length === 0 ? (
-        <p className="text-sm text-gray-400">No snapshots yet.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">No snapshots yet.</p>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {snapshotsWithHistory.map(snapshot => {
             type ComponentRow = {
               role?: string
@@ -216,7 +216,7 @@ export default async function SystemDetailPage({ params }: Props) {
                 isOwner={isOwner}
               >
                 {snapshot.tests.length === 0 ? (
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     No tests have used this snapshot yet.
                   </p>
                 ) : (
@@ -234,11 +234,11 @@ export default async function SystemDetailPage({ params }: Props) {
                                 {test.title}
                               </p>
                               {test.track && (
-                                <p className="text-xs text-gray-400 truncate">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                   {test.track.artist} — {test.track.title}
                                 </p>
                               )}
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {new Date(test.created_at).toLocaleDateString()}
                               </p>
                             </div>

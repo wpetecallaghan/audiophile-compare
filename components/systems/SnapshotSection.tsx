@@ -150,7 +150,7 @@ export default function SnapshotSection({
             <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
               v{snapshot.version}
             </span>
-            <p className="text-xs text-gray-400 font-medium">Editing snapshot</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Editing snapshot</p>
           </div>
 
           <div className="space-y-3">
@@ -168,7 +168,7 @@ export default function SnapshotSection({
                 onChange={e => setLabel(e.target.value)}
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
-                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
@@ -185,7 +185,7 @@ export default function SnapshotSection({
                 onChange={e => setNotes(e.target.value)}
                 rows={2}
                 placeholder={t('notesEditPlaceholder')}
-                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
 
@@ -232,7 +232,7 @@ export default function SnapshotSection({
                     type="button"
                     onClick={() => removeComponentRow(i)}
                     aria-label={t('removeComponentAriaLabel', { n: i + 1 })}
-                    className="text-gray-400 hover:text-red-500 text-xs px-1"
+                    className="text-gray-500 dark:text-gray-400 hover:text-red-500 text-xs px-1"
                   >
                     ×
                   </button>
@@ -241,21 +241,21 @@ export default function SnapshotSection({
               <button
                 type="button"
                 onClick={addComponentRow}
-                className="text-xs text-blue-600 hover:underline"
+                className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 {t('addComponentButton')}
               </button>
             </div>
           </div>
 
-          {error && <p className="text-xs text-red-500">{error}</p>}
+          {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handleSave}
               disabled={submitting || !label.trim()}
-              className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
+              className="rounded bg-black dark:bg-white px-3 py-1.5 text-xs font-medium text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-40"
             >
               {submitting ? t('saving') : t('saveButton')}
             </button>
@@ -263,7 +263,7 @@ export default function SnapshotSection({
               type="button"
               onClick={handleCancel}
               disabled={submitting}
-              className="text-xs text-gray-500 hover:underline"
+              className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               {t('cancel')}
             </button>
@@ -277,32 +277,32 @@ export default function SnapshotSection({
               <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
                 v{snapshot.version}
               </span>
-              <h2 className="text-base font-semibold">{snapshot.label}</h2>
+              <h2 className="text-base sm:text-lg font-semibold">{snapshot.label}</h2>
               {isOwner && (
                 <button
                   type="button"
                   onClick={handleEdit}
-                  className="text-xs text-gray-400 hover:text-blue-600 hover:underline"
+                  className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   {t('editButton')}
                 </button>
               )}
             </div>
             {snapshot.notes && (
-              <p className="text-xs text-gray-400">{snapshot.notes}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{snapshot.notes}</p>
             )}
             {/* suppressHydrationWarning: toLocaleDateString() can differ between
                 Node.js (server SSR) and the browser; the mismatch is cosmetic. */}
-            <p className="text-xs text-gray-400" suppressHydrationWarning>
+            <p className="text-xs text-gray-500 dark:text-gray-400" suppressHydrationWarning>
               {new Date(snapshot.created_at).toLocaleDateString()}
             </p>
           </div>
 
           {hasRevealedTests && (
             <div className="shrink-0 flex gap-3 text-xs font-medium">
-              {wins > 0 && <span className="text-green-700">{wins}W</span>}
-              {losses > 0 && <span className="text-red-600">{losses}L</span>}
-              {draws > 0 && <span className="text-gray-500">{draws}D</span>}
+              {wins > 0 && <span className="text-green-700 dark:text-green-300">{wins}W</span>}
+              {losses > 0 && <span className="text-red-700 dark:text-red-300">{losses}L</span>}
+              {draws > 0 && <span className="text-gray-500 dark:text-gray-400">{draws}D</span>}
             </div>
           )}
         </div>
@@ -312,10 +312,10 @@ export default function SnapshotSection({
       {!editing && snapshot.components && snapshot.components.length > 0 && (
         <ul className="space-y-0.5">
           {snapshot.components.map((c, i) => (
-            <li key={i} className="text-xs text-gray-500">
-              <span className="text-gray-400 w-20 inline-block">{c.role}</span>
+            <li key={i} className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="text-gray-500 dark:text-gray-400 w-20 inline-block">{c.role}</span>
               {c.make} {c.model}
-              {c.notes && <span className="text-gray-400"> — {c.notes}</span>}
+              {c.notes && <span className="text-gray-500 dark:text-gray-400"> — {c.notes}</span>}
             </li>
           ))}
         </ul>
