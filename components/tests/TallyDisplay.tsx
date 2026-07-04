@@ -1,5 +1,7 @@
 import type { TallyResult } from '@/lib/votes/compute-tally'
 import { getTranslations } from 'next-intl/server'
+import { Heading } from '@/components/ui/Heading'
+import { Callout } from '@/components/ui/Callout'
 
 type Props = {
   tally: TallyResult
@@ -15,17 +17,17 @@ export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base sm:text-lg font-semibold">{t('heading')}</h2>
+      <Heading level={2}>{t('heading')}</Heading>
 
       {!hasAnyVotes && (
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('noVotes')}</p>
       )}
 
       {divergent && (
-        <div className="rounded border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">
+        <Callout tone="warning" className="px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">
           Techniques disagree on the winner — this change may involve a
           tradeoff.
-        </div>
+        </Callout>
       )}
 
       {/* Curated technique percentage bars */}

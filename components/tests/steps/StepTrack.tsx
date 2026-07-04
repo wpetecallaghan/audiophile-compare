@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react'
 import type { Track, TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { TextInput } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
+import { Callout } from '@/components/ui/Callout'
 
 type Props = {
   draft: TestDraft
@@ -63,14 +68,14 @@ export default function StepTrack({ draft, onComplete }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base sm:text-lg font-semibold">Track</h2>
+        <Heading level={2}>Track</Heading>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Find the recording used in this test, or add it if it's not listed.
         </p>
       </div>
 
       {selected ? (
-        <div className="rounded border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4 space-y-1">
+        <Callout tone="success" className="space-y-1">
           <p className="font-medium">{selected.artist} — {selected.title}</p>
           {selected.album && (
             <p className="text-sm text-gray-600 dark:text-gray-300">{selected.album}</p>
@@ -81,7 +86,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
           <Button variant="secondary" onClick={() => setSelected(null)} className="mt-2">
             Change track
           </Button>
-        </div>
+        </Callout>
       ) : creating ? (
         <div className="space-y-4 rounded border dark:border-gray-700 p-4">
         <h3 className="font-medium text-sm">{t('addTrackHeading')}</h3>
@@ -91,30 +96,28 @@ export default function StepTrack({ draft, onComplete }: Props) {
             { label: t('albumLabel'),  value: album,  set: setAlbum  },
           ].map(({ label, value, set }) => (
             <div key={label}>
-              <label className="block text-sm font-medium mb-1">{label}</label>
-              <input
+              <FieldLabel>{label}</FieldLabel>
+              <TextInput
                 type="text"
                 value={value}
                 onChange={e => set(e.target.value)}
-                className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
               />
             </div>
           ))}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <FieldLabel>
               {t('passageNoteLabel')}
               <span className="text-gray-500 dark:text-gray-400 font-normal ml-1">
                 (e.g. "Opening bars, track 3")
               </span>
-            </label>
-            <input
+            </FieldLabel>
+            <TextInput
               type="text"
               value={passageNote}
               onChange={e => setPassageNote(e.target.value)}
-              className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
             />
           </div>
-          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          {error && <FormMessage tone="error">{error}</FormMessage>}
           <div className="flex gap-3">
             <Button onClick={handleCreate}>
               {t('createButton')}
@@ -126,12 +129,11 @@ export default function StepTrack({ draft, onComplete }: Props) {
         </div>
       ) : (
         <div className="space-y-3">
-          <input
+          <TextInput
             type="text"
             placeholder={t('searchPlaceholder')}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
           />
           {loading && <p className="text-sm text-gray-500 dark:text-gray-400">{t('searching')}</p>}
           {results.length > 0 && (

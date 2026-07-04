@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { TextInput } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 export default function ChangeEmailForm() {
   const t = useTranslations('profile')
@@ -32,26 +35,25 @@ export default function ChangeEmailForm() {
   }
 
   if (sent) {
-    return <p className="text-sm text-green-600 dark:text-green-400">{t('emailConfirmationSent')}</p>
+    return <FormMessage tone="success">{t('emailConfirmationSent')}</FormMessage>
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
       <div>
-        <label htmlFor="new-email" className="block text-sm font-medium mb-1">
+        <FieldLabel htmlFor="new-email">
           {t('newEmailLabel')}
-        </label>
-        <input
+        </FieldLabel>
+        <TextInput
           id="new-email"
           type="email"
           required
           value={newEmail}
           onChange={e => { setNewEmail(e.target.value); setError(null) }}
           placeholder={t('newEmailPlaceholder')}
-          className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+      {error && <FormMessage tone="error">{error}</FormMessage>}
       <Button type="submit" disabled={submitting || !newEmail.trim()}>
         {submitting ? t('sendingConfirmation') : t('sendConfirmationButton')}
       </Button>

@@ -4,6 +4,7 @@ import FeedCard from '@/components/feed/FeedCard'
 import type { FeedTest } from '@/components/feed/FeedCard'
 import { getTranslations } from 'next-intl/server'
 import { buttonVariants } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
 
 const PAGE_SIZE = 20
 
@@ -95,7 +96,7 @@ export default async function HomePage({ searchParams }: Props) {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
+          <Heading level={1}>{t('heading')}</Heading>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {t('subheading')}
           </p>

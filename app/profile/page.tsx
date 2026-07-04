@@ -4,6 +4,7 @@ import ProfileForm from '@/components/ProfileForm'
 import ChangeEmailForm from '@/components/ChangeEmailForm'
 import ChangePasswordForm from '@/components/ChangePasswordForm'
 import { getTranslations } from 'next-intl/server'
+import { Heading } from '@/components/ui/Heading'
 
 export default async function ProfilePage({
   searchParams,
@@ -27,7 +28,7 @@ export default async function ProfilePage({
   return (
     <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       <div className="space-y-1">
-        <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
+        <Heading level={1}>{t('heading')}</Heading>
         {profile?.email && (
           <p className="text-sm text-gray-500 dark:text-gray-400">{profile.email}</p>
         )}

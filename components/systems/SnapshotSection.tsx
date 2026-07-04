@@ -5,6 +5,10 @@ import type { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { TextInput, TextArea } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type ComponentDisplay = {
   role?: string
@@ -156,37 +160,29 @@ export default function SnapshotSection({
 
           <div className="space-y-3">
             <div>
-              <label
-                htmlFor={`snapshot-label-${snapshot.id}`}
-                className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1"
-              >
+              <FieldLabel tone="muted" htmlFor={`snapshot-label-${snapshot.id}`}>
                 Label
-              </label>
-              <input
+              </FieldLabel>
+              <TextInput
                 id={`snapshot-label-${snapshot.id}`}
                 type="text"
                 value={label}
                 onChange={e => setLabel(e.target.value)}
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
-                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             <div>
-              <label
-                htmlFor={`snapshot-notes-${snapshot.id}`}
-                className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1"
-              >
+              <FieldLabel tone="muted" htmlFor={`snapshot-notes-${snapshot.id}`}>
                 Notes
-              </label>
-              <textarea
+              </FieldLabel>
+              <TextArea
                 id={`snapshot-notes-${snapshot.id}`}
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 rows={2}
                 placeholder={t('notesEditPlaceholder')}
-                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
 
@@ -197,37 +193,37 @@ export default function SnapshotSection({
                   key={i}
                   className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-center"
                 >
-                  <input
+                  <TextInput
                     type="text"
+                    size="compact"
                     placeholder={t('rolePlaceholder')}
                     value={row.role}
                     onChange={e => updateComponentRow(i, 'role', e.target.value)}
                     aria-label={t('componentRoleAriaLabel', { n: i + 1 })}
-                    className="rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                  <input
+                  <TextInput
                     type="text"
+                    size="compact"
                     placeholder={t('makePlaceholder')}
                     value={row.make}
                     onChange={e => updateComponentRow(i, 'make', e.target.value)}
                     aria-label={t('componentMakeAriaLabel', { n: i + 1 })}
-                    className="rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                  <input
+                  <TextInput
                     type="text"
+                    size="compact"
                     placeholder={t('modelPlaceholder')}
                     value={row.model}
                     onChange={e => updateComponentRow(i, 'model', e.target.value)}
                     aria-label={t('componentModelAriaLabel', { n: i + 1 })}
-                    className="rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                  <input
+                  <TextInput
                     type="text"
+                    size="compact"
                     placeholder={t('notesColumnPlaceholder')}
                     value={row.notes}
                     onChange={e => updateComponentRow(i, 'notes', e.target.value)}
                     aria-label={t('componentNotesAriaLabel', { n: i + 1 })}
-                    className="rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <button
                     type="button"
@@ -245,7 +241,7 @@ export default function SnapshotSection({
             </div>
           </div>
 
-          {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+          {error && <FormMessage tone="error">{error}</FormMessage>}
 
           <div className="flex items-center gap-3">
             <Button
@@ -275,7 +271,7 @@ export default function SnapshotSection({
               <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
                 v{snapshot.version}
               </span>
-              <h2 className="text-base sm:text-lg font-semibold">{snapshot.label}</h2>
+              <Heading level={2}>{snapshot.label}</Heading>
               {isOwner && (
                 <Button type="button" variant="secondary" size="compact" onClick={handleEdit}>
                   {t('editButton')}

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
+import { Heading } from '@/components/ui/Heading'
 
 export default async function TracksPage() {
   const supabase = await createClient()
@@ -23,7 +24,7 @@ export default async function TracksPage() {
   return (
     <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
+        <Heading level={1}>{t('heading')}</Heading>
         <span className="text-sm text-gray-500 dark:text-gray-400">
           {tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}
         </span>

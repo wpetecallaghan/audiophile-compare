@@ -3,6 +3,7 @@ import NextLink from 'next/link'
 import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { buttonVariants } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
 
 export default async function SystemsPage() {
   const supabase = await createClient()
@@ -33,7 +34,7 @@ export default async function SystemsPage() {
   return (
     <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
+        <Heading level={1}>{t('heading')}</Heading>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {systems.length} {systems.length === 1 ? 'system' : 'systems'}

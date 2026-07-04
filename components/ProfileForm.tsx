@@ -4,6 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { Button, buttonVariants } from '@/components/ui/Button'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { TextInput } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   initialDisplayName: string
@@ -43,20 +46,19 @@ export default function ProfileForm({ initialDisplayName }: Props) {
   return (
     <div className="space-y-4 max-w-lg">
       <div>
-        <label htmlFor="display-name" className="block text-sm font-medium mb-1">
+        <FieldLabel htmlFor="display-name">
           {t('displayNameLabel')}
-        </label>
-        <input
+        </FieldLabel>
+        <TextInput
           id="display-name"
           type="text"
           placeholder={t('displayNamePlaceholder')}
           value={displayName}
           onChange={e => { setDisplayName(e.target.value); setSuccess(false) }}
-          className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-      {success && <p className="text-xs text-green-600 dark:text-green-400">{t('successMessage')}</p>}
+      {error && <FormMessage tone="error">{error}</FormMessage>}
+      {success && <FormMessage tone="success">{t('successMessage')}</FormMessage>}
       <div className="flex items-center gap-3">
         <Button
           type="button"

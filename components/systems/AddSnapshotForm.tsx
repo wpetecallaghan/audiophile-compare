@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
+import { TextInput, TextArea } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   systemId: string
@@ -70,25 +72,21 @@ export default function AddSnapshotForm({ systemId }: Props) {
   return (
     <div className="space-y-3 rounded border border-gray-200 dark:border-gray-700 p-4">
       <p className="text-sm font-medium">{t('newHeading')}</p>
-      <input
+      <TextInput
         type="text"
         placeholder={t('labelPlaceholder')}
         value={label}
         onChange={e => setLabel(e.target.value)}
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-      <textarea
+      <TextArea
         placeholder={t('notesPlaceholder')}
         value={notes}
         onChange={e => setNotes(e.target.value)}
         rows={2}
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
       />
-      {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <FormMessage tone="error">{error}</FormMessage>}
       <div className="flex items-center gap-3">
         <Button
           type="button"

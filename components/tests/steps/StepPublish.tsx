@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation'
 import type { TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { TextInput } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   draft: TestDraft
@@ -64,7 +68,7 @@ export default function StepPublish({ draft, onBack }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base sm:text-lg font-semibold">{t('heading')}</h2>
+        <Heading level={2}>{t('heading')}</Heading>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Review your test, give it a title, then publish.
         </p>
@@ -96,19 +100,18 @@ export default function StepPublish({ draft, onBack }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <FieldLabel>
           Test title
-        </label>
-        <input
+        </FieldLabel>
+        <TextInput
           type="text"
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder={t('titlePlaceholder')}
-          className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
       </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <FormMessage tone="error">{error}</FormMessage>}
 
       <div className="flex gap-3">
         <Button variant="secondary" onClick={onBack}>

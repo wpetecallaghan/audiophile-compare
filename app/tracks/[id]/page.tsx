@@ -4,6 +4,7 @@ import NextLink from 'next/link'
 import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/Badge'
+import { Heading } from '@/components/ui/Heading'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -59,9 +60,9 @@ export default async function TrackDetailPage({ params }: Props) {
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           {t('trackBadge')}
         </p>
-        <h1 className="text-xl sm:text-2xl font-semibold">
+        <Heading level={1}>
           {track.artist} — {track.title}
-        </h1>
+        </Heading>
         {track.album && (
           <p className="text-sm text-gray-500 dark:text-gray-400">{track.album}</p>
         )}
@@ -73,7 +74,7 @@ export default async function TrackDetailPage({ params }: Props) {
       {/* Tests */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-semibold">{t('testsHeading')}</h2>
+          <Heading level={2}>{t('testsHeading')}</Heading>
           <span className="text-sm text-gray-500 dark:text-gray-400">
             {tests.length} {tests.length === 1 ? 'test' : 'tests'}
           </span>

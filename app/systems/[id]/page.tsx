@@ -9,6 +9,7 @@ import AddSnapshotForm from '@/components/systems/AddSnapshotForm'
 import SnapshotSection from '@/components/systems/SnapshotSection'
 import { Badge } from '@/components/ui/Badge'
 import { buttonVariants } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -162,7 +163,7 @@ export default async function SystemDetailPage({ params }: Props) {
           System
         </p>
         <div className="flex items-start justify-between gap-4">
-          <h1 className="text-xl sm:text-2xl font-semibold">{system.name}</h1>
+          <Heading level={1}>{system.name}</Heading>
           {isOwner && (
             <NextLink
               href={`/systems/${id}/edit`}

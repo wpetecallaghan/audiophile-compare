@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
+import { TextInput, TextArea } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 export default function CreateSystemForm() {
   const router = useRouter()
@@ -43,26 +45,22 @@ export default function CreateSystemForm() {
   return (
     <div className="space-y-4 max-w-lg">
       <div className="space-y-3">
-        <input
+        <TextInput
           type="text"
           placeholder={t('namePlaceholder')}
           value={name}
           onChange={e => setName(e.target.value)}
           // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
-          className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <textarea
+        <TextArea
           placeholder={t('descriptionPlaceholder')}
           value={description}
           onChange={e => setDescription(e.target.value)}
           rows={3}
-          className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
       </div>
-      {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
-      )}
+      {error && <FormMessage tone="error">{error}</FormMessage>}
       <div className="flex items-center gap-3">
         <Button type="button" onClick={handleSubmit} disabled={submitting || !name.trim()}>
           {submitting ? t('creating') : t('createButton')}

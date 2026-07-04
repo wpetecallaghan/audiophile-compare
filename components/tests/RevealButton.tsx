@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
+import { Callout } from '@/components/ui/Callout'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   testId: string
@@ -37,14 +39,14 @@ export default function RevealButton({ testId }: Props) {
 
   if (confirming) {
     return (
-      <div className="rounded border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 p-4 space-y-3">
+      <Callout tone="warning" className="space-y-3">
         <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
           {t('confirmHeading')}
         </p>
         <p className="text-sm text-amber-800 dark:text-amber-200">
           {t('confirmWarning')}
         </p>
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <FormMessage tone="error">{error}</FormMessage>}
         <div className="flex gap-3">
           <button
             onClick={handleReveal}
@@ -57,7 +59,7 @@ export default function RevealButton({ testId }: Props) {
             {t('cancelButton')}
           </Button>
         </div>
-      </div>
+      </Callout>
     )
   }
 

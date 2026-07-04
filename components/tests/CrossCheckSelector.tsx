@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
 import { Link } from '@/components/ui/Link'
+import { Heading } from '@/components/ui/Heading'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { Select } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Snapshot = {
   id: string
@@ -130,7 +134,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
   return (
     <section className="space-y-4">
       <div className="pb-2 border-b border-gray-100 dark:border-gray-800">
-        <h2 className="text-base sm:text-lg font-semibold">{t('heading')}</h2>
+        <Heading level={2}>{t('heading')}</Heading>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {t('description')}
           no new recording needed. Addresses the risk of successive improvements
@@ -140,18 +144,14 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
 
       {/* Snapshot pickers */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label
-            className="block text-xs font-medium text-gray-500 dark:text-gray-400"
-            htmlFor="cc-snap-a"
-          >
+        <div>
+          <FieldLabel tone="muted" htmlFor="cc-snap-a">
             Snapshot A
-          </label>
-          <select
+          </FieldLabel>
+          <Select
             id="cc-snap-a"
             value={snapshotAId}
             onChange={e => setSnapshotAId(e.target.value)}
-            className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">{t('choosePlaceholder')}</option>
             {snapshots.map(s => (
@@ -159,21 +159,17 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                 v{s.version} — {s.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
-        <div className="space-y-1">
-          <label
-            className="block text-xs font-medium text-gray-500 dark:text-gray-400"
-            htmlFor="cc-snap-b"
-          >
+        <div>
+          <FieldLabel tone="muted" htmlFor="cc-snap-b">
             Snapshot B
-          </label>
-          <select
+          </FieldLabel>
+          <Select
             id="cc-snap-b"
             value={snapshotBId}
             onChange={e => setSnapshotBId(e.target.value)}
-            className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">{t('choosePlaceholder')}</option>
             {snapshots.map(s => (
@@ -181,7 +177,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                 v{s.version} — {s.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -190,9 +186,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
         <p className="text-sm text-gray-500 dark:text-gray-400">Finding shared tracks…</p>
       )}
 
-      {fetchError && (
-        <p className="text-sm text-red-600 dark:text-red-400">{fetchError}</p>
-      )}
+      {fetchError && <FormMessage tone="error">{fetchError}</FormMessage>}
 
       {results !== null && !loading && (
         <>
@@ -202,9 +196,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
             </p>
           ) : (
             <div className="space-y-2">
-              {createError && (
-                <p className="text-sm text-red-600 dark:text-red-400">{createError}</p>
-              )}
+              {createError && <FormMessage tone="error">{createError}</FormMessage>}
 
               {results.map(item => (
                 <div

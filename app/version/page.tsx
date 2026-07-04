@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { isAdminEmail } from '@/lib/admin/is-admin-email'
+import { Heading } from '@/components/ui/Heading'
 
 export default async function VersionPage() {
   const supabase = await createClient()
@@ -30,7 +31,7 @@ export default async function VersionPage() {
 
   return (
     <main className="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
-      <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
+      <Heading level={1}>{t('heading')}</Heading>
 
       <dl className="space-y-3">
         {rows.map(({ label, value }) => (

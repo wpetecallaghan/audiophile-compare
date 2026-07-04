@@ -4,6 +4,9 @@ import { useState } from 'react'
 import type { Snapshot, SystemWithSnapshots, TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
+import { TextInput, TextArea } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   draft: TestDraft
@@ -126,25 +129,21 @@ function SnapshotSelector({
           {addingForSystemId === system.id ? (
             <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800 mt-1">
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400">New snapshot</p>
-              <input
+              <TextInput
                 type="text"
                 placeholder="Label (e.g. After — Furutech cable)"
                 value={newLabel}
                 onChange={e => setNewLabel(e.target.value)}
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
-                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <textarea
+              <TextArea
                 placeholder="Notes (optional)"
                 value={newNotes}
                 onChange={e => setNewNotes(e.target.value)}
                 rows={2}
-                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
-              {createError && (
-                <p className="text-xs text-red-600 dark:text-red-400">{createError}</p>
-              )}
+              {createError && <FormMessage tone="error">{createError}</FormMessage>}
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 Components can be filled in on the Systems page after creation.
               </p>
@@ -242,25 +241,21 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
   const addSystemTrigger = addingSystem ? (
     <div className="space-y-2 rounded border border-gray-200 dark:border-gray-700 p-3">
       <p className="text-xs font-medium text-gray-500 dark:text-gray-400">New system</p>
-      <input
+      <TextInput
         type="text"
         placeholder="System name"
         value={newSystemName}
         onChange={e => setNewSystemName(e.target.value)}
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-      <textarea
+      <TextArea
         placeholder="Description (optional)"
         value={newSystemDesc}
         onChange={e => setNewSystemDesc(e.target.value)}
         rows={2}
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
       />
-      {systemCreateError && (
-        <p className="text-xs text-red-600 dark:text-red-400">{systemCreateError}</p>
-      )}
+      {systemCreateError && <FormMessage tone="error">{systemCreateError}</FormMessage>}
       <div className="flex items-center gap-3">
         <Button
           type="button"
@@ -290,7 +285,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base sm:text-lg font-semibold">Systems</h2>
+        <Heading level={2}>Systems</Heading>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           {t('description')}
         </p>

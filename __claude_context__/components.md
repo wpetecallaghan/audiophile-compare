@@ -430,3 +430,64 @@ Always import `Link` from `@/components/ui/Link`, not `next/link`, unless
 the link doesn't fit any of the three roles above (e.g. a breadcrumb, or one
 already styled via `buttonVariants()`) — in that case import `next/link`
 directly (often aliased `NextLink` in files that need both).
+
+**Headings — use `<Heading level={1|2} />` (`components/ui/Heading.tsx`),
+never a raw `<h1>`/`<h2>` with a hand-copied class string:**
+```tsx
+import { Heading } from '@/components/ui/Heading'
+<Heading level={1}>{t('heading')}</Heading>   {/* page title */}
+<Heading level={2}>{t('sectionHeading')}</Heading>   {/* section heading */}
+```
+A heading with genuinely different sizing (e.g. `ChangePasswordForm.tsx`'s
+smaller `text-sm` disclosure heading) is not a `level={2}` — leave it raw
+rather than force a size it doesn't have.
+
+**Field labels — use `<FieldLabel tone />` (`components/ui/FieldLabel.tsx`):**
+```tsx
+import { FieldLabel } from '@/components/ui/FieldLabel'
+<FieldLabel htmlFor="email">Email</FieldLabel>                 {/* tone="standard" is the default */}
+<FieldLabel tone="muted" htmlFor="cc-snap-a">Snapshot A</FieldLabel>  {/* dense/inline editors */}
+```
+
+**Text fields — use `<TextInput>`/`<TextArea>`/`<Select>`
+(`components/ui/TextField.tsx`), never raw `<input>`/`<textarea>`/`<select>`
+with a hand-copied class string:**
+```tsx
+import { TextInput, TextArea, Select } from '@/components/ui/TextField'
+<TextInput type="email" value={email} onChange={...} />              {/* size="standard" is the default */}
+<TextArea rows={2} value={notes} onChange={...} />
+<TextInput size="compact" value={row.role} onChange={...} />         {/* dense inline editors */}
+```
+All three share one exported `fieldVariants` (`size: standard | compact`) —
+same relationship `Button.tsx` has to `buttonVariants`. **Do not add a
+`size` prop by any other name** — `<input>`/`<select>` have a *native* HTML
+`size` attribute (numeric), so `TextInputProps`/`SelectProps` `Omit` it
+before intersecting with the variant props; redo that Omit if you ever
+change the prop name.
+
+**Inline error/success text — use `<FormMessage tone />`
+(`components/ui/FormMessage.tsx`), never a raw `<p className="text-red-600...">`:**
+```tsx
+import { FormMessage } from '@/components/ui/FormMessage'
+{error && <FormMessage tone="error">{error}</FormMessage>}
+{success && <FormMessage tone="success">{t('successMessage')}</FormMessage>}
+```
+
+**Alert/info boxes — use `<Callout tone />` (`components/ui/Callout.tsx`):**
+```tsx
+import { Callout } from '@/components/ui/Callout'
+<Callout tone="warning">...</Callout>   {/* tone: warning | success | info | neutral */}
+<Callout tone="warning" className="px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">...</Callout>
+```
+Padding/text-size that differs per instance (e.g. `TallyDisplay.tsx`'s
+tighter `px-3 py-2.5`) is a `className` override, not a variant — same
+reasoning as `Link`'s `card` variant.
+
+See `build-history.md` step 22 for the full audit behind these five
+components (exact occurrence counts, and the bugs found and fixed along
+the way — a missing dark-mode variant on an info box, a stray `green-700`,
+two disagreeing "compact" field sizes, three disagreeing "muted" label
+colors). One-off styling that doesn't fit any role (a genuinely unique tab
+bar, a single search-result row button, an inline icon-button) stays raw —
+same "don't force an abstraction used exactly once" rule as everywhere else
+in this codebase.

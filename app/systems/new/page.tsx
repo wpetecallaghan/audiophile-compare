@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import CreateSystemForm from '@/components/systems/CreateSystemForm'
 import { getTranslations } from 'next-intl/server'
+import { Heading } from '@/components/ui/Heading'
 
 export default async function NewSystemPage() {
   const supabase = await createClient()
@@ -13,7 +14,7 @@ export default async function NewSystemPage() {
 
   return (
     <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
-      <h1 className="text-xl sm:text-2xl font-semibold">{t('newHeading')}</h1>
+      <Heading level={1}>{t('newHeading')}</Heading>
       <CreateSystemForm />
     </main>
   )

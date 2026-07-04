@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import EditSystemForm from '@/components/systems/EditSystemForm'
 import { getTranslations } from 'next-intl/server'
+import { Heading } from '@/components/ui/Heading'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -37,7 +38,7 @@ export default async function EditSystemPage({ params }: Props) {
         {' / '}
         <span>{t('editBreadcrumb')}</span>
       </nav>
-      <h1 className="text-xl sm:text-2xl font-semibold">{t('editHeading')}</h1>
+      <Heading level={1}>{t('editHeading')}</Heading>
       <EditSystemForm
         systemId={id}
         initialName={system.name}
