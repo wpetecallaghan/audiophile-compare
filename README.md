@@ -56,6 +56,6 @@ Load `core.md` first, then the file for your task:
 | [__claude_context__/components.md](__claude_context__/components.md) | Component patterns, MediaPlayer contracts, wizard state, mobile responsiveness, error boundaries |
 | [__claude_context__/testing.md](__claude_context__/testing.md) | Unit and E2E conventions, test inventory, vitest mocks, Playwright strategy |
 | [__claude_context__/audiophile-compare-schema.md](__claude_context__/audiophile-compare-schema.md) | Complete database schema, RLS policies, query patterns, auth triggers |
-| [__claude_context__/build-history.md](__claude_context__/build-history.md) | Build step log (1–18 with implementation notes), deferred feature notes (owned storage, mobile app) |
-| [__claude_context__/build-history.md](__claude_context__/build-history.md) | Build step log (1–18), deferred feature notes (owned storage, mobile app) |
+| [__claude_context__/build-history.md](__claude_context__/build-history.md) | Build step log (1–18 with implementation notes) |
+| [__claude_context__/deferred-features.md](__claude_context__/deferred-features.md) | Deferred feature notes: agentic ingestion pipeline, owned blob storage, mobile app |
 
