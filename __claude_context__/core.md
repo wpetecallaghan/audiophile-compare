@@ -77,6 +77,7 @@ app/
   global-error.tsx                          ← Required for Next.js 16 + Turbopack
   layout.tsx
   page.tsx                                  ← Public feed (server, paginated)
+  about/page.tsx                            ← Public: why/how explainer, no auth
   login/page.tsx
   register/page.tsx
   profile/page.tsx
@@ -166,7 +167,7 @@ types/
 
 **Public paths** (no login required to view; login required for play/vote — enforced in API routes):
 ```
-/, /tests/[id], /login, /register, /auth/callback, /auth/confirm
+/, /about, /tests/[id], /login, /register, /auth/callback, /auth/confirm
 ```
 
 ---
@@ -192,4 +193,4 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-18 of 19 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ⬜ 19 visual polish remaining). The current unit test suite is 25 files / 256 tests passing. See `testing.md` for the full inventory.
+19 of 20 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ✅ 19 about page; ⬜ 20 visual polish remaining). The current unit test suite is 25 files / 256 tests passing. See `testing.md` for the full inventory.

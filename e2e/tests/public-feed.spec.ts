@@ -55,6 +55,12 @@ test.describe('Public feed (unauthenticated)', () => {
     await expect(page.getByRole(ROLE.button, { name: m.auth.googleButton })).toBeVisible()
   })
 
+  test('visiting /about shows the about page without requiring login', async ({ page }) => {
+    await page.goto('/about')
+    await expect(page).toHaveURL('/about')
+    await expect(page.getByRole(ROLE.heading, { name: m.about.heading })).toBeVisible()
+  })
+
   test('visiting /profile redirects to /login', async ({ page }) => {
     await page.goto('/profile')
     await expect(page).toHaveURL(/\/login/)
