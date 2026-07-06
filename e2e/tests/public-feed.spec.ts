@@ -5,6 +5,8 @@
  * Tests what anonymous users can and cannot do.
  */
 import { test, expect } from '@playwright/test'
+import { routes } from '../helpers/routes'
+import { seedCompleteTest, type SeedTestFixture } from '../helpers/admin'
 import { ROLE } from '../helpers/constants'
 import m from '../../messages/en.json'
 
@@ -69,5 +71,26 @@ test.describe('Public feed (unauthenticated)', () => {
   test('visiting /tracks redirects to /login', async ({ page }) => {
     await page.goto('/tracks')
     await expect(page).toHaveURL(/\/login/)
+  })
+})
+
+test.describe('Anonymous clip playback', () => {
+  let fixture: SeedTestFixture
+
+  test.beforeAll(async () => {
+    fixture = await seedCompleteTest(`anon-play-${Date.now()}`)
+  })
+
+  test('anonymous visitor can see the player on a test detail page', async ({ page }) => {
+    await page.goto(routes.test(fixture.test.id))
+    await expect(page.getByRole(ROLE.heading, { name: 'Clip A' })).toBeVisible()
+    await expect(page.getByRole(ROLE.heading, { name: 'Clip B' })).toBeVisible()
+  })
+
+  test('anonymous visitor sees a "Sign in to vote" prompt instead of the vote form', async ({ page }) => {
+    await page.goto(routes.test(fixture.test.id))
+    const main = page.getByRole('main')
+    await expect(main.getByText(m.tests.signInToVote)).toBeVisible()
+    await expect(main.getByRole(ROLE.link, { name: m.tests.signIn })).toBeVisible()
   })
 })

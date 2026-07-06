@@ -175,7 +175,7 @@ types/
 ```
 `/version` is also gated by an `ADMIN_EMAILS` allowlist beyond just auth — see `build-history.md` step 18.
 
-**Public paths** (no login required to view; login required for play/vote — enforced in API routes):
+**Public paths** (no login required to view; login required to vote):
 ```
 /, /about, /tests/[id], /login, /register, /auth/callback, /auth/confirm
 ```
@@ -203,4 +203,4 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-All 22 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ✅ 19 about page; ✅ 20 visual polish; ✅ 21 Link component; ✅ 22 Heading/FieldLabel/TextField/FormMessage/Callout components). The current unit test suite is 25 files / 256 tests passing. See `testing.md` for the full inventory.
+All 23 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ✅ 19 about page; ✅ 20 visual polish; ✅ 21 Link component; ✅ 22 Heading/FieldLabel/TextField/FormMessage/Callout components; ✅ 23 anonymous clip playback). The current unit test suite is 25 files / 256 tests passing. See `testing.md` for the full inventory.

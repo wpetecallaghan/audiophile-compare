@@ -153,9 +153,13 @@ const canSeeTally = test.status === 'revealed' || (count ?? 0) > 0
 
 Never query `votes` directly for a public count — RLS restricts vote rows to own votes or revealed tests, so a direct count returns 0 or an error for most callers.
 
-### Rule 3 — clip playback requires login
+### Rule 3 — clip playback is public; voting requires login
 
-Enforced in middleware for protected routes. API routes serving clip data must also check that `user` is not null.
+`clips`/`tests` SELECT RLS policies are `using (true)` — clip data is
+public read, same as the rest of the test detail page. There is no auth
+check anywhere in the playback path (no middleware, no API-route check) —
+`app/tests/[id]/page.tsx` renders `ABPlayer` unconditionally. Only casting
+a vote (`VoteForm`, `POST /api/votes`) requires `user` to be non-null.
 
 ### Rule 4 — only the creator can reveal a test
 

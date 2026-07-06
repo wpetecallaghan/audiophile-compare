@@ -156,16 +156,9 @@ export default async function TestDetailPage({ params }: Props) {
         />
       )}
 
-      {/* Player — login required to see */}
+      {/* Player — playback is public */}
       <div className="w-full max-w-full min-w-0">
-        {user ? (
-          <ABPlayer clipA={clipA} clipB={clipB} />
-        ) : (
-          <Callout tone="neutral" className="p-4 sm:p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            <Link href="/login">{t('signIn')}</Link>
-            {' '}{t('signInToListen')}
-          </Callout>
-        )}
+        <ABPlayer clipA={clipA} clipB={clipB} />
       </div>
 
       {/* Creator controls */}
@@ -187,6 +180,12 @@ export default async function TestDetailPage({ params }: Props) {
           techniques={techniques}
           existingVotes={existingVotes}
         />
+      )}
+      {!user && !isRevealed && (
+        <Callout tone="neutral" className="p-4 sm:p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          <Link href="/login">{t('signIn')}</Link>
+          {' '}{t('signInToVote')}
+        </Callout>
       )}
 
     </main>

@@ -458,7 +458,7 @@ and the test-creation wizard's track step (including its success `Callout`
 and "add track" `FieldLabel`/`TextInput` form) in both light and dark mode,
 authenticated and unauthenticated.
 
-### ⬜ 23 — Allow anonymous clip playback (planned, not yet built)
+### ✅ 23 — Allow anonymous clip playback
 **The gap this closes:** `app/tests/[id]/page.tsx:159-169` is the *only*
 gate on playback:
 ```tsx
@@ -479,7 +479,7 @@ protected-paths list) and no RLS gate (`clips`/`tests` SELECT policies are
 Confirmed separate from the blind/reveal mechanism: `clip_mapping`
 visibility (`isCreator || isRevealed`, lines 43-55) and vote-tally
 visibility (`canSeeTally`, line 70) are independent gates and do not
-change. Plan only — no code written yet.
+change.
 
 **Decisions:**
 
@@ -512,8 +512,7 @@ change. Plan only — no code written yet.
    references to `signInToListen` in the whole repo: `messages/en.json` and
    `app/tests/[id]/page.tsx` — no other call sites to update.
 
-**Files to update when this step is actually built** (documented now for
-completeness, not part of this plan-only pass):
+**Files updated:**
 - `app/tests/[id]/page.tsx` — the two changes above.
 - `messages/en.json` — key rename.
 - `api-conventions.md` Rule 3 (currently: *"clip playback requires
@@ -534,32 +533,32 @@ completeness, not part of this plan-only pass):
   anonymous-playback assertion.
 
 **Tests:**
-- **Unit:** none needed — `app/tests/[id]/page.tsx` is a server component
+- **Unit:** none added — `app/tests/[id]/page.tsx` is a server component
   with no client-side branching logic to unit test, consistent with the
   existing convention (this page has never had a unit test; it's covered
   end-to-end only).
 - **E2E (`e2e/tests/public-feed.spec.ts`, the unauthenticated Playwright
-  project):** needs a seeded test fixture to visit (same `seedCompleteTest`
-  helper `voting.spec.ts` already uses from `e2e/helpers/admin.ts`). Add:
-  visiting a seeded test's detail page while unauthenticated renders the
-  player (assert the `ABPlayer`/`MediaPlayer` container is present, not the
-  old sign-in callout) — e.g. assert clip labels/audio elements are visible
-  rather than `m.tests.signIn`/`signInToListen` text; and the same page
-  shows the new "Sign in to vote" callout (`m.tests.signInToVote`) in place
-  of the vote form.
-- **E2E (`e2e/tests/voting.spec.ts`, authenticated project):** no behavior
-  change expected for signed-in users, but worth a quick sanity read-through
-  after the change to confirm nothing there implicitly depended on the
-  removed branch (it shouldn't — that suite already runs authenticated
-  throughout).
+  project):** added a new `Anonymous clip playback` describe block using
+  the same `seedCompleteTest` helper `voting.spec.ts` already uses from
+  `e2e/helpers/admin.ts`. Covers: an anonymous visitor to a seeded test's
+  detail page sees the `ABPlayer` (asserted via the `Clip A`/`Clip B`
+  headings it renders); the same page shows the new "Sign in to vote"
+  callout (`m.tests.signInToVote`) — scoped to `getByRole('main')` since
+  the header nav also has its own "Sign in" link.
+- **E2E (`e2e/tests/voting.spec.ts`, authenticated project):** unchanged —
+  confirmed it doesn't implicitly depend on the removed branch.
 
-**Verification once built:** `npm run test` (unit) shows no new failures
-with the same file/test count; `npm run test:e2e` green on both the
-unauthenticated and authenticated projects, including the new
-`public-feed.spec.ts` assertions; manual check in an incognito window
-confirms the player renders and plays both clips while logged out, and that
-attempting to vote surfaces the new "Sign in to vote" prompt instead of a
-vote form.
+**Verified:** `npm run test` — unit suite unchanged at 25 files / 256 tests,
+all passing. `npx tsc --noEmit` — no new errors (32 pre-existing failures
+in `__tests__/supabase-client.test.ts`/`supabase-server.test.ts`, unrelated
+Supabase-mock typing issues, confirmed present before this step's changes
+via `git stash`). `npm run test:e2e` — full suite 27/27 passing (25
+pre-existing + 2 new), both the unauthenticated and authenticated projects,
+run against a local dev server (`.env.local`'s `E2E_BASE_URL` points at the
+staging deployment by default, which doesn't have this branch's code yet —
+overrode it to `http://localhost:3000` for this run). Confirms the player
+renders for a logged-out visitor and the "Sign in to vote" prompt appears
+in place of the vote form on an open test.
 
 ### ⬜ 24 — Delete tests, snapshots, and systems (planned, not yet built)
 User-requested rules: a creator can delete a **test** they created, but

@@ -44,7 +44,7 @@ A web application for audiophile and hi-fi enthusiasts to share, compare, and co
 
 ### Visitor (anonymous)
 - Browse the public feed of tests: title, system description, vote count, status
-- Cannot play clips or vote without registering
+- Can play clips; cannot vote without registering
 
 ### Out of scope for v1
 - Component catalogue (structured make/model database)
@@ -140,7 +140,7 @@ Three navigation views must be implemented to support cross-time comparison:
 | Page | Route | Auth | Description |
 |---|---|---|---|
 | Home / feed | `/` | Public | Paginated list of tests with status, vote count, track info |
-| Test detail | `/tests/[id]` | Public (play requires login) | Clip player, voting UI, results (gated), comments |
+| Test detail | `/tests/[id]` | Public (voting requires login) | Clip player, voting UI, results (gated), comments |
 | Create test | `/tests/new` | Required | Multi-step: select track → select/create snapshots → paste clip URLs → publish |
 | My systems | `/systems` | Required | List systems and their snapshot history |
 | System detail | `/systems/[id]` | Required | Snapshot timeline, cross-check launcher |
