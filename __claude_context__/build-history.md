@@ -579,8 +579,8 @@ does: Supabase + Vercel + Google (OAuth only) as the only third parties, no
 analytics/tracking dependencies, clip URLs are user-supplied links to
 externally hosted media rather than anything hosted by the app, and the
 `comments` schema table is correctly omitted since no UI reads or writes it
-yet. Cross-references step 25 (no self-service account deletion exists yet;
-requests go through the contact email) and step 26 (clip links can go dead
+yet. Cross-references step 26 (no self-service account deletion exists yet;
+requests go through the contact email) and step 27 (clip links can go dead
 — covered by "no warranty").
 
 **Tests:** `e2e/tests/public-feed.spec.ts` — three new assertions in the
@@ -606,7 +606,64 @@ before relying on this as confirmed-working.
   domain via Search Console, publishing the OAuth consent screen) is a
   dashboard action outside this repo, not covered here.
 
-### ⬜ 25 — Delete tests, snapshots, and systems (planned, not yet built)
+### ⬜ 25 — Fixed header/footer app shell with internal scroll region (planned, not yet built)
+**The ask:** header always stays at the top of the viewport, footer always
+stays at the bottom, and page content scrolls independently between them —
+an app-shell layout, not the current model where the whole document
+scrolls in the browser. Plan only — no code written yet.
+
+**Approach — flex-column shell, not `sticky`/`fixed` tricks.** `sticky`/
+`fixed` pin an element *within* an otherwise normally-scrolling page, but
+don't cleanly produce "content scrolls independently between two fixed
+bars." The correct fit:
+
+1. Lock the outer shell to the viewport, no page-level scroll: `<body>`
+   becomes `h-dvh flex flex-col overflow-hidden` — `dvh` (dynamic viewport
+   height), not `vh`/`h-screen`, because mobile Safari/Chrome resize the
+   visible viewport as the address bar shows/hides; `vh` would clip content
+   behind that chrome.
+2. `SiteHeader`/`SiteFooter` become flex items with `shrink-0` — fixed size
+   at the top/bottom of that column, structurally unable to scroll away
+   since there's no page scroll for them to scroll with.
+3. Wrap `{children}` in a new `flex-1 overflow-y-auto` div in
+   `app/layout.tsx` — the only scrollable element. All existing page
+   content renders inside it unchanged.
+
+**Files to touch:**
+- `app/layout.tsx` — the structural change above
+- `components/SiteHeader.tsx`, `components/SiteFooter.tsx` — add `shrink-0`
+- `app/login/page.tsx`, `app/register/page.tsx` — both currently use
+  `min-h-screen` on their own `<main>` to vertically center their form.
+  Nested inside the new scrollable wrapper, `min-h-screen` still means
+  "100dvh," forcing an oversized scrollable region regardless of the
+  header/footer taking their own space — needs to change to `h-full` (fill
+  the available scroll region) instead. No other page needs any change —
+  every other page's `<main>` has no explicit height today, so it flows
+  naturally inside the new wrapper exactly as it does inside the document
+  body currently.
+
+**Risks/decisions to verify at build time, not just assume:**
+- **Double scrollbars** — the whole point is one scrollbar (the inner div),
+  not two. `overflow-hidden` on the shell plus `overflow-y-auto` only on the
+  inner wrapper is what prevents that.
+- **Cmd+F / anchor-link scrolling** — browsers generally handle "scroll to
+  find" correctly against an internal scrollable element, but this is a
+  less common pattern than page-level scroll and is worth a manual check.
+- **Short pages get sticky-footer behavior for free** — e.g. an empty feed
+  state should show the footer pinned at the true bottom of the viewport,
+  not floating right under a short block of content. Worth confirming this
+  actually happens rather than assuming the flexbox math works out.
+
+**Testing/verification plan:** screenshot a long page (home feed) at a
+small viewport height, scroll the middle region, confirm header/footer
+never move; check a short page's footer sits at the true bottom; re-check
+`/login`/`/register` still center correctly after the `h-full` change;
+light and dark mode; a mobile-sized viewport to confirm `dvh` behaves near
+the address bar; confirm no regression of the existing `overflow-x-hidden`
+horizontal-scroll guard in `app/layout.tsx`. No unit tests — pure layout/CSS,
+no branching logic to cover; same reasoning as steps 19–24's static pages.
+
+### ⬜ 26 — Delete tests, snapshots, and systems (planned, not yet built)
 User-requested rules: a creator can delete a **test** they created, but
 only if it has **zero votes recorded** — listening is a real time
 commitment, so once a vote exists it must be respected and the test is
@@ -713,7 +770,7 @@ since the page already has the child count in hand — `app/systems/[id]/
 page.tsx` already fetches each snapshot's tests, and each system's
 snapshots, to render the existing lists.
 
-### ⬜ 26 — Handle verified-broken clip URLs (planned, not yet built)
+### ⬜ 27 — Handle verified-broken clip URLs (planned, not yet built)
 **The gap this closes:** the URL health-check cron (step 10) already writes
 `url_status` (`ok`/`degraded`/`dead`) to `clips` daily, but nothing
 downstream ever reads it — a dead end, not a feature. `lib/clips/
