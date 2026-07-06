@@ -123,3 +123,56 @@ no name is available.
 | Redirected back to the wrong environment after sign-in | The Supabase project's Redirect URL in Step 5 points to the wrong Vercel domain |
 | "Invalid redirect URL" error from Supabase | The `?redirectTo=` destination is not covered by the wildcard added in Step 5 |
 | Display name shows as email local-part after Google sign-in | `raw_user_meta_data` did not contain `full_name` — this is normal for Google Workspace accounts with restricted profile sharing |
+
+---
+
+## Known issue: Google account chooser shows the Supabase ref, not our domain
+
+**Symptom:** After clicking "Continue with Google", the Google account-chooser
+screen reads "to continue to `<project-ref>.supabase.co`" instead of showing
+`audiophile-compare.uk` (or `staging.audiophile-compare.uk`). OAuth itself
+works correctly — this is a branding/trust issue, not a functional bug.
+
+**Cause:** That screen displays the domain of the actual OAuth redirect URI,
+which is the Supabase Auth callback (`https://<project-ref>.supabase.co/auth/v1/callback`,
+see Step 3 above) — not our app's domain.
+
+There are two ways to fix this, not yet applied (deferred — revisit later):
+
+### Option A — Free: show the app name instead of the domain
+
+Configure and publish the Google Cloud OAuth consent screen fully:
+
+1. **Google Cloud Console → APIs & Services → OAuth consent screen**
+2. Set **App name** (e.g. `Audiophile Compare`), add a logo, and add a
+   **Privacy policy** and **Terms of service** URL hosted on our real domain
+3. Add `audiophile-compare.uk` as an **Authorized domain** — requires verifying
+   ownership via Google Search Console
+4. **Publish the app** (move it from "Testing" to "In production"). Since we
+   only request basic `email`/`profile`/`openid` scopes, this does not trigger
+   Google's manual sensitive-scope review — just the domain verification above
+
+Once published, the account chooser shows "to continue to **Audiophile
+Compare**" instead of the raw Supabase subdomain. It shows our app name, not
+the literal domain string.
+
+### Option B — Paid: show the actual domain
+
+Use Supabase's **custom domains** feature so the Auth server itself runs on
+our domain (e.g. `auth.audiophile-compare.uk`) instead of `*.supabase.co`.
+Because the redirect URI's host becomes our domain, Google's account chooser
+then displays it directly.
+
+- Requires the **Pro plan** ($25/mo) plus a **custom domains add-on**
+  (~$10/mo **per project** — both prod and staging would need it separately)
+- Steps: add the new custom-domain callback URL *alongside* the existing
+  `*.supabase.co` one in the Google OAuth client → activate the custom domain
+  in the Supabase dashboard → Supabase Auth then advertises the custom domain
+  as the callback → update Step 3's registered redirect URI accordingly
+- Keep the old `.supabase.co` redirect URI registered during the transition so
+  sign-in doesn't break mid-cutover
+
+**Recommendation:** Option A is free and solves the trust/branding concern
+(proper name and logo instead of a random project ref). Option B is only
+worth the recurring cost if the literal domain string needs to appear, and it
+would be paid twice if enabled on both staging and production.
