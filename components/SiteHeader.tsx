@@ -10,7 +10,7 @@ export default async function SiteHeader() {
   const t = await getTranslations('nav')
 
   return (
-    <header className="border-b border-gray-100 dark:border-gray-800">
+    <header className="shrink-0 border-b border-gray-100 dark:border-gray-800">
       <div className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
 
         <div className="flex items-center gap-3 sm:gap-6 min-w-0">

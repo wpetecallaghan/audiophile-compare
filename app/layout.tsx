@@ -31,11 +31,13 @@ export default async function RootLayout({
   return (
     <html lang="en" className="overflow-x-hidden">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden h-dvh flex flex-col overflow-hidden`}
       >
         <NextIntlClientProvider messages={messages}>
           <SiteHeader />
-          {children}
+          <div className="flex-1 overflow-y-auto">
+            {children}
+          </div>
           <SiteFooter />
         </NextIntlClientProvider>
       </body>

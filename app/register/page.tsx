@@ -6,7 +6,7 @@ export default async function RegisterPage() {
   const t = await getTranslations('auth')
 
   return (
-    <main className="min-h-screen flex items-center justify-center">
+    <main className="h-full flex items-center justify-center">
       <div className="w-full max-w-sm space-y-6 p-8">
         <h1 className="text-2xl font-semibold">{t('registerHeading')}</h1>
         <RegisterForm />
