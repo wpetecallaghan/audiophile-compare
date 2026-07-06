@@ -254,5 +254,49 @@
     "gettingStartedBody": "Browsing is open to everyone.",
     "registerCta": "Create a free account",
     "signInCta": "Sign in"
+  },
+  "footer": {
+    "privacyLink": "Privacy",
+    "termsLink": "Terms"
+  },
+  "privacy": {
+    "heading": "Privacy Policy",
+    "intro": "This page explains what information Audiophile Compare collects, why, and who it's shared with. Audiophile Compare is run by an individual, not a registered company.",
+    "collectHeading": "What I collect",
+    "collectBody": "If you create an account, I collect your email address. If you register with a password, I store a securely hashed version of it — never the password itself. If you sign in with Google, I receive whatever profile information Google shares (typically your name and email address). I also store whatever you choose to enter using the service: hi-fi systems and their snapshots, tracks, tests, the clip URLs you submit, and your votes, including any optional written observation.",
+    "useHeading": "How I use it",
+    "useBody": "This information is used only to run the service — to keep you signed in, to show your own tests and votes back to you, and to display published tests in the public feed. I don't run advertising and I don't use any analytics or tracking tools.",
+    "thirdPartiesHeading": "Third parties",
+    "thirdPartiesBody": "Audiophile Compare is built on Supabase, which stores the database and handles sign-in, and is hosted on Vercel. If you choose to sign in with Google, Google acts as your identity provider for that sign-in only — I don't receive any other data from Google. Clips you submit are links to media hosted elsewhere (YouTube, Vimeo, or a direct file URL you provide) — I don't host that media myself, though an automated check periodically confirms a direct link is still reachable.",
+    "cookiesHeading": "Cookies",
+    "cookiesBody": "The only cookies this service sets are the ones Supabase Auth uses to keep you signed in. They're essential to the service working and aren't used for advertising or tracking.",
+    "rightsHeading": "Your rights and data deletion",
+    "rightsBody": "You can update your display name, email, and password from your profile page at any time. There's currently no self-service way to delete your account — if you'd like your account and data removed, email me and I'll action it.",
+    "childrenHeading": "Children",
+    "childrenBody": "This service isn't directed at children under 16.",
+    "contactHeading": "Governing law and contact",
+    "contactBody": "This policy is governed by the laws of England and Wales. If you have any questions, contact wpete.callaghan@gmail.com."
+  },
+  "terms": {
+    "heading": "Terms of Service",
+    "intro": "These terms cover use of Audiophile Compare. Audiophile Compare is run by an individual, not a registered company. By using the service you agree to them.",
+    "serviceHeading": "The service",
+    "serviceBody": "Audiophile Compare lets you run blind A/B listening tests to compare hi-fi systems, components, or recordings, and lets other people vote on what they hear without knowing which clip is which until you choose to reveal it.",
+    "accountHeading": "Your account",
+    "accountBody": "You're responsible for keeping your account credentials secure and for the accuracy of the information you provide. Please use one account per person — voting is limited to one vote per person per listening technique on each test.",
+    "contentHeading": "Your content",
+    "contentBody": "You keep ownership of everything you submit — systems, snapshots, tracks, tests, clip links, and votes. Publishing a test makes it visible to anyone in the public feed. You're responsible for making sure any clip URL you submit doesn't infringe anyone's rights — the service only links to media hosted elsewhere and doesn't host or review it.",
+    "acceptableUseHeading": "Acceptable use",
+    "acceptableUseBody": "Don't submit illegal or infringing content, don't create multiple accounts to manipulate vote counts, and don't harass other users.",
+    "warrantyHeading": "No warranty",
+    "warrantyBody": "The service is provided as-is, with no uptime guarantee. Clip links point to third-party hosted media, which can occasionally become unreachable — this is outside the service's control.",
+    "liabilityHeading": "Liability",
+    "liabilityBody": "I'm not liable for decisions you make about hi-fi purchases based on test outcomes, or for the availability of third-party hosted media.",
+    "endingHeading": "Ending your use",
+    "endingBody": "Accounts or content may be removed for abuse of the service. You can delete your own eligible tests, snapshots, or systems yourself once that feature is available.",
+    "changesHeading": "Changes to these terms",
+    "changesBody": "These terms may be updated from time to time; continuing to use the service after a change means you accept the update.",
+    "contactHeading": "Governing law and contact",
+    "contactBody": "These terms are governed by the laws of England and Wales. Questions: wpete.callaghan@gmail.com."
   }
 }

@@ -560,118 +560,51 @@ overrode it to `http://localhost:3000` for this run). Confirms the player
 renders for a logged-out visitor and the "Sign in to vote" prompt appears
 in place of the vote form on an open test.
 
-### ⬜ 24 — Add `/privacy` and `/terms` pages (planned, not yet built)
-**Why this step exists:** blocks Option A in `docs/google-oauth.md` (branding
-fix for the Google OAuth account chooser showing the raw Supabase project ref
-instead of the app's name). Google's brand-verification process requires a
-publicly reachable home page plus a Privacy Policy and Terms of Service page,
-all on the same domain, before it will show an app name/logo instead of the
-underlying redirect URI's domain. Also good practice independent of that.
-Plan only — no code written yet.
+### ✅ 24 — Add `/privacy` and `/terms` pages
+Built per plan, no deviations. `app/privacy/page.tsx` and `app/terms/page.tsx`
+— server components, public, static content, mirroring `app/about/page.tsx`
+exactly; neither added to `middleware.ts`'s `protectedPaths`. New `privacy`,
+`terms`, and `footer` namespaces in `messages/en.json` (one key per
+section heading/paragraph, `about`'s convention).
 
-**Route structure — mirrors step 19's `/about` pattern exactly:**
-`app/privacy/page.tsx` and `app/terms/page.tsx`, server components, fully
-static content, no `'use client'`, no auth check — **public**, same access
-model as `/about`, so neither path is added to `middleware.ts`'s
-`protectedPaths`. New `privacy` and `terms` namespaces in `messages/en.json`,
-one key per section heading/paragraph, same convention `about` established
-(prose content, not UI chrome, so paragraph-level keys rather than
-label-level ones).
+New `components/SiteFooter.tsx` (Privacy/Terms links, `variant="nav"` on
+`Link`) rendered in `app/layout.tsx` below `{children}` — kept deliberately
+minimal (no About link, no copyright line) since `SiteHeader.tsx`'s nav
+already carries About in both auth states.
 
-**Footer, not header nav.** `SiteHeader.tsx`'s nav is already dense —
-wordmark + About on the left, and for signed-in users four links plus
-Sign out on the right. Rather than crowd two more links in there, add a new
-`components/SiteFooter.tsx` (doesn't exist today — no footer anywhere in the
-app currently) rendered unconditionally in `app/layout.tsx`, below
-`{children}`, containing Privacy/Terms links (and possibly About). This is
-also the conventional location for legal links and satisfies Google's
-requirement that the policy be reachable from the home page.
+Content uses the four details confirmed by the user (`wpete.callaghan@gmail.com`,
+England and Wales, minimum age 16, individual operator — "I", not "we",
+no company name/address) and is grounded in what the app's code actually
+does: Supabase + Vercel + Google (OAuth only) as the only third parties, no
+analytics/tracking dependencies, clip URLs are user-supplied links to
+externally hosted media rather than anything hosted by the app, and the
+`comments` schema table is correctly omitted since no UI reads or writes it
+yet. Cross-references step 25 (no self-service account deletion exists yet;
+requests go through the contact email) and step 26 (clip links can go dead
+— covered by "no warranty").
 
-**Content — grounded in what the app's code actually does, not generic
-boilerplate. Confirmed via the actual schema, dependency list, and step
-history above, not assumed:**
+**Tests:** `e2e/tests/public-feed.spec.ts` — three new assertions in the
+unauthenticated describe block: `/privacy` and `/terms` each render (200, no
+redirect to `/login`), plus a footer-links-visible check on `/`. No unit
+tests — same reasoning as `/about` (static server components, no branching
+logic).
 
-**Suggested `/privacy` content:**
-1. **What we collect** — email (all auth methods, step 2/16); password hash
-   (email/password sign-up only, step 16); Google profile name/email (Google
-   sign-in only, step 14, and only what Google shares); display name; and all
-   user-generated content — systems, snapshots, tracks, tests, clip URLs,
-   votes (technique + optional observation/"other" description text). Note:
-   the schema has a `comments` table, but no UI reads or writes it today
-   (confirmed — no component or route references `comments`) — don't claim a
-   feature that doesn't exist yet; add this section back if/when a comments
-   UI ships.
-2. **How we use it** — to operate the service (auth sessions, showing your
-   own tests/votes, the public feed). No advertising, and no
-   analytics/tracking libraries anywhere in `package.json` today — call this
-   out explicitly, and flag in a code comment or this doc that the claim
-   needs revisiting if an analytics dependency is ever added.
-3. **Third parties** — Supabase (auth + Postgres hosting; processes all the
-   above as a data processor), Vercel (app hosting), Google (OAuth sign-in
-   only, no ad/tracking integration). Clip URLs point to externally hosted
-   media (YouTube, Vimeo, or direct links) supplied by the test creator — we
-   don't host that media ourselves, but the health-check cron (step 10)
-   does send periodic HEAD requests to `direct`-provider URLs.
-4. **Cookies** — Supabase Auth session cookies only; essential, not
-   tracking/marketing cookies.
-5. **Your rights / deletion** — cross-reference step 25's planned
-   test/snapshot/system deletion feature. Note there is **no self-service
-   account-deletion flow today** (profile page only supports changing
-   email/password/display name, step 16) — until that's built, deletion
-   requests go through the contact email below.
-6. **Children** — not directed at children under 16.
-7. **Governing law / contact** — governed by the laws of England and Wales;
-   contact `wpete.callaghan@gmail.com`; run by an individual, not a
-   registered business — no company name or registered address to include.
+**Verified:** `npx tsc --noEmit` clean for all new/changed files (pre-existing
+unrelated errors in `__tests__/supabase-*.test.ts` untouched — confirmed
+present before this change). `npm run test` — unchanged at 25 files / 256
+tests. **Not verified as rendered**: this sandbox has no `.env.local` with
+Supabase credentials, so `npm run dev` 500s on every route including
+pre-existing ones (confirmed `/about` 500s too, from `middleware.ts` needing
+a live Supabase client on every request) — not something introduced by this
+step, but a real gap in this step's own verification. Run the dev server or
+E2E suite somewhere with Supabase env vars configured (or push to staging)
+before relying on this as confirmed-working.
 
-**Suggested `/terms` content:**
-1. **Service description** — a platform for blind A/B listening tests
-   comparing hi-fi systems/components/recordings.
-2. **Accounts** — accurate account info, responsibility for credential
-   security, one account per person (matters because voting is
-   one-vote-per-user-per-technique, step 7).
-3. **User content & license** — you own what you submit (tracks, tests, clip
-   URLs, votes); publishing a test grants the service a license to display it
-   in the public feed; you're responsible for the legality of any clip URL
-   you submit — the service doesn't host or vet the underlying media, only
-   links to it.
-4. **Acceptable use** — no illegal/infringing content, no manipulating vote
-   counts via multiple accounts, no harassment.
-5. **No warranty** — provided "as is"; linked clip media is third-party
-   hosted and may go offline (direct cross-reference to step 26's planned
-   `url_status`/dead-clip handling); no uptime guarantee.
-6. **Limitation of liability** — not liable for hi-fi purchasing decisions
-   made from test outcomes, or for third-party media availability.
-7. **Termination** — accounts/content may be suspended or removed for abuse;
-   users may delete their own eligible tests/snapshots/systems per step 25's
-   rules once built.
-8. **Changes to these terms** — updates posted here; continued use means
-   acceptance.
-9. **Governing law / contact** — same as the privacy policy: England and
-   Wales, `wpete.callaghan@gmail.com`, individual operator.
-
-**Resolved (confirmed by user, no longer open):**
-- Contact email: `wpete.callaghan@gmail.com`
-- Governing law: England and Wales
-- Minimum age: 16
-- Run as an individual, not a registered business entity — pages should say
-  "I"/the operator's name, not "we"/"the company," and should not reference
-  a registered business address
-
-**Files to add/update:**
-- `app/privacy/page.tsx`, `app/terms/page.tsx` (new, mirror `app/about/page.tsx`)
-- `components/SiteFooter.tsx` (new)
-- `app/layout.tsx` — render `<SiteFooter />` after `{children}`
-- `messages/en.json` — new `privacy` and `terms` namespaces; extend `nav`
-  (or a new `footer` namespace) with the link labels
-- `docs/google-oauth.md` — once built, come back and check off Option A's
-  home-page/privacy/terms prerequisite
-
-**Testing:** same shape as step 19 — add unauthenticated-project E2E
-assertions (`e2e/tests/public-feed.spec.ts` or a new spec) that `/privacy`
-and `/terms` return 200 with no redirect to `/login`. No unit tests — static
-server components with no branching logic to cover, same reasoning as
-`/about`.
+**Still open, not done as part of this step:**
+- `docs/google-oauth.md` Option A — these pages are the prerequisite, but
+  submitting for Google's brand verification (logo upload, Authorized
+  domain via Search Console, publishing the OAuth consent screen) is a
+  dashboard action outside this repo, not covered here.
 
 ### ⬜ 25 — Delete tests, snapshots, and systems (planned, not yet built)
 User-requested rules: a creator can delete a **test** they created, but

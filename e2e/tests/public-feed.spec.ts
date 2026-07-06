@@ -63,6 +63,24 @@ test.describe('Public feed (unauthenticated)', () => {
     await expect(page.getByRole(ROLE.heading, { name: m.about.heading })).toBeVisible()
   })
 
+  test('visiting /privacy shows the privacy policy without requiring login', async ({ page }) => {
+    await page.goto('/privacy')
+    await expect(page).toHaveURL('/privacy')
+    await expect(page.getByRole(ROLE.heading, { name: m.privacy.heading })).toBeVisible()
+  })
+
+  test('visiting /terms shows the terms of service without requiring login', async ({ page }) => {
+    await page.goto('/terms')
+    await expect(page).toHaveURL('/terms')
+    await expect(page.getByRole(ROLE.heading, { name: m.terms.heading })).toBeVisible()
+  })
+
+  test('footer shows Privacy and Terms links', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByRole(ROLE.link, { name: m.footer.privacyLink })).toBeVisible()
+    await expect(page.getByRole(ROLE.link, { name: m.footer.termsLink })).toBeVisible()
+  })
+
   test('visiting /profile redirects to /login', async ({ page }) => {
     await page.goto('/profile')
     await expect(page).toHaveURL(/\/login/)
