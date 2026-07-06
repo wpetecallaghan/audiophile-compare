@@ -326,5 +326,5 @@ insert into public.listening_techniques (name, description, sort_order, is_other
   ('PRaT',                      'Pace, Rhythm and Timing — focuses on drive and rhythmic momentum',                  2, false, true),
   ('Tonal / Frequency balance', 'Assesses bass weight, midrange presence, treble extension and tonal naturalness',   3, false, true),
   ('Soundstage & imaging',      'Width, depth, and specificity of instrument placement',                             4, false, true),
-  ('General preference',        'No specific methodology — overall impression',         vscode-webview://02g76osggdk4pjolg1f5o0s0tj3jqun85pq4ras2lt315huuji66/supabase/migrations/20260625094142_initial_schema.sql                             5, false, true),
+  ('General preference',        'No specific methodology — overall impression',                                     5, false, true),
   ('Other',                     'A different approach not listed above — please describe it',                        6, true,  true);
