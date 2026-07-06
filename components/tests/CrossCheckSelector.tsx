@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
+import { Link } from '@/components/ui/Link'
+import { Heading } from '@/components/ui/Heading'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { Select } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Snapshot = {
   id: string
@@ -128,8 +134,8 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
   return (
     <section className="space-y-4">
       <div className="pb-2 border-b border-gray-100 dark:border-gray-800">
-        <h2 className="text-base font-semibold">{t('heading')}</h2>
-        <p className="text-xs text-gray-400 mt-0.5">
+        <Heading level={2}>{t('heading')}</Heading>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {t('description')}
           no new recording needed. Addresses the risk of successive improvements
           that are locally good but globally suboptimal.
@@ -138,18 +144,14 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
 
       {/* Snapshot pickers */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label
-            className="block text-xs font-medium text-gray-500 dark:text-gray-400"
-            htmlFor="cc-snap-a"
-          >
+        <div>
+          <FieldLabel tone="muted" htmlFor="cc-snap-a">
             Snapshot A
-          </label>
-          <select
+          </FieldLabel>
+          <Select
             id="cc-snap-a"
             value={snapshotAId}
             onChange={e => setSnapshotAId(e.target.value)}
-            className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">{t('choosePlaceholder')}</option>
             {snapshots.map(s => (
@@ -157,21 +159,17 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                 v{s.version} — {s.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
-        <div className="space-y-1">
-          <label
-            className="block text-xs font-medium text-gray-500 dark:text-gray-400"
-            htmlFor="cc-snap-b"
-          >
+        <div>
+          <FieldLabel tone="muted" htmlFor="cc-snap-b">
             Snapshot B
-          </label>
-          <select
+          </FieldLabel>
+          <Select
             id="cc-snap-b"
             value={snapshotBId}
             onChange={e => setSnapshotBId(e.target.value)}
-            className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">{t('choosePlaceholder')}</option>
             {snapshots.map(s => (
@@ -179,35 +177,31 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                 v{s.version} — {s.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
       {/* Status / results */}
       {loading && (
-        <p className="text-sm text-gray-400">Finding shared tracks…</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Finding shared tracks…</p>
       )}
 
-      {fetchError && (
-        <p className="text-sm text-red-500">{fetchError}</p>
-      )}
+      {fetchError && <FormMessage tone="error">{fetchError}</FormMessage>}
 
       {results !== null && !loading && (
         <>
           {results.length === 0 ? (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {t('noSharedTracks')}
             </p>
           ) : (
             <div className="space-y-2">
-              {createError && (
-                <p className="text-sm text-red-500">{createError}</p>
-              )}
+              {createError && <FormMessage tone="error">{createError}</FormMessage>}
 
               {results.map(item => (
                 <div
                   key={item.trackId}
-                  className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 dark:border-gray-800 px-4 py-3"
+                  className="flex items-center justify-between gap-4 rounded border border-gray-100 dark:border-gray-800 px-4 py-3"
                 >
                   {/* Track info */}
                   <div className="space-y-0.5 min-w-0">
@@ -217,7 +211,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                         : item.trackId}
                     </p>
                     {item.track?.album && (
-                      <p className="text-xs text-gray-400 truncate">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {item.track.album}
                       </p>
                     )}
@@ -234,20 +228,20 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                   {/* Action */}
                   <div className="shrink-0">
                     {item.existingTestId ? (
-                      <a
+                      <Link
                         href={`/tests/${item.existingTestId}`}
-                        className="text-xs text-blue-600 hover:underline"
+                        size="compact"
                       >
                         Test exists →
-                      </a>
+                      </Link>
                     ) : (
-                      <button
+                      <Button
+                        size="compact"
                         onClick={() => handleCreate(item)}
                         disabled={creating === item.trackId}
-                        className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                       >
                         {creating === item.trackId ? 'Creating…' : 'Create test'}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

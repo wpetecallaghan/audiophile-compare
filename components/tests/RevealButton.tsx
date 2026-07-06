@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
+import { Callout } from '@/components/ui/Callout'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   testId: string
@@ -36,30 +39,27 @@ export default function RevealButton({ testId }: Props) {
 
   if (confirming) {
     return (
-      <div className="rounded border border-amber-200 bg-amber-50 p-4 space-y-3">
-        <p className="text-sm font-medium text-amber-900">
+      <Callout tone="warning" className="space-y-3">
+        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
           {t('confirmHeading')}
         </p>
-        <p className="text-sm text-amber-700">
+        <p className="text-sm text-amber-800 dark:text-amber-200">
           {t('confirmWarning')}
         </p>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <FormMessage tone="error">{error}</FormMessage>}
         <div className="flex gap-3">
           <button
             onClick={handleReveal}
             disabled={loading}
-            className="bg-amber-600 text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
+            className="bg-amber-600 hover:bg-amber-700 text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
           >
             {loading ? t('revealing') : t('confirmButton')}
           </button>
-          <button
-            onClick={() => setConfirming(false)}
-            className="text-sm text-gray-600 dark:text-gray-300 underline"
-          >
+          <Button variant="secondary" onClick={() => setConfirming(false)}>
             {t('cancelButton')}
-          </button>
+          </Button>
         </div>
-      </div>
+      </Callout>
     )
   }
 

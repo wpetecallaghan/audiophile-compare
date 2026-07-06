@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { TextInput } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 export default function ChangePasswordForm({ autoOpen = false }: { autoOpen?: boolean }) {
   const t = useTranslations('profile')
@@ -71,43 +75,37 @@ export default function ChangePasswordForm({ autoOpen = false }: { autoOpen?: bo
     <div className="space-y-4 max-w-lg">
       <h2 className="text-sm font-semibold">{t('changePasswordHeading')}</h2>
       {success ? (
-        <p className="text-sm text-green-600">{t('passwordUpdated')}</p>
+        <FormMessage tone="success">{t('passwordUpdated')}</FormMessage>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="new-password" className="block text-sm font-medium mb-1">
+            <FieldLabel htmlFor="new-password">
               {t('newPasswordLabel')}
-            </label>
-            <input
+            </FieldLabel>
+            <TextInput
               id="new-password"
               type="password"
               required
               value={password}
               onChange={e => { setPassword(e.target.value); setError(null); setSuccess(false) }}
-              className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <div>
-            <label htmlFor="confirm-new-password" className="block text-sm font-medium mb-1">
+            <FieldLabel htmlFor="confirm-new-password">
               {t('confirmNewPasswordLabel')}
-            </label>
-            <input
+            </FieldLabel>
+            <TextInput
               id="confirm-new-password"
               type="password"
               required
               value={confirm}
               onChange={e => { setConfirm(e.target.value); setError(null) }}
-              className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40"
-          >
+          {error && <FormMessage tone="error">{error}</FormMessage>}
+          <Button type="submit" disabled={submitting}>
             {submitting ? t('updatingPassword') : t('updatePasswordButton')}
-          </button>
+          </Button>
         </form>
       )}
     </div>

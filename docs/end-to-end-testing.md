@@ -57,11 +57,12 @@ e2e/
     routes.ts              ← typed URL builders
   tests/
     public-feed.spec.ts    ← unauthenticated user: feed, redirects
-    auth.spec.ts           ← session state: nav links, sign-out, redirectTo preservation
+    auth.spec.ts           ← session state: nav links, redirectTo preservation
     systems.spec.ts        ← create system, edit system, add snapshot, edit snapshot
     test-creation.spec.ts  ← full wizard: track → snapshots → clips → publish
     voting.spec.ts         ← cast vote, hidden/visible tally, reveal, update vote
     profile.spec.ts        ← update display name
+    zz-sign-out.spec.ts    ← sign out (must run last — see file for why)
 playwright.config.ts
 ```
 
@@ -86,8 +87,7 @@ playwright.config.ts
 | # | Scenario |
 |---|---|
 | 1 | Authenticated header shows Tests / Systems / Tracks / Profile nav links |
-| 2 | Sign out clears the session: header shows "Sign in" after |
-| 3 | `redirectTo` is preserved: `/systems` → login → lands back on `/systems` |
+| 2 | `redirectTo` is preserved: `/systems` → login → lands back on `/systems` |
 
 ### `systems.spec.ts` — system CRUD (creates and cleans up `[E2E]` data)
 
@@ -123,6 +123,20 @@ playwright.config.ts
 | 2 | Update display name and see confirmation |
 | 3 | Save button is disabled when display name is cleared |
 
+### `zz-sign-out.spec.ts` — must run last
+
+| # | Scenario |
+|---|---|
+| 1 | Sign out clears the session: header shows "Sign in" after |
+
+`SignOutButton` calls `supabase.auth.signOut()` with the default **global**
+scope, which revokes every session for the E2E test account — including the
+shared session in `playwright/.auth/user.json` that every other authenticated
+test depends on, regardless of which browser context triggers the sign-out.
+The `zz-` prefix keeps this test running last under the serial (`workers: 1`)
+test order, so its collateral revocation doesn't take down the rest of the
+suite.
+
 ---
 
 ## Environment variables
@@ -135,10 +149,19 @@ SUPABASE_SERVICE_ROLE_KEY=<staging service role key>
 E2E_TEST_USER_EMAIL=e2e-tests@example.com
 E2E_BASE_URL=http://localhost:3000        # local
 # E2E_BASE_URL=https://your-preview.vercel.app   # CI
+VERCEL_AUTOMATION_BYPASS_SECRET=<protection bypass secret>  # only if E2E_BASE_URL is Vercel-protected
 ```
 
 `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are already
 in `.env.local` and must point to the staging project.
+
+`VERCEL_AUTOMATION_BYPASS_SECRET` is only needed when `E2E_BASE_URL` points at
+a Vercel deployment with SSO Deployment Protection enabled — true for most
+staging/preview URLs. Without it, every request gets redirected to
+`vercel.com/sso-api` before ever reaching the app. Generate via
+`vercel project protection enable <project> --protection-bypass`, then read
+the secret back with `vercel project protection <project>`. Not needed for
+`http://localhost:3000`.
 
 ---
 

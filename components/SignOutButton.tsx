@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
+import { linkVariants } from '@/components/ui/Link'
+import { cn } from '@/components/ui/cn'
 
 export default function SignOutButton() {
   const t = useTranslations('nav')
@@ -20,7 +22,7 @@ export default function SignOutButton() {
       type="button"
       onClick={handleSignOut}
       disabled={signingOut}
-      className="text-sm text-gray-500 hover:text-gray-900 disabled:opacity-40"
+      className={cn(linkVariants({ variant: 'nav' }), 'disabled:opacity-40')}
     >
       {signingOut ? t('signingOut') : t('signOut')}
     </button>

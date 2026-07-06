@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
+import { Button, buttonVariants } from '@/components/ui/Button'
+import { TextInput, TextArea } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   systemId: string
@@ -48,39 +51,27 @@ export default function EditSystemForm({ systemId, initialName, initialDescripti
   return (
     <div className="space-y-4 max-w-lg">
       <div className="space-y-3">
-        <input
+        <TextInput
           type="text"
           placeholder={t('editNamePlaceholder')}
           value={name}
           onChange={e => setName(e.target.value)}
           // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
-          className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <textarea
+        <TextArea
           placeholder={t('descriptionPlaceholder')}
           value={description}
           onChange={e => setDescription(e.target.value)}
           rows={3}
-          className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
       </div>
-      {error && (
-        <p className="text-xs text-red-500">{error}</p>
-      )}
+      {error && <FormMessage tone="error">{error}</FormMessage>}
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting || !name.trim()}
-          className="rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40"
-        >
+        <Button type="button" onClick={handleSubmit} disabled={submitting || !name.trim()}>
           {submitting ? t('saving') : t('saveButton')}
-        </button>
-        <Link
-          href={`/systems/${systemId}`}
-          className="text-sm text-gray-500 hover:underline"
-        >
+        </Button>
+        <Link href={`/systems/${systemId}`} className={buttonVariants({ variant: 'secondary' })}>
           {t('cancel')}
         </Link>
       </div>

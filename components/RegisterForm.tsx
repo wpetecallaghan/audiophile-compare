@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { TextInput } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 export default function RegisterForm() {
   const t = useTranslations('auth')
@@ -62,66 +66,58 @@ export default function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="reg-name" className="block text-sm font-medium mb-1">
+        <FieldLabel htmlFor="reg-name">
           {t('nameLabel')}
-        </label>
-        <input
+        </FieldLabel>
+        <TextInput
           id="reg-name"
           type="text"
           required
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder={t('namePlaceholder')}
-          className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
       </div>
       <div>
-        <label htmlFor="reg-email" className="block text-sm font-medium mb-1">
+        <FieldLabel htmlFor="reg-email">
           {t('emailLabel')}
-        </label>
-        <input
+        </FieldLabel>
+        <TextInput
           id="reg-email"
           type="email"
           required
           value={email}
           onChange={e => setEmail(e.target.value)}
-          className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
       </div>
       <div>
-        <label htmlFor="reg-password" className="block text-sm font-medium mb-1">
+        <FieldLabel htmlFor="reg-password">
           {t('passwordLabel')}
-        </label>
-        <input
+        </FieldLabel>
+        <TextInput
           id="reg-password"
           type="password"
           required
           value={password}
           onChange={e => setPassword(e.target.value)}
-          className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
       </div>
       <div>
-        <label htmlFor="reg-confirm" className="block text-sm font-medium mb-1">
+        <FieldLabel htmlFor="reg-confirm">
           {t('confirmPasswordLabel')}
-        </label>
-        <input
+        </FieldLabel>
+        <TextInput
           id="reg-confirm"
           type="password"
           required
           value={confirm}
           onChange={e => setConfirm(e.target.value)}
-          className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full rounded bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-40"
-      >
+      {error && <FormMessage tone="error">{error}</FormMessage>}
+      <Button type="submit" disabled={submitting} className="w-full">
         {submitting ? t('registering') : t('registerButton')}
-      </button>
+      </Button>
     </form>
   )
 }

@@ -61,7 +61,7 @@ Suppress on the element:
 
 ```tsx
 {/* suppressHydrationWarning: toLocaleDateString() may differ between Node.js and browser */}
-<p className="text-xs text-gray-400" suppressHydrationWarning>
+<p className="text-xs text-gray-500 dark:text-gray-400" suppressHydrationWarning>
   {new Date(createdAt).toLocaleDateString()}
 </p>
 ```
@@ -229,7 +229,7 @@ Every layout must prevent horizontal scroll on small screens.
 ```
 
 Use `sm:` and `lg:` breakpoints for padding, gaps, and text sizes:
-`py-6 sm:py-10` · `gap-4 sm:gap-6` · `text-xl sm:text-2xl`
+`py-4 sm:py-6` · `gap-4 sm:gap-6` · `text-xl sm:text-2xl`
 
 Global styles (`app/globals.css`):
 ```css
@@ -290,7 +290,7 @@ export default function GlobalError({
 All user-facing strings live in `messages/en.json`, namespaced by feature area.
 **Never hardcode strings directly in components** — always add them to `en.json` first.
 
-**Namespaces:** `common`, `nav`, `auth`, `systems`, `snapshots`, `tests`, `profile`, `feed`, `tracks`
+**Namespaces:** `common`, `nav`, `auth`, `systems`, `snapshots`, `tests`, `profile`, `feed`, `tracks`, `crosscheck`
 
 **Server components** (async — no bundle cost):
 ```typescript
@@ -326,3 +326,168 @@ requires middleware for session refresh and has not yet published a `proxy.ts` m
 
 **Do NOT migrate to `proxy.ts`** — wait for official Supabase support. The deprecation
 warning can be safely ignored. `middleware.ts` continues to work in Next.js 16+.
+
+---
+
+## 12. Visual design system (established in build step 20)
+
+Established by an audit of actual class usage, not arbitrary rules — see
+`build-history.md` step 20 for the full rationale. Buttons and status badges
+are now real components (`components/ui/Button.tsx`, `Badge.tsx`, built on
+`class-variance-authority` — see `docs/dependencies.md`) specifically because
+hand-copying the same class string into 15+ files is how the drift this step
+cleaned up happened in the first place. Type scale, text color, and border
+roles below aren't (yet) componentized — they're conventions to follow by
+hand — but don't introduce new shades or one-off combinations for those
+either.
+
+**Type scale:** `text-xs` (metadata/badges/timestamps), `text-sm` (body,
+inputs, buttons, nav), `text-base sm:text-lg font-semibold` (h2 section
+headings — always this exact pair, never plain `text-lg` or plain
+`text-base`), `text-xl sm:text-2xl font-semibold` (h1 page headings).
+
+**Text color roles:** primary = default/inherit (or `gray-900`/`gray-100`
+dark for emphasis); muted/secondary = `text-gray-500 dark:text-gray-400`
+(metadata, labels, timestamps); readable secondary body copy (About-page-style
+prose, not metadata) = `text-gray-600 dark:text-gray-300` — a deliberate
+second, higher-contrast tier, not a mistake if you see both. Error messages:
+`text-red-600 dark:text-red-400`. Never leave a light-mode-only or
+dark-mode-only color unpaired — always specify both, since `darkMode: 'media'`
+(see `tailwind.config.ts`) means both render for real users.
+
+**Border roles:** exactly two — default (`border-gray-200 dark:border-gray-700`)
+and subtle/divider (`border-gray-100 dark:border-gray-800`).
+
+**Status badges — use `<Badge status="..." />` (`components/ui/Badge.tsx`),
+never raw `bg-*/text-*` classes:**
+```tsx
+import { Badge } from '@/components/ui/Badge'
+<Badge status="win">Win</Badge>   {/* status: win | loss | draw | blind | revealed */}
+```
+The color pairing for each status (e.g. `bg-green-100 text-green-700
+dark:bg-green-900/40 dark:text-green-300` for `win`) lives in exactly one
+place, `badgeVariants` inside `Badge.tsx`. Need a new status? Add a variant
+there — don't invent a `bg-*`/`text-*` pair at the call site.
+
+**Buttons — use `<Button variant size />` (`components/ui/Button.tsx`),
+never raw `bg-black`/`border` classes:**
+```tsx
+import { Button, buttonVariants } from '@/components/ui/Button'
+<Button onClick={...}>Save</Button>                              {/* primary, standard — the default */}
+<Button variant="secondary" onClick={...}>Cancel</Button>
+<Button size="compact" onClick={...}>+ Add snapshot</Button>      {/* inline/header actions */}
+
+{/* Non-<button> elements styled as a button (e.g. a Next.js <Link>) use the
+    exported variant function directly instead of wrapping in <Button>: */}
+<Link href="/systems" className={buttonVariants({ variant: 'secondary' })}>Cancel</Link>
+```
+Two roles (`primary` default / `secondary`) × two size tiers (`standard`
+default / `compact`, for inline/header actions) — that's the full matrix, see
+`Button.tsx`'s `cva` config for the exact classes per combination. **Primary
+always pairs `bg-black` with `dark:bg-white`** (and `text-white` with
+`dark:text-black`) — the page background is `#0a0a0a` in dark mode (see
+`app/globals.css`), so an unpaired `bg-black` button is invisible against it.
+This was a real bug found via manual dark-mode screenshot verification, not
+code review — visual changes need an actual rendered check, not just a
+class-name audit, which is exactly why this is now a component instead of
+copy-pasted classes: get the pairing right once, everywhere inherits it.
+
+Reserve unstyled/underlined links for real page-to-page navigation
+(breadcrumbs, pagination, CTAs to `/login`/`/register`) — not in-place
+actions like edit/cancel/back, which use `Button`.
+
+A one-off, single-use special case that doesn't fit either role (e.g. the
+amber confirm/trigger buttons in `RevealButton.tsx`) can stay as raw classes
+— don't add a variant to `Button`/`Badge` for something used exactly once;
+that's the same "don't force an abstraction for its own sake" rule as
+everywhere else in this codebase.
+
+**Links — use `<Link variant size />` (`components/ui/Link.tsx`), never
+raw `text-gray-500`/`text-blue-600`/border classes on a `next/link` `Link`:**
+```tsx
+import { Link } from '@/components/ui/Link'
+<Link href="/about" variant="nav" className="shrink-0">About</Link>          {/* header nav */}
+<Link href={`/systems/${id}`} variant="card" className="block">...</Link>    {/* bordered row card */}
+<Link href="/register">Create a free account</Link>                          {/* variant="inline" is the default */}
+<Link href={`/tests/${id}`} size="compact">Test exists →</Link>              {/* smaller inline CTA, e.g. dense lists */}
+```
+Three roles (`nav | card | inline`, `inline` default) — see `Link.tsx`'s
+`cva` config for the exact classes per variant, and `build-history.md` step
+21 for the audit behind them. `card`'s `block` vs `flex items-center
+justify-between` is a real per-page layout difference, not part of the
+variant — pass it via `className`. `size` (`standard` default `| compact`)
+only affects `variant="inline"`; don't rely on a plain `className` override
+to shrink text size on a `Link` — `cn()`/`clsx` won't reliably make a later
+class win over an earlier conflicting one from the variant (that needs
+`tailwind-merge`, which this codebase doesn't use).
+
+Breadcrumb links (bare `hover:underline`, no other classes) are deliberately
+**not** componentized — one utility class repeated a handful of times
+doesn't clear the bar that justified `Button`/`Badge`/`Link`. Keep using
+plain `next/link`'s `Link` with `className="hover:underline"` for those.
+
+Always import `Link` from `@/components/ui/Link`, not `next/link`, unless
+the link doesn't fit any of the three roles above (e.g. a breadcrumb, or one
+already styled via `buttonVariants()`) — in that case import `next/link`
+directly (often aliased `NextLink` in files that need both).
+
+**Headings — use `<Heading level={1|2} />` (`components/ui/Heading.tsx`),
+never a raw `<h1>`/`<h2>` with a hand-copied class string:**
+```tsx
+import { Heading } from '@/components/ui/Heading'
+<Heading level={1}>{t('heading')}</Heading>   {/* page title */}
+<Heading level={2}>{t('sectionHeading')}</Heading>   {/* section heading */}
+```
+A heading with genuinely different sizing (e.g. `ChangePasswordForm.tsx`'s
+smaller `text-sm` disclosure heading) is not a `level={2}` — leave it raw
+rather than force a size it doesn't have.
+
+**Field labels — use `<FieldLabel tone />` (`components/ui/FieldLabel.tsx`):**
+```tsx
+import { FieldLabel } from '@/components/ui/FieldLabel'
+<FieldLabel htmlFor="email">Email</FieldLabel>                 {/* tone="standard" is the default */}
+<FieldLabel tone="muted" htmlFor="cc-snap-a">Snapshot A</FieldLabel>  {/* dense/inline editors */}
+```
+
+**Text fields — use `<TextInput>`/`<TextArea>`/`<Select>`
+(`components/ui/TextField.tsx`), never raw `<input>`/`<textarea>`/`<select>`
+with a hand-copied class string:**
+```tsx
+import { TextInput, TextArea, Select } from '@/components/ui/TextField'
+<TextInput type="email" value={email} onChange={...} />              {/* size="standard" is the default */}
+<TextArea rows={2} value={notes} onChange={...} />
+<TextInput size="compact" value={row.role} onChange={...} />         {/* dense inline editors */}
+```
+All three share one exported `fieldVariants` (`size: standard | compact`) —
+same relationship `Button.tsx` has to `buttonVariants`. **Do not add a
+`size` prop by any other name** — `<input>`/`<select>` have a *native* HTML
+`size` attribute (numeric), so `TextInputProps`/`SelectProps` `Omit` it
+before intersecting with the variant props; redo that Omit if you ever
+change the prop name.
+
+**Inline error/success text — use `<FormMessage tone />`
+(`components/ui/FormMessage.tsx`), never a raw `<p className="text-red-600...">`:**
+```tsx
+import { FormMessage } from '@/components/ui/FormMessage'
+{error && <FormMessage tone="error">{error}</FormMessage>}
+{success && <FormMessage tone="success">{t('successMessage')}</FormMessage>}
+```
+
+**Alert/info boxes — use `<Callout tone />` (`components/ui/Callout.tsx`):**
+```tsx
+import { Callout } from '@/components/ui/Callout'
+<Callout tone="warning">...</Callout>   {/* tone: warning | success | info | neutral */}
+<Callout tone="warning" className="px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">...</Callout>
+```
+Padding/text-size that differs per instance (e.g. `TallyDisplay.tsx`'s
+tighter `px-3 py-2.5`) is a `className` override, not a variant — same
+reasoning as `Link`'s `card` variant.
+
+See `build-history.md` step 22 for the full audit behind these five
+components (exact occurrence counts, and the bugs found and fixed along
+the way — a missing dark-mode variant on an info box, a stray `green-700`,
+two disagreeing "compact" field sizes, three disagreeing "muted" label
+colors). One-off styling that doesn't fit any role (a genuinely unique tab
+bar, a single search-result row button, an inline icon-button) stays raw —
+same "don't force an abstraction used exactly once" rule as everywhere else
+in this codebase.

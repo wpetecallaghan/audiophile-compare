@@ -1,5 +1,7 @@
 import type { TallyResult } from '@/lib/votes/compute-tally'
 import { getTranslations } from 'next-intl/server'
+import { Heading } from '@/components/ui/Heading'
+import { Callout } from '@/components/ui/Callout'
 
 type Props = {
   tally: TallyResult
@@ -15,17 +17,17 @@ export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base sm:text-lg font-semibold">{t('heading')}</h2>
+      <Heading level={2}>{t('heading')}</Heading>
 
       {!hasAnyVotes && (
-        <p className="text-sm text-gray-400">{t('noVotes')}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('noVotes')}</p>
       )}
 
       {divergent && (
-        <div className="rounded border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">
+        <Callout tone="warning" className="px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">
           Techniques disagree on the winner — this change may involve a
           tradeoff.
-        </div>
+        </Callout>
       )}
 
       {/* Curated technique percentage bars */}
@@ -35,7 +37,7 @@ export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
             <div key={r.techniqueId} className="space-y-2">
               <div className="flex justify-between items-baseline">
                 <span className="text-sm font-medium">{r.techniqueName}</span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   {r.total} {r.total === 1 ? 'vote' : 'votes'}
                 </span>
               </div>
@@ -57,7 +59,7 @@ export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
                 ] as const
               ).map(({ clipId, label, percent }) => (
                 <div key={clipId} className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500 w-12 text-right shrink-0">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 w-12 text-right shrink-0">
                     {label}
                   </span>
                   <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
@@ -70,7 +72,7 @@ export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
                       style={{ width: `${percent}%` }}
                     />
                   </div>
-                  <span className="text-xs text-gray-500 w-7 text-right shrink-0">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 w-7 text-right shrink-0">
                     {percent}%
                   </span>
                 </div>
@@ -95,7 +97,7 @@ export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
                 {' — '}
                 {vote.description}
                 {vote.observation && (
-                  <span className="block text-xs text-gray-400 mt-0.5 ml-2">
+                  <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5 ml-2">
                     {vote.observation}
                   </span>
                 )}

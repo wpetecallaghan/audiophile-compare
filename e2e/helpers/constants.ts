@@ -4,3 +4,13 @@
  * Change it here only — it is used throughout seed helpers, specs, and teardown.
  */
 export const E2E_PREFIX = '[E2E]'
+
+/**
+ * ARIA roles passed to page.getByRole() across the E2E specs. Centralized
+ * here since each is repeated many times across every spec file.
+ */
+export const ROLE = {
+  button: 'button',
+  link: 'link',
+  heading: 'heading',
+} as const

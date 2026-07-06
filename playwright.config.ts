@@ -1,5 +1,14 @@
 import { defineConfig, devices } from '@playwright/test'
 import path from 'path'
+import fs from 'fs'
+
+// Playwright's config runs in a plain Node process — unlike `next dev`, it
+// doesn't auto-load `.env.local`, so E2E-only vars (E2E_TEST_USER_EMAIL etc.)
+// silently disappear unless we load them here.
+const envLocalPath = path.join(__dirname, '.env.local')
+if (fs.existsSync(envLocalPath)) {
+  process.loadEnvFile(envLocalPath)
+}
 
 export const AUTH_FILE = path.join(__dirname, 'playwright/.auth/user.json')
 
@@ -19,6 +28,12 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    // Remote targets (staging/preview) sit behind Vercel SSO Deployment
+    // Protection — this header lets the automated browser through without
+    // disabling protection for everyone else.
+    extraHTTPHeaders: process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+      ? { 'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET }
+      : undefined,
   },
 
   projects: [

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
+import { Heading } from '@/components/ui/Heading'
 
 export default async function TracksPage() {
   const supabase = await createClient()
@@ -21,18 +22,18 @@ export default async function TracksPage() {
   }))
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
-        <span className="text-sm text-gray-400">
+        <Heading level={1}>{t('heading')}</Heading>
+        <span className="text-sm text-gray-500 dark:text-gray-400">
           {tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}
         </span>
       </div>
 
       {tracks.length === 0 ? (
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('empty')}{' '}
-          <Link href="/tests/new" className="text-blue-600 underline">
+          <Link href="/tests/new">
             {t('createTestLink')}
           </Link>{' '}
           {t('toAddFirst')}
@@ -43,22 +44,23 @@ export default async function TracksPage() {
             <li key={track.id}>
               <Link
                 href={`/tracks/${track.id}`}
-                className="flex items-center justify-between rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                variant="card"
+                className="flex items-center justify-between"
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
                     {track.artist} — {track.title}
                   </p>
                   {track.album && (
-                    <p className="text-xs text-gray-400 truncate">{track.album}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{track.album}</p>
                   )}
                   {track.passage_note && (
-                    <p className="text-xs text-gray-400 italic truncate">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic truncate">
                       {track.passage_note}
                     </p>
                   )}
                 </div>
-                <span className="ml-4 shrink-0 text-xs text-gray-400">
+                <span className="ml-4 shrink-0 text-xs text-gray-500 dark:text-gray-400">
                   {track.testCount} {track.testCount === 1 ? 'test' : 'tests'}
                 </span>
               </Link>

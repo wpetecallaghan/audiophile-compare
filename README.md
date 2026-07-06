@@ -47,15 +47,21 @@ including Node.js version, Playwright browsers, and the Supabase CLI.
 ## AI context
 
 These files in `__claude_context__/` provide architectural context for AI coding assistants.
-Load `core.md` first, then the file for your task:
+Read `entry.md` first, then the file for your task:
 
 | File | Contents |
 |---|---|
-| [__claude_context__/core.md](__claude_context__/core.md) | Stack, file layout, deployment topology, server/client rules, skill routing guide |
+| [__claude_context__/entry.md](__claude_context__/entry.md) | Entry point: project orientation and routing to the right context file |
+| [__claude_context__/core.md](__claude_context__/core.md) | Stack, file layout, deployment topology, server/client rules, context file routing guide |
 | [__claude_context__/api-conventions.md](__claude_context__/api-conventions.md) | API route patterns, auth checks, security rules, response format, programmatic access |
 | [__claude_context__/components.md](__claude_context__/components.md) | Component patterns, MediaPlayer contracts, wizard state, mobile responsiveness, error boundaries |
 | [__claude_context__/testing.md](__claude_context__/testing.md) | Unit and E2E conventions, test inventory, vitest mocks, Playwright strategy |
 | [__claude_context__/audiophile-compare-schema.md](__claude_context__/audiophile-compare-schema.md) | Complete database schema, RLS policies, query patterns, auth triggers |
 | [__claude_context__/build-history.md](__claude_context__/build-history.md) | Build step log (1–18 with implementation notes) |
 | [__claude_context__/deferred-features.md](__claude_context__/deferred-features.md) | Deferred feature notes: agentic ingestion pipeline, owned blob storage, mobile app |
+| [__claude_context__/repeated-string-constants.md](__claude_context__/repeated-string-constants.md) | Convention: extract repeated string literals into scoped named constants |
+
+See [docs/skills-vs-context.md](docs/skills-vs-context.md) for why this project
+uses a `CLAUDE.md`-routed context directory instead of Claude Code's built-in
+Skill system (`.claude/skills/`).
 

@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import type { VerifiedClip, TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
+import { TextInput } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   draft: TestDraft
@@ -13,17 +17,17 @@ type Props = {
 function VerificationBadge({ result }: { result: VerifiedClip }) {
   if (result.url_status === 'dead') {
     return (
-      <p className="text-sm text-red-600">
+      <FormMessage tone="error">
         This URL could not be reached. Check the link and try again.
-      </p>
+      </FormMessage>
     )
   }
   return (
-    <p className="text-sm text-green-700">
+    <FormMessage tone="success">
       Verified — {result.provider}
       {result.media_type !== 'unknown' && `, ${result.media_type}`}
       {result.url_status === 'degraded' && ' (server responded slowly — may be intermittent)'}
-    </p>
+    </FormMessage>
   )
 }
 
@@ -53,21 +57,21 @@ function ClipInput({
     <div className="space-y-2">
       <p className="text-sm font-medium">Clip {label}</p>
       <div className="flex gap-2">
-        <input
+        <TextInput
           type="url"
           value={url}
           onChange={e => { onUrlChange(e.target.value); }}
           placeholder={urlPlaceholder}
-          className="flex-1 border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
+          className="flex-1"
         />
-        <button
+        <Button
+          variant="secondary"
           onClick={onVerify}
           disabled={!url.trim() || verifying}
-          className="shrink-0 border dark:border-gray-600 rounded px-3 py-2 text-sm font-medium
-            hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-40"
+          className="shrink-0"
         >
           {verifying ? verifyingLabel : verifyLabel}
-        </button>
+        </Button>
       </div>
       {verified && <VerificationBadge result={verified} />}
     </div>
@@ -105,8 +109,8 @@ export default function StepClips({ draft, onComplete }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">{t('heading')}</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <Heading level={2}>{t('heading')}</Heading>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Enter the URL for each recording. Listeners will see these as Clip A
           and Clip B — the before/after identity stays hidden until you reveal.
         </p>
@@ -138,7 +142,7 @@ export default function StepClips({ draft, onComplete }: Props) {
 
       <div className="rounded border p-4 space-y-2">
         <p className="text-sm font-medium">{t('beforeQuestion')}</p>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('beforeDescription')}
         </p>
         <div className="flex gap-4 mt-2">
@@ -156,7 +160,7 @@ export default function StepClips({ draft, onComplete }: Props) {
         </div>
       </div>
 
-      <button
+      <Button
         disabled={!canContinue}
         onClick={() => onComplete({
           clipAUrl: urlA,
@@ -165,10 +169,10 @@ export default function StepClips({ draft, onComplete }: Props) {
           clipBVerified: verifiedB,
           beforeIsA,
         })}
-        className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
+        className="w-full"
       >
         {tw('continueButton')}
-      </button>
+      </Button>
     </div>
   )
 }

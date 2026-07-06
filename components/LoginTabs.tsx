@@ -52,7 +52,7 @@ export default function LoginTabs({ redirectTo }: { redirectTo?: string }) {
               <button
                 type="button"
                 onClick={() => setShowForgot(true)}
-                className="text-xs text-gray-500 hover:underline"
+                className="text-xs text-gray-500 dark:text-gray-400 hover:underline"
               >
                 {t('forgotPasswordLink')}
               </button>
@@ -70,7 +70,7 @@ export default function LoginTabs({ redirectTo }: { redirectTo?: string }) {
       )}
 
       {/* Register link */}
-      <p className="text-center text-xs text-gray-500">
+      <p className="text-center text-xs text-gray-500 dark:text-gray-400">
         <Link href="/register" className="hover:underline">
           {t('registerLink')}
         </Link>

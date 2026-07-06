@@ -5,6 +5,10 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { TextInput } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
   const t = useTranslations('auth')
@@ -38,25 +42,21 @@ export default function LoginForm({ redirectTo }: { redirectTo?: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-1">
+        <FieldLabel htmlFor="email">
           {t('emailLabel')}
-        </label>
-        <input
+        </FieldLabel>
+        <TextInput
           id="email"
           type="email"
           required
           value={email}
           onChange={e => setEmail(e.target.value)}
-          className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button
-        type="submit"
-        className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium"
-      >
+      {error && <FormMessage tone="error">{error}</FormMessage>}
+      <Button type="submit" className="w-full">
         {t('magicLinkButton')}
-      </button>
+      </Button>
     </form>
   )
 }

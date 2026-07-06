@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import CreateTestForm from '@/components/tests/CreateTestForm'
 import type { SystemWithSnapshots } from '@/lib/types/test-creation'
 import { getTranslations } from 'next-intl/server'
+import { Heading } from '@/components/ui/Heading'
 
 export default async function NewTestPage() {
   const supabase = await createClient()
@@ -28,10 +29,10 @@ export default async function NewTestPage() {
     .order('version', { referencedTable: 'system_snapshots', ascending: false })
 
   return (
-    <main className="min-h-screen px-4 py-12">
-      <h1 className="text-2xl font-semibold mb-8 max-w-2xl mx-auto">
+    <main className="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+      <Heading level={1}>
         {t('newHeading')}
-      </h1>
+      </Heading>
       <CreateTestForm systems={(systems ?? []) as SystemWithSnapshots[]} />
     </main>
   )

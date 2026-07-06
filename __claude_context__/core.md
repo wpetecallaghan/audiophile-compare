@@ -3,12 +3,12 @@ name: audiophile-compare-core
 description: >
   Technology stack, file layout, deployment topology, and server/client rules
   for the audiophile A/B comparison app. Read this first before any coding
-  task, then load the skill file that matches your work category (see §5).
+  task, then load the context file that matches your work category (see §5).
 ---
 
 # Audiophile Compare — Core Reference
 
-Read this file first. Then load the skill file for your task (§5).
+Read this file first. Then load the context file for your task (§5).
 
 ---
 
@@ -73,9 +73,11 @@ app/
     votes/route.ts
     votes/[id]/route.ts
   auth/callback/route.ts                    ← Magic link + OAuth code exchange
+  auth/confirm/route.ts                     ← token_hash verification (admin/service-issued links)
   global-error.tsx                          ← Required for Next.js 16 + Turbopack
   layout.tsx
   page.tsx                                  ← Public feed (server, paginated)
+  about/page.tsx                            ← Public: why/how explainer, no auth
   login/page.tsx
   register/page.tsx
   profile/page.tsx
@@ -87,8 +89,19 @@ app/
   tests/[id]/page.tsx
   tracks/page.tsx
   tracks/[id]/page.tsx
+  version/page.tsx                          ← Admin-only: deployed commit info
 
 components/
+  ui/
+    Button.tsx                               ← cva-based; variant (primary/secondary) × size (standard/compact)
+    Badge.tsx                                ← cva-based; status (win/loss/draw/blind/revealed)
+    Link.tsx                                 ← cva-based; wraps next/link; variant (nav/card/inline) × size (inline only)
+    Heading.tsx                              ← cva-based; wraps h1/h2; level (1/2)
+    FieldLabel.tsx                           ← cva-based; wraps label; tone (standard/muted)
+    TextField.tsx                            ← cva-based; TextInput/TextArea/Select share fieldVariants; size (standard/compact)
+    FormMessage.tsx                          ← cva-based; wraps p; tone (error/success)
+    Callout.tsx                              ← cva-based; wraps div; tone (warning/success/info/neutral)
+    cn.ts                                    ← clsx wrapper for merging conditional class lists
   media/
     ABPlayer.tsx                            ← Client: owns refs, coordinates pause
     MediaPlayer.tsx                         ← Client: routes to correct player
@@ -140,6 +153,10 @@ lib/
   votes/
     compute-outcome.ts                      ← computeOutcome(); Outcome type
     compute-tally.ts                        ← computeTally(); RawVoteRow, CuratedResult types
+  admin/
+    is-admin-email.ts                       ← isAdminEmail(); ADMIN_EMAILS allowlist check for /version
+                                               (unrelated to lib/supabase/admin.ts's service-role client —
+                                               "admin" here means privileged user, not DB access level)
   types/
     test-creation.ts                        ← TestDraft, Snapshot, SystemWithSnapshots types
   youtube-api.ts                            ← Singleton YouTube IFrame API loader
@@ -154,12 +171,13 @@ types/
 
 **Protected paths** (middleware redirects unauthenticated users to `/login`):
 ```
-/systems, /tracks, /profile, /tests/new
+/systems, /tracks, /profile, /tests/new, /version
 ```
+`/version` is also gated by an `ADMIN_EMAILS` allowlist beyond just auth — see `build-history.md` step 18.
 
 **Public paths** (no login required to view; login required for play/vote — enforced in API routes):
 ```
-/, /tests/[id], /login, /register, /auth/callback
+/, /about, /tests/[id], /login, /register, /auth/callback, /auth/confirm
 ```
 
 ---
@@ -170,7 +188,7 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ---
 
-## 5. Which skill file to load
+## 5. Which context file to load
 
 | Task | Load |
 |---|---|
@@ -179,9 +197,10 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 | Writing or modifying tests | `testing.md` |
 | Writing queries, migrations, or RLS policies | `audiophile-compare-schema.md` |
 | Any task touching the data model | `audiophile-compare-schema.md` |
+| Writing or reviewing code (app or test) that repeats a string literal | `repeated-string-constants.md` |
 
 ---
 
 ## 6. Build status
 
-All 18 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ⬜ 18 visual polish). The current unit test suite is 24 files / 249 tests passing. See `testing.md` for the full inventory.
+All 22 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ✅ 19 about page; ✅ 20 visual polish; ✅ 21 Link component; ✅ 22 Heading/FieldLabel/TextField/FormMessage/Callout components). The current unit test suite is 25 files / 256 tests passing. See `testing.md` for the full inventory.

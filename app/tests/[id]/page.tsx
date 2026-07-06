@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import { Link } from '@/components/ui/Link'
+import { Callout } from '@/components/ui/Callout'
 import ABPlayer from '@/components/media/ABPlayer'
 import RevealButton from '@/components/tests/RevealButton'
 import MappingBadge from '@/components/tests/MappingBadge'
@@ -10,6 +12,7 @@ import { computeTally } from '@/lib/votes/compute-tally'
 import type { Technique, ExistingVote } from '@/components/tests/VoteForm'
 import type { RawVoteRow, TallyResult } from '@/lib/votes/compute-tally'
 import { getTranslations } from 'next-intl/server'
+import { Heading } from '@/components/ui/Heading'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -122,22 +125,22 @@ export default async function TestDetailPage({ params }: Props) {
   const creator = Array.isArray(test.creator) ? test.creator[0] : test.creator
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
       {/* Header */}
       <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           {isRevealed ? t('revealedStatus') : t('blindStatus')}
         </p>
-        <h1 className="text-xl sm:text-2xl font-semibold">{test.title}</h1>
-        <p className="text-sm text-gray-500">
+        <Heading level={1}>{test.title}</Heading>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {track?.artist} — {track?.title}
           {track?.album && ` (${track.album})`}
         </p>
         {track?.passage_note && (
-          <p className="text-sm text-gray-400 italic">{track.passage_note}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 italic">{track.passage_note}</p>
         )}
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           by {creator?.display_name ?? t('anonymous')} ·{' '}
           {new Date(test.created_at).toLocaleDateString()} ·{' '}
           {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
@@ -158,10 +161,10 @@ export default async function TestDetailPage({ params }: Props) {
         {user ? (
           <ABPlayer clipA={clipA} clipB={clipB} />
         ) : (
-          <div className="rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 sm:p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            <a href="/login" className="text-blue-600 underline">{t('signIn')}</a>
+          <Callout tone="neutral" className="p-4 sm:p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+            <Link href="/login">{t('signIn')}</Link>
             {' '}{t('signInToListen')}
-          </div>
+          </Callout>
         )}
       </div>
 

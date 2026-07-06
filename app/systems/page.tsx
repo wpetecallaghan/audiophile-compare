@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import NextLink from 'next/link'
+import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
+import { buttonVariants } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
 
 export default async function SystemsPage() {
   const supabase = await createClient()
@@ -29,26 +32,26 @@ export default async function SystemsPage() {
   const systems = data ?? []
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
+        <Heading level={1}>{t('heading')}</Heading>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-gray-500 dark:text-gray-400">
             {systems.length} {systems.length === 1 ? 'system' : 'systems'}
           </span>
-          <Link
+          <NextLink
             href="/systems/new"
-            className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
+            className={buttonVariants({ size: 'compact' })}
           >
             {t('newButton')}
-          </Link>
+          </NextLink>
         </div>
       </div>
 
       {systems.length === 0 ? (
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('empty')}{' '}
-          <Link href="/tests/new" className="text-blue-600 underline">
+          <Link href="/tests/new">
             {t('createTestLink')}
           </Link>{' '}
           to add your first system.
@@ -62,23 +65,24 @@ export default async function SystemsPage() {
               <li key={system.id}>
                 <Link
                   href={`/systems/${system.id}`}
-                  className="block rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  variant="card"
+                  className="block"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-sm font-medium">{system.name}</p>
                       {system.description && (
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           {system.description}
                         </p>
                       )}
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {snapshots.length}{' '}
                         {snapshots.length === 1 ? 'snapshot' : 'snapshots'}
                         {latest && ` · latest: v${latest.version} — ${latest.label}`}
                       </p>
                     </div>
-                    <span className="shrink-0 text-xs text-gray-400">
+                    <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
                       {new Date(system.created_at).toLocaleDateString()}
                     </span>
                   </div>

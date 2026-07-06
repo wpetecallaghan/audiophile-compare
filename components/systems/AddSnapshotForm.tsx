@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
+import { TextInput, TextArea } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   systemId: string
@@ -60,55 +63,48 @@ export default function AddSnapshotForm({ systemId }: Props) {
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={handleOpen}
-        className="text-sm text-blue-600 hover:underline"
-      >
+      <Button type="button" variant="secondary" onClick={handleOpen}>
         {t('addButton')}
-      </button>
+      </Button>
     )
   }
 
   return (
     <div className="space-y-3 rounded border border-gray-200 dark:border-gray-700 p-4">
       <p className="text-sm font-medium">{t('newHeading')}</p>
-      <input
+      <TextInput
         type="text"
         placeholder={t('labelPlaceholder')}
         value={label}
         onChange={e => setLabel(e.target.value)}
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-      <textarea
+      <TextArea
         placeholder={t('notesPlaceholder')}
         value={notes}
         onChange={e => setNotes(e.target.value)}
         rows={2}
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
       />
-      {error && (
-        <p className="text-xs text-red-500">{error}</p>
-      )}
+      {error && <FormMessage tone="error">{error}</FormMessage>}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="button"
+          size="compact"
           onClick={handleSubmit}
           disabled={submitting || !label.trim()}
-          className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
         >
           {submitting ? t('adding') : t('submitButton')}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
+          size="compact"
           onClick={handleCancel}
           disabled={submitting}
-          className="text-xs text-gray-500 hover:underline"
         >
           {t('cancel')}
-        </button>
+        </Button>
       </div>
     </div>
   )

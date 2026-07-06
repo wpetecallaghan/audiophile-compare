@@ -4,6 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { TextInput } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   draft: TestDraft
@@ -63,8 +68,8 @@ export default function StepPublish({ draft, onBack }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">{t('heading')}</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <Heading level={2}>{t('heading')}</Heading>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Review your test, give it a title, then publish.
         </p>
       </div>
@@ -72,9 +77,9 @@ export default function StepPublish({ draft, onBack }: Props) {
       {/* Summary */}
       <div className="rounded border dark:border-gray-700 divide-y dark:divide-gray-700 text-sm">
         <div className="px-4 py-3 space-y-0.5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">{t('trackBadge')}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('trackBadge')}</p>
           <p className="font-medium">{draft.track?.artist} — {draft.track?.title}</p>
-          {draft.track?.album && <p className="text-gray-500">{draft.track.album}</p>}
+          {draft.track?.album && <p className="text-gray-500 dark:text-gray-400">{draft.track.album}</p>}
         </div>
         <div className="px-4 py-3 grid grid-cols-2 gap-4">
           {(['A', 'B'] as const).map(side => {
@@ -83,11 +88,11 @@ export default function StepPublish({ draft, onBack }: Props) {
             const isBefore = side === 'A' ? draft.beforeIsA : !draft.beforeIsA
             return (
               <div key={side} className="space-y-1">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   Clip {side} {isBefore ? '(before)' : '(after)'}
                 </p>
                 <p className="font-medium">v{snap?.version} — {snap?.label}</p>
-                <p className="text-gray-500 break-all">{url}</p>
+                <p className="text-gray-500 dark:text-gray-400 break-all">{url}</p>
               </div>
             )
           })}
@@ -95,34 +100,26 @@ export default function StepPublish({ draft, onBack }: Props) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <FieldLabel>
           Test title
-        </label>
-        <input
+        </FieldLabel>
+        <TextInput
           type="text"
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder={t('titlePlaceholder')}
-          className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
         />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <FormMessage tone="error">{error}</FormMessage>}
 
       <div className="flex gap-3">
-        <button
-          onClick={onBack}
-          className="text-sm text-gray-600 dark:text-gray-300 underline"
-        >
+        <Button variant="secondary" onClick={onBack}>
           Back
-        </button>
-        <button
-          disabled={!title.trim() || loading}
-          onClick={handlePublish}
-          className="flex-1 bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
-        >
+        </Button>
+        <Button disabled={!title.trim() || loading} onClick={handlePublish} className="flex-1">
           {loading ? t('publishing') : t('publishButton')}
-        </button>
+        </Button>
       </div>
     </div>
   )

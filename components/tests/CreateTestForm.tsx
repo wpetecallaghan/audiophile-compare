@@ -56,19 +56,19 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="space-y-6">
 
       {/* Step indicator */}
       <div className="flex items-center gap-0">
         {STEPS.map((label, i) => (
           <div key={i} className="flex items-center">
             <div className={`flex items-center gap-2 text-sm
-              ${i === step ? 'font-semibold text-black dark:text-white' : 'text-gray-400'}`}
+              ${i === step ? 'font-semibold text-black dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}
             >
               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs
                 ${i < step  ? 'bg-black text-white dark:bg-white dark:text-black' : ''}
                 ${i === step ? 'ring-2 ring-black dark:ring-white text-black dark:text-white' : ''}
-                ${i > step  ? 'ring-1 ring-gray-300 dark:ring-gray-600 text-gray-400' : ''}
+                ${i > step  ? 'ring-1 ring-gray-300 dark:ring-gray-600 text-gray-500 dark:text-gray-400' : ''}
               `}>
                 {i < step ? '✓' : i + 1}
               </span>

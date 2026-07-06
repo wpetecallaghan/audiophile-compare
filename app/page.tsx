@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
-import Link from 'next/link'
+import { Link } from '@/components/ui/Link'
 import FeedCard from '@/components/feed/FeedCard'
 import type { FeedTest } from '@/components/feed/FeedCard'
 import { getTranslations } from 'next-intl/server'
+import { buttonVariants } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
 
 const PAGE_SIZE = 20
 
@@ -89,20 +91,20 @@ export default async function HomePage({ searchParams }: Props) {
   const t = await getTranslations('feed')
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-semibold">{t('heading')}</h1>
-          <p className="text-sm text-gray-400">
+          <Heading level={1}>{t('heading')}</Heading>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {t('subheading')}
           </p>
         </div>
         {user && (
           <Link
             href="/tests/new"
-            className="shrink-0 rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800"
+            className={buttonVariants({ size: 'compact', className: 'shrink-0' })}
           >
             {t('newTestButton')}
           </Link>
@@ -111,15 +113,15 @@ export default async function HomePage({ searchParams }: Props) {
 
       {/* Feed */}
       {feedTests.length === 0 ? (
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('noTests')}{' '}
           {user ? (
-            <Link href="/tests/new" className="text-blue-600 underline">
+            <Link href="/tests/new">
               {t('createFirst')}
             </Link>
           ) : (
             <>
-              <Link href="/login" className="text-blue-600 underline">{t('signIn')}</Link>
+              <Link href="/login">{t('signIn')}</Link>
               {' '}{t('toCreateFirst')}
             </>
           )}
@@ -138,20 +140,18 @@ export default async function HomePage({ searchParams }: Props) {
           {hasPrev ? (
             <Link
               href={`/?page=${page - 1}`}
-              className="text-sm text-blue-600 hover:underline"
             >
               {t('previousPage')}
             </Link>
           ) : (
             <span />
           )}
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
             {t('pageOf', { page, total: totalPages })}
           </span>
           {hasNext ? (
             <Link
               href={`/?page=${page + 1}`}
-              className="text-sm text-blue-600 hover:underline"
             >
               {t('nextPage')}
             </Link>

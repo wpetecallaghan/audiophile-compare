@@ -1,13 +1,15 @@
 'use client'
 
+import { Callout } from '@/components/ui/Callout'
+
 type Props = {
   url: string
 }
 
 export default function UnknownPlayer({ url }: Props) {
   return (
-    <div className="rounded border border-yellow-300 bg-yellow-50 p-4 text-sm space-y-2">
-      <p className="font-medium text-yellow-800">
+    <Callout tone="warning" className="text-sm space-y-2">
+      <p className="font-medium text-amber-800 dark:text-amber-200">
         This URL could not be identified as a supported media source.
       </p>
       <a
@@ -18,6 +20,6 @@ export default function UnknownPlayer({ url }: Props) {
       >
         Open link directly
       </a>
-    </div>
+    </Callout>
   )
 }

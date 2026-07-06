@@ -153,7 +153,7 @@ comments (
 --
 -- ALTER TABLE public.clips ADD COLUMN storage_key text;
 --
--- See core.md §1 notes and docs/audiophile-compare-app-specification.md for storage expansion rationale.
+-- See deferred-features.md "Owned blob storage" and docs/audiophile-compare-app-specification.md for storage expansion rationale.
 ```
 
 ---
@@ -180,7 +180,7 @@ All tables have RLS enabled. Policy intent per table:
 same RLS policies as any other user — no policy exceptions are needed. Tests
 it creates are owned by `ingestion_bot` and can be revealed by that user only.
 The `source_ref` column on `tests` (UNIQUE, nullable) records forum provenance
-for idempotency — see SKILL.md section 5a.
+for idempotency — see `api-conventions.md §5` (Programmatic access).
 
 ### clip_mapping policy (most important)
 ```sql

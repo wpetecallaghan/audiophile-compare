@@ -41,3 +41,4 @@ All detailed context is in `__claude_context__/`. Read `core.md` first for the f
 | Queries / migrations / RLS | `audiophile-compare-schema.md` |
 | Build history / orientation | `build-history.md` |
 | Deferred features (ingestion, storage, mobile) | `deferred-features.md` |
+| Writing or reviewing code (app or test) that repeats a string literal | `repeated-string-constants.md` |

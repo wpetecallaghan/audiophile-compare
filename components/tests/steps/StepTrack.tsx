@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react'
 import type { Track, TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
+import { FieldLabel } from '@/components/ui/FieldLabel'
+import { TextInput } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
+import { Callout } from '@/components/ui/Callout'
 
 type Props = {
   draft: TestDraft
@@ -62,28 +68,25 @@ export default function StepTrack({ draft, onComplete }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Track</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <Heading level={2}>Track</Heading>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Find the recording used in this test, or add it if it's not listed.
         </p>
       </div>
 
       {selected ? (
-        <div className="rounded border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4 space-y-1">
+        <Callout tone="success" className="space-y-1">
           <p className="font-medium">{selected.artist} — {selected.title}</p>
           {selected.album && (
             <p className="text-sm text-gray-600 dark:text-gray-300">{selected.album}</p>
           )}
           {selected.passage_note && (
-            <p className="text-sm text-gray-500 italic">{selected.passage_note}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 italic">{selected.passage_note}</p>
           )}
-          <button
-            onClick={() => setSelected(null)}
-            className="text-sm text-blue-600 underline mt-2 block"
-          >
+          <Button variant="secondary" onClick={() => setSelected(null)} className="mt-2">
             Change track
-          </button>
-        </div>
+          </Button>
+        </Callout>
       ) : creating ? (
         <div className="space-y-4 rounded border dark:border-gray-700 p-4">
         <h3 className="font-medium text-sm">{t('addTrackHeading')}</h3>
@@ -93,55 +96,46 @@ export default function StepTrack({ draft, onComplete }: Props) {
             { label: t('albumLabel'),  value: album,  set: setAlbum  },
           ].map(({ label, value, set }) => (
             <div key={label}>
-              <label className="block text-sm font-medium mb-1">{label}</label>
-              <input
+              <FieldLabel>{label}</FieldLabel>
+              <TextInput
                 type="text"
                 value={value}
                 onChange={e => set(e.target.value)}
-                className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
               />
             </div>
           ))}
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <FieldLabel>
               {t('passageNoteLabel')}
-              <span className="text-gray-400 font-normal ml-1">
+              <span className="text-gray-500 dark:text-gray-400 font-normal ml-1">
                 (e.g. "Opening bars, track 3")
               </span>
-            </label>
-            <input
+            </FieldLabel>
+            <TextInput
               type="text"
               value={passageNote}
               onChange={e => setPassageNote(e.target.value)}
-              className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <FormMessage tone="error">{error}</FormMessage>}
           <div className="flex gap-3">
-            <button
-              onClick={handleCreate}
-              className="bg-black text-white rounded px-4 py-2 text-sm font-medium"
-            >
+            <Button onClick={handleCreate}>
               {t('createButton')}
-            </button>
-            <button
-              onClick={() => setCreating(false)}
-              className="text-sm text-gray-600 dark:text-gray-300 underline"
-            >
+            </Button>
+            <Button variant="secondary" onClick={() => setCreating(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <div className="space-y-3">
-          <input
+          <TextInput
             type="text"
             placeholder={t('searchPlaceholder')}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full border dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 rounded px-3 py-2 text-sm"
           />
-          {loading && <p className="text-sm text-gray-400">{t('searching')}</p>}
+          {loading && <p className="text-sm text-gray-500 dark:text-gray-400">{t('searching')}</p>}
           {results.length > 0 && (
             <ul className="border dark:border-gray-700 rounded divide-y dark:divide-gray-700">
               {results.map(track => (
@@ -154,7 +148,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
                     {' — '}
                     {track.title}
                     {track.album && (
-                      <span className="text-gray-500 ml-1">({track.album})</span>
+                      <span className="text-gray-500 dark:text-gray-400 ml-1">({track.album})</span>
                     )}
                   </button>
                 </li>
@@ -162,25 +156,22 @@ export default function StepTrack({ draft, onComplete }: Props) {
             </ul>
           )}
           {!loading && query.trim() && results.length === 0 && (
-            <p className="text-sm text-gray-500">{t('noResults')}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('noResults')}</p>
           )}
-          <button
-            onClick={() => setCreating(true)}
-            className="text-sm text-blue-600 underline"
-          >
+          <Button variant="secondary" onClick={() => setCreating(true)}>
             {t('addTrackLink')}
-          </button>
+          </Button>
         </div>
       )}
 
-      <button
+      <Button
         disabled={isDisabled ? true : undefined}
         onClick={() => onComplete({ track: selected })}
-        className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
+        className="w-full"
         suppressHydrationWarning
       >
         {tw('continueButton')}
-      </button>
+      </Button>
     </div>
   )
 }

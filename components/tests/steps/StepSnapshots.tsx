@@ -3,6 +3,10 @@
 import { useState } from 'react'
 import type { Snapshot, SystemWithSnapshots, TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/components/ui/Button'
+import { Heading } from '@/components/ui/Heading'
+import { TextInput, TextArea } from '@/components/ui/TextField'
+import { FormMessage } from '@/components/ui/FormMessage'
 
 type Props = {
   draft: TestDraft
@@ -90,7 +94,7 @@ function SnapshotSelector({
       <p className="text-sm font-medium">{label}</p>
       {systems.map(system => (
         <div key={system.id} className="border dark:border-gray-700 rounded p-3 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             {system.name}
           </p>
 
@@ -115,7 +119,7 @@ function SnapshotSelector({
               <div>
                 <span className="font-medium">v{snap.version} — {snap.label}</span>
                 {snap.notes && (
-                  <p className="text-gray-500 mt-0.5">{snap.notes}</p>
+                  <p className="text-gray-500 dark:text-gray-400 mt-0.5">{snap.notes}</p>
                 )}
               </div>
             </label>
@@ -124,56 +128,49 @@ function SnapshotSelector({
           {/* Inline mini-form or add button */}
           {addingForSystemId === system.id ? (
             <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800 mt-1">
-              <p className="text-xs font-medium text-gray-500">New snapshot</p>
-              <input
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">New snapshot</p>
+              <TextInput
                 type="text"
                 placeholder="Label (e.g. After — Furutech cable)"
                 value={newLabel}
                 onChange={e => setNewLabel(e.target.value)}
                 // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
-                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <textarea
+              <TextArea
                 placeholder="Notes (optional)"
                 value={newNotes}
                 onChange={e => setNewNotes(e.target.value)}
                 rows={2}
-                className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
-              {createError && (
-                <p className="text-xs text-red-500">{createError}</p>
-              )}
-              <p className="text-xs text-gray-400">
+              {createError && <FormMessage tone="error">{createError}</FormMessage>}
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Components can be filled in on the Systems page after creation.
               </p>
               <div className="flex items-center gap-3">
-                <button
+                <Button
                   type="button"
+                  size="compact"
                   onClick={() => handleSubmit(system.id)}
                   disabled={creating || !newLabel.trim()}
-                  className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
                 >
                   {creating ? 'Adding…' : 'Add snapshot'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="compact"
                   onClick={cancelAdding}
                   disabled={creating}
-                  className="text-xs text-gray-500 hover:underline"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => startAdding(system.id)}
-              className="text-xs text-blue-600 hover:underline"
-            >
+            <Button type="button" variant="secondary" size="compact" onClick={() => startAdding(system.id)}>
               + Add new snapshot
-            </button>
+            </Button>
           )}
         </div>
       ))}
@@ -243,67 +240,60 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
 
   const addSystemTrigger = addingSystem ? (
     <div className="space-y-2 rounded border border-gray-200 dark:border-gray-700 p-3">
-      <p className="text-xs font-medium text-gray-500">New system</p>
-      <input
+      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">New system</p>
+      <TextInput
         type="text"
         placeholder="System name"
         value={newSystemName}
         onChange={e => setNewSystemName(e.target.value)}
         // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
-      <textarea
+      <TextArea
         placeholder="Description (optional)"
         value={newSystemDesc}
         onChange={e => setNewSystemDesc(e.target.value)}
         rows={2}
-        className="w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
       />
-      {systemCreateError && (
-        <p className="text-xs text-red-500">{systemCreateError}</p>
-      )}
+      {systemCreateError && <FormMessage tone="error">{systemCreateError}</FormMessage>}
       <div className="flex items-center gap-3">
-        <button
+        <Button
           type="button"
+          size="compact"
           onClick={handleSystemSubmit}
           disabled={creatingSystem || !newSystemName.trim()}
-          className="rounded bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-40"
         >
           {creatingSystem ? 'Adding…' : 'Add system'}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="secondary"
+          size="compact"
           onClick={cancelAddingSystem}
           disabled={creatingSystem}
-          className="text-xs text-gray-500 hover:underline"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   ) : (
-    <button
-      type="button"
-      onClick={startAddingSystem}
-      className="text-xs text-blue-600 hover:underline"
-    >
+    <Button type="button" variant="secondary" size="compact" onClick={startAddingSystem}>
       + Add new system
-    </button>
+    </Button>
   )
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Systems</h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <Heading level={2}>Systems</Heading>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           {t('description')}
         </p>
       </div>
 
       {noSystems ? (
         <div className="space-y-3">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             You have no systems yet. Add one below to continue.
           </p>
           {addSystemTrigger}
@@ -332,14 +322,14 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
         </div>
       )}
 
-      <button
+      <Button
         disabled={isDisabled ? true : undefined}
         onClick={() => onComplete({ snapshotA, snapshotB })}
-        className="w-full bg-black text-white rounded px-4 py-2 text-sm font-medium disabled:opacity-40"
+        className="w-full"
         suppressHydrationWarning
       >
         {tw('continueButton')}
-      </button>
+      </Button>
     </div>
   )
 }

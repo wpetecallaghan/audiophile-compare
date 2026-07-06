@@ -1,7 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
+import NextLink from 'next/link'
+import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
+import { Badge } from '@/components/ui/Badge'
+import { Heading } from '@/components/ui/Heading'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -42,43 +45,43 @@ export default async function TrackDetailPage({ params }: Props) {
   )
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6">
+    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
       {/* Breadcrumb */}
-      <nav className="text-xs text-gray-400">
-        <Link href="/tracks" className="hover:underline">
+      <nav className="text-xs text-gray-500 dark:text-gray-400">
+        <NextLink href="/tracks" className="hover:underline">
           Tracks
-        </Link>
+        </NextLink>
         {' / '}
         <span>{track.artist} — {track.title}</span>
       </nav>
 
       {/* Header */}
       <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           {t('trackBadge')}
         </p>
-        <h1 className="text-xl sm:text-2xl font-semibold">
+        <Heading level={1}>
           {track.artist} — {track.title}
-        </h1>
+        </Heading>
         {track.album && (
-          <p className="text-sm text-gray-500">{track.album}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{track.album}</p>
         )}
         {track.passage_note && (
-          <p className="text-sm text-gray-400 italic">{track.passage_note}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 italic">{track.passage_note}</p>
         )}
       </div>
 
       {/* Tests */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-semibold">{t('testsHeading')}</h2>
-          <span className="text-sm text-gray-400">
+          <Heading level={2}>{t('testsHeading')}</Heading>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
             {tests.length} {tests.length === 1 ? 'test' : 'tests'}
           </span>
         </div>
 
         {tests.length === 0 ? (
-          <p className="text-sm text-gray-400">{t('noTestsForTrack')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('noTestsForTrack')}</p>
         ) : (
           <ul className="space-y-2">
             {tests.map(test => {
@@ -89,24 +92,22 @@ export default async function TrackDetailPage({ params }: Props) {
                 <li key={test.id}>
                   <Link
                     href={`/tests/${test.id}`}
-                    className="flex items-center justify-between rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    variant="card"
+                    className="flex items-center justify-between"
                   >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{test.title}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         by {creator?.display_name ?? t('anonymous')} ·{' '}
                         {new Date(test.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <span
-                      className={`ml-4 shrink-0 text-xs px-2 py-0.5 rounded-full ${
-                        test.status === 'revealed'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                          : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                      }`}
+                    <Badge
+                      status={test.status === 'revealed' ? 'revealed' : 'blind'}
+                      className="ml-4 shrink-0"
                     >
                       {test.status === 'revealed' ? t('statusRevealed') : t('statusBlind')}
-                    </span>
+                    </Badge>
                   </Link>
                 </li>
               )

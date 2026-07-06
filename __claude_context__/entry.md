@@ -1,14 +1,14 @@
 ---
-name: audiophile-compare
+name: audiophile-compare-entry
 description: >
   Entry point for any coding task on the Audiophile Compare project. Provides
   project orientation and routes to the right context file for your task.
-  Invoke this at the start of any session before loading task-specific files.
+  Read this at the start of any session before loading task-specific files.
 ---
 
-# Audiophile Compare — Project Skill
+# Audiophile Compare — Entry Point
 
-Blind A/B comparison app for hi-fi audio systems. Next.js 15+ App Router, Supabase (Postgres + Auth), Tailwind CSS, Vercel. 16 of 18 build steps complete; 249 unit tests passing.
+Blind A/B comparison app for hi-fi audio systems. Next.js 15+ App Router, Supabase (Postgres + Auth), Tailwind CSS, Vercel. All 22 planned build steps complete; 256 unit tests passing.
 
 ## Step 1 — Always read core.md first
 
@@ -24,6 +24,7 @@ Blind A/B comparison app for hi-fi audio systems. Next.js 15+ App Router, Supaba
 | Queries / migrations / RLS | `audiophile-compare-schema.md` |
 | Build history / orientation | `build-history.md` |
 | Deferred features (ingestion, storage, mobile) | `deferred-features.md` |
+| Writing or reviewing code (app or test) that repeats a string literal | `repeated-string-constants.md` |
 
 ## Key invariants (apply to every task)
 
