@@ -458,7 +458,110 @@ and the test-creation wizard's track step (including its success `Callout`
 and "add track" `FieldLabel`/`TextInput` form) in both light and dark mode,
 authenticated and unauthenticated.
 
-### ⬜ 23 — Delete tests, snapshots, and systems (planned, not yet built)
+### ⬜ 23 — Allow anonymous clip playback (planned, not yet built)
+**The gap this closes:** `app/tests/[id]/page.tsx:159-169` is the *only*
+gate on playback:
+```tsx
+{/* Player — login required to see */}
+<div className="w-full max-w-full min-w-0">
+  {user ? (
+    <ABPlayer clipA={clipA} clipB={clipB} />
+  ) : (
+    <Callout tone="neutral" ...>
+      <Link href="/login">{t('signIn')}</Link>{' '}{t('signInToListen')}
+    </Callout>
+  )}
+</div>
+```
+No middleware involvement (`/tests/[id]` isn't in `middleware.ts`'s
+protected-paths list) and no RLS gate (`clips`/`tests` SELECT policies are
+`using (true)`) — this single conditional is 100% of the enforcement.
+Confirmed separate from the blind/reveal mechanism: `clip_mapping`
+visibility (`isCreator || isRevealed`, lines 43-55) and vote-tally
+visibility (`canSeeTally`, line 70) are independent gates and do not
+change. Plan only — no code written yet.
+
+**Decisions:**
+
+1. **Playback — remove the gate entirely.** Replace the `user ? ... : ...`
+   branch with an unconditional `<ABPlayer clipA={clipA} clipB={clipB} />`.
+   No new prop threading needed — `clipA`/`clipB` are already computed
+   unconditionally above this block (lines 104-105).
+
+2. **Voting — stays gated, but give anonymous visitors an explicit prompt
+   where the vote form used to be invisible.** Today, `{user && !isRevealed
+   && <VoteForm .../>}` (line 182) simply renders nothing for a logged-out
+   visitor — that was fine when the sign-in callout above it already
+   covered "you need an account for any of this." Once playback no longer
+   implies that, add a sibling anonymous-only prompt:
+   ```tsx
+   {!user && !isRevealed && (
+     <Callout tone="neutral" className="p-4 sm:p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+       <Link href="/login">{t('signIn')}</Link>{' '}{t('signInToVote')}
+     </Callout>
+   )}
+   ```
+   placed where `VoteForm` would render. Revealed tests show nothing extra
+   for anonymous visitors (voting is already closed for everyone at that
+   point, same as today).
+
+3. **Copy — repurpose, don't duplicate.** Rename `messages/en.json`'s
+   `tests.signInToListen` (`"to listen to the clips."`) to
+   `tests.signInToVote` (`"to vote."`), reusing the existing `tests.signIn`
+   ("Sign in") key for both the old and new callout. Confirmed only two
+   references to `signInToListen` in the whole repo: `messages/en.json` and
+   `app/tests/[id]/page.tsx` — no other call sites to update.
+
+**Files to update when this step is actually built** (documented now for
+completeness, not part of this plan-only pass):
+- `app/tests/[id]/page.tsx` — the two changes above.
+- `messages/en.json` — key rename.
+- `api-conventions.md` Rule 3 (currently: *"clip playback requires
+  login... Enforced in middleware for protected routes. API routes serving
+  clip data must also check that `user` is not null."*) — rewrite to state
+  playback is public and only voting requires auth; this existing rule text
+  was already slightly aspirational (no middleware or API-route check for
+  clip data actually exists today), so the rewrite also corrects that
+  inaccuracy.
+- `core.md`'s Public paths parenthetical `(login required for play/vote)` →
+  `(login required to vote)`.
+- `docs/audiophile-compare-app-specification.md` — the visitor-persona
+  bullet ("Cannot play clips or vote without registering" → "Can play
+  clips; cannot vote without registering") and the page-structure row for
+  test detail (`Public (play requires login)` → `Public (voting requires
+  login)`).
+- `testing.md` §6 coverage table — `public-feed.spec.ts` row gains the new
+  anonymous-playback assertion.
+
+**Tests:**
+- **Unit:** none needed — `app/tests/[id]/page.tsx` is a server component
+  with no client-side branching logic to unit test, consistent with the
+  existing convention (this page has never had a unit test; it's covered
+  end-to-end only).
+- **E2E (`e2e/tests/public-feed.spec.ts`, the unauthenticated Playwright
+  project):** needs a seeded test fixture to visit (same `seedCompleteTest`
+  helper `voting.spec.ts` already uses from `e2e/helpers/admin.ts`). Add:
+  visiting a seeded test's detail page while unauthenticated renders the
+  player (assert the `ABPlayer`/`MediaPlayer` container is present, not the
+  old sign-in callout) — e.g. assert clip labels/audio elements are visible
+  rather than `m.tests.signIn`/`signInToListen` text; and the same page
+  shows the new "Sign in to vote" callout (`m.tests.signInToVote`) in place
+  of the vote form.
+- **E2E (`e2e/tests/voting.spec.ts`, authenticated project):** no behavior
+  change expected for signed-in users, but worth a quick sanity read-through
+  after the change to confirm nothing there implicitly depended on the
+  removed branch (it shouldn't — that suite already runs authenticated
+  throughout).
+
+**Verification once built:** `npm run test` (unit) shows no new failures
+with the same file/test count; `npm run test:e2e` green on both the
+unauthenticated and authenticated projects, including the new
+`public-feed.spec.ts` assertions; manual check in an incognito window
+confirms the player renders and plays both clips while logged out, and that
+attempting to vote surfaces the new "Sign in to vote" prompt instead of a
+vote form.
+
+### ⬜ 24 — Delete tests, snapshots, and systems (planned, not yet built)
 User-requested rules: a creator can delete a **test** they created, but
 only if it has **zero votes recorded** — listening is a real time
 commitment, so once a vote exists it must be respected and the test is
@@ -565,7 +668,7 @@ since the page already has the child count in hand — `app/systems/[id]/
 page.tsx` already fetches each snapshot's tests, and each system's
 snapshots, to render the existing lists.
 
-### ⬜ 24 — Handle verified-broken clip URLs (planned, not yet built)
+### ⬜ 25 — Handle verified-broken clip URLs (planned, not yet built)
 **The gap this closes:** the URL health-check cron (step 10) already writes
 `url_status` (`ok`/`degraded`/`dead`) to `clips` daily, but nothing
 downstream ever reads it — a dead end, not a feature. `lib/clips/
@@ -620,13 +723,13 @@ behavior change.
    message instead of the normal vote controls when true. Server-side,
    `POST /api/votes` re-checks clip status before accepting and returns 409
    if a chosen clip is dead — defense in depth against a direct API call
-   bypassing the UI gate, same pattern as step 23's DB-level backstop on
+   bypassing the UI gate, same pattern as step 24's DB-level backstop on
    vote-blocked test deletion. `degraded` alone never blocks voting — it
    may be transient (a 5xx or a timeout), and blocking on it would punish
    listeners for a possibly-temporary failure.
 
 3. **Remediation — creator can replace a dead clip's URL, but only if the
-   test has zero votes, mirroring step 23's "once voted, frozen forever"
+   test has zero votes, mirroring step 24's "once voted, frozen forever"
    principle exactly.** Replacing a clip's URL changes what's being
    compared; on a voted test that risks retroactively misrepresenting what
    earlier listeners actually heard, the same integrity concern that
