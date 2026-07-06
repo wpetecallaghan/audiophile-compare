@@ -141,20 +141,37 @@ There are two ways to fix this, not yet applied (deferred — revisit later):
 
 ### Option A — Free: show the app name instead of the domain
 
-Configure and publish the Google Cloud OAuth consent screen fully:
+Showing an app name and logo (instead of just publishing with defaults)
+requires completing Google's **brand verification** process — a lighter
+review than full sensitive-scope verification, but a real submission with a
+real review turnaround. This needs actual hosted pages, not just form fields:
 
-1. **Google Cloud Console → APIs & Services → OAuth consent screen**
-2. Set **App name** (e.g. `Audiophile Compare`), add a logo, and add a
-   **Privacy policy** and **Terms of service** URL hosted on our real domain
-3. Add `audiophile-compare.uk` as an **Authorized domain** — requires verifying
-   ownership via Google Search Console
-4. **Publish the app** (move it from "Testing" to "In production"). Since we
-   only request basic `email`/`profile`/`openid` scopes, this does not trigger
-   Google's manual sensitive-scope review — just the domain verification above
+1. **A public home page** at our domain (e.g. `https://audiophile-compare.uk`)
+   that is publicly reachable and clearly relevant to the app
+2. **A Privacy Policy page** hosted on that same domain, disclosing how the
+   app accesses and uses Google user data — e.g. `/privacy`
+3. **A Terms of Service page** on the same domain — e.g. `/terms`. Some
+   sources list this as merely recommended, but Google's brand-verification
+   requirements list it alongside the privacy policy, so treat it as required
+4. In **Google Cloud Console → APIs & Services → OAuth consent screen**, set:
+   - **App name** (e.g. `Audiophile Compare`) — a text field
+   - **App logo** — a direct image upload (120×120px minimum), not a URL
+   - The home page, privacy policy, and terms of service links from steps 1–3
+5. Add `audiophile-compare.uk` as an **Authorized domain** — requires
+   verifying ownership via Google Search Console (covers the home page,
+   privacy policy, and terms links, since they all share this domain)
+6. **Submit for brand verification** and publish the app (move it from
+   "Testing" to "In production"). Since we only request basic
+   `email`/`profile`/`openid` scopes, this does not trigger the heavier
+   sensitive/restricted-scope review — just brand verification, which
+   typically takes **2–3 business days**
+7. Note: any future change to the app name, logo, or these links requires
+   resubmitting for verification before it takes effect on the consent screen
 
-Once published, the account chooser shows "to continue to **Audiophile
+Once approved, the account chooser shows "to continue to **Audiophile
 Compare**" instead of the raw Supabase subdomain. It shows our app name, not
-the literal domain string.
+the literal domain string — and it requires building two new pages
+(privacy policy, terms) plus a home page if we don't already have one.
 
 ### Option B — Paid: show the actual domain
 
