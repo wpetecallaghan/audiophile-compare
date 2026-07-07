@@ -231,6 +231,10 @@ is currently implemented."
      clip_b_url: string
      before_is_a: boolean
      votes?: Array<{
+       voter: {
+         forum_username: string
+         display_name?: string   // falls back to forum_username if omitted
+       }
        chosen_label: 'A' | 'B'
        technique_name: string
        observation?: string
@@ -240,7 +244,26 @@ is currently implemented."
    ```
    Everything else matches the existing documented shape.
 
-3. **System/track matching, scoped correctly for multiple authors.**
+3. **Resolved: each vote resolves/creates its own placeholder author —
+   votes are not attributed to the post's author.** `votes.user_id` is
+   `NOT NULL REFERENCES users(id)` with `UNIQUE (test_id, user_id,
+   technique_id)` (`audiophile-compare-schema.md`). The post's author and
+   the people who commented/voted on that post are frequently different
+   forum members; attributing every imported vote to the single post-
+   author placeholder would hit the unique constraint the moment two
+   different commenters cite the same technique on the same test — a
+   routine occurrence, not an edge case. Each `votes[]` entry therefore
+   carries its own `voter` (same shape as the top-level `author`), resolved
+   via the same `create-placeholder-author.ts` helper from step 30. This
+   is the correct extension of decision 1's "per-author placeholder, not a
+   single bot" principle to voters, not just system/test owners — a
+   payload for one forum post can resolve into a post-author placeholder
+   plus N distinct voter placeholders (one per commenter, deduplicated by
+   `forum_username` within the payload — `create-placeholder-author.ts`'s
+   existing `(source, external_username)` lookup already makes calling it
+   twice for the same voter within one request harmless, just redundant).
+
+4. **System/track matching, scoped correctly for multiple authors.**
    Tracks match globally by artist+title (tracks were never per-owner in
    the schema — no change from the original plan). Systems match by name
    **scoped to the resolved author** — two different forum members can
@@ -249,21 +272,31 @@ is currently implemented."
    not a bare name lookup. The original single-bot design didn't need this
    distinction since everything belonged to one owner.
 
-4. **Atomicity.** A single test's worth of writes (track/system/snapshot
-   resolution, test, clips, clip_mapping, votes) should either fully
-   succeed or fully roll back — a partial import across six tables would
-   be tedious to find and clean up by hand. Recommend a Postgres function
-   (`create or replace function ingest_test(...) returns uuid`) called via
-   `.rpc()`, giving transactional atomicity for free, over hand-rolled
-   ordered inserts with manual cleanup-on-failure in the route handler.
-   Adds one migration; worth it for the safety.
+5. **Atomicity — scoped to the DB-only writes.** A single test's worth of
+   DB writes (track/system/snapshot resolution, test, clips, clip_mapping,
+   votes) should either fully succeed or fully roll back — a partial
+   import across six tables would be tedious to find and clean up by hand.
+   Recommend a Postgres function (`create or replace function
+   ingest_test(...) returns uuid`) called via `.rpc()`, giving
+   transactional atomicity for free, over hand-rolled ordered inserts with
+   manual cleanup-on-failure in the route handler. Adds one migration;
+   worth it for the safety. **Placeholder author resolution (the post
+   author, plus now potentially several distinct voters per decision 3)
+   happens via step 30's admin-SDK helper *before* calling this RPC** —
+   `auth.admin.createUser()` can't run inside a SQL function, so it's
+   necessarily outside the atomic boundary, same as it already was for the
+   single post-author case. This is self-healing rather than a gap: if the
+   RPC fails after N placeholder authors were already created, re-running
+   the same payload resolves each one to its existing `import_authors`
+   mapping instead of creating duplicates (step 30's idempotency), so no
+   cleanup step is needed for a partial failure here.
 
-5. **Idempotency unchanged from the original plan** — check `source_ref`
+6. **Idempotency unchanged from the original plan** — check `source_ref`
    on `tests` first; return 200 with an "already imported" indicator
    rather than erroring, so re-running the importer over the same thread
    is always safe.
 
-6. **Clip verification is *not* this route's job.** The route trusts the
+7. **Clip verification is *not* this route's job.** The route trusts the
    caller (the scraper/extraction script, step 32) to have already
    confirmed both clip URLs are reachable — same "client already verified,
    server persists" pattern `POST /api/tests` already uses for
@@ -277,6 +310,11 @@ is currently implemented."
 - `docs/google-oauth.md`-style: no new doc file needed; document the route
   in `api-conventions.md` §5 (Programmatic access) at build time, replacing
   the "not yet implemented" framing there.
+- **`docs/vercel-setup.md`** — `INGEST_SECRET` is a new required env var,
+  the same category as the `CRON_SECRET` this file already documents
+  per-scope (Production/Preview/Development tables). Add an `INGEST_SECRET`
+  row to all three, matching the existing `CRON_SECRET` pattern (a strong
+  random string per environment; any string for Development).
 
 **Tests:**
 - **Unit:** none planned — API routes aren't unit-tested in this project
@@ -284,10 +322,19 @@ is currently implemented."
 - **E2E / integration:** a script-driven test (not Playwright — no
   browser involved) that POSTs a synthetic payload twice and confirms (a)
   the first call creates exactly one test/track/system/snapshot set and
-  resolves/creates the placeholder author, (b) the second call with the
-  same `source_ref` is a no-op, (c) a payload naming an existing system
-  under the *same* author matches it rather than duplicating, and (d) two
-  different authors using the same system name each get their own system.
+  resolves/creates the placeholder post-author *and* voter placeholders,
+  (b) the second call with the same `source_ref` is a no-op, (c) a payload
+  naming an existing system under the *same* author matches it rather than
+  duplicating, (d) two different authors using the same system name each
+  get their own system, and (e) two votes citing the same technique from
+  two different `voter`s both succeed (the case decision 3 fixes), while
+  two votes citing the same technique from the *same* voter still hit the
+  `UNIQUE (test_id, user_id, technique_id)` constraint as intended.
+  **Data hygiene:** runs against staging, following the exact convention
+  `testing.md` §5 already mandates for Playwright E2E — every synthetic
+  `track`/`system`/`test` title this script creates is prefixed `[E2E]`,
+  so the existing `global-teardown.ts` sweep picks them up with no new
+  mechanism needed. No separate disposable database is introduced.
 
 ---
 
