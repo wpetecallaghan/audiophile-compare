@@ -1266,9 +1266,9 @@ verification detail: `build-history-ingestion.md`.
 **The gap this closes:** step 30 made `import_authors` publicly readable
 specifically so the UI could show forum provenance — "may also help a real
 forum member recognize their own imported content" — but no page actually
-surfaces it. Must ship **before** the ingestion pipeline (steps 33–36)
+surfaces it. Must ship **before** the ingestion pipeline (steps 33–37)
 actually runs, so imported content is never live without it. Unlike steps
-30–31/33–36, this is UI work, not ingestion-pipeline infrastructure, so it
+30–31/33–37, this is UI work, not ingestion-pipeline infrastructure, so it
 gets its full detail directly here rather than in
 `build-history-ingestion.md`.
 
@@ -1423,15 +1423,25 @@ verify in the app, then commit the same, staging-verified set against
 `audiophile-prod`. No new code; exercises steps 30–35. Full plan:
 `build-history-ingestion.md`.
 
-**Explicitly deferred, not part of steps 30–36:** the user-merge/claim flow
+### ⬜ 37 — Import rollback (planned, not yet built)
+
+A documented, reviewed `source_ref`-scoped delete query — not a Supabase
+backup/PITR restore, which would also destroy any unrelated real user
+activity in the same window. Safety conditions are built into the query
+itself: never touches a system/test whose owner is no longer a placeholder
+(so it's automatically safe even after some content has been claimed), and
+never deletes a track still referenced by a surviving test. Placeholder
+accounts are left in place, not deleted — idempotent re-import reuses
+them. Dry-run first, matching the rest of this plan's philosophy. Full
+plan: `build-history-ingestion.md`.
+
+**Explicitly deferred, not part of steps 30–37:** the user-merge/claim flow
 (letting a real Lejonklou member claim their imported content once they
 join) — anticipated to be mechanically simple given every placeholder is a
 full real user row, but intentionally not designed in detail until
-requested as its own step. Also deferred: import rollback (Supabase
-backup/PITR vs. a targeted `source_ref`-based undo query) — flagged as a
-post-ingest planning topic, not resolved. See `build-history-ingestion.md`'s
-closing sections for both.
+requested as its own step. See `build-history-ingestion.md`'s closing
+section.
 
 ---
 
-Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30, 31, and 33–36 above have their full detailed plan in `build-history-ingestion.md`; step 32 (UI work, not pipeline infrastructure) is fully detailed here instead — see that file's frontmatter for why.
+Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30, 31, and 33–37 above have their full detailed plan in `build-history-ingestion.md`; step 32 (UI work, not pipeline infrastructure) is fully detailed here instead — see that file's frontmatter for why.

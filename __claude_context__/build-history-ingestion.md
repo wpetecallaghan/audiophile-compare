@@ -2,7 +2,7 @@
 name: audiophile-compare-build-history-ingestion
 description: >
   Detailed step-by-step build plan for the Lejonklou forum ingestion
-  pipeline (build-history.md steps 30, 31, 33-36). Companion to
+  pipeline (build-history.md steps 30, 31, 33-37). Companion to
   build-history.md (which holds only short pointer entries for these
   steps, to keep the main index scannable) and deferred-features.md
   (original architecture notes and rationale — the "why", not the "how").
@@ -13,7 +13,7 @@ description: >
 
 # Forum Ingestion Pipeline — Detailed Build Plan
 
-Full detail for `build-history.md` steps 30, 31, and 33–36 (step 32, import
+Full detail for `build-history.md` steps 30, 31, and 33–37 (step 32, import
 provenance UI, is detailed directly in `build-history.md` instead — see
 above). See `deferred-features.md`'s
 "Forum ingestion pipeline" section for the original architecture notes this
@@ -914,10 +914,96 @@ thread content actually present in the app.
 
 **Not part of this step:** the user-merge/claim flow (letting a real
 Lejonklou member claim their imported content once they join) is
-explicitly deferred — see below.
+explicitly deferred — see below. Import rollback (step 37) is a documented
+safety net that sits alongside this step, not a dependency of it.
 
 **Tests:** none new — this step *exercises* steps 30–35, it doesn't add
 code. Verification is the manual review described above.
+
+---
+
+## ⬜ 37 — Import rollback
+
+**The gap this closes:** no documented, reviewed mechanism exists for
+undoing a bad production import. This needs to be written and reviewed
+*ahead of time* — composing a destructive query live, during an incident,
+against production, is exactly the kind of pressure that produces
+mistakes.
+
+**Decisions:**
+
+1. **A targeted, `source_ref`-scoped delete is the primary mechanism for
+   this — not a Supabase backup/point-in-time-recovery restore.** A
+   whole-database restore is all-or-nothing: it would also destroy any
+   real, unrelated user activity (new signups, votes on unrelated tests)
+   that happened after the restore point, not just the imported rows.
+   Given `audiophile-prod` is a live app, that collateral damage is a real
+   cost, not a minor caveat. A `source_ref`-scoped delete only touches
+   imported rows.
+
+2. **The query is written and reviewed now, committed as an artifact —
+   not composed ad hoc during an incident.** Reuses the exact FK-safe
+   deletion order `testing.md` §5 already documents for E2E teardown:
+   `votes → clip_mapping → clips → tests → system_snapshots → systems →
+   tracks`, scoped by `tests.source_ref like 'lejonklou-forum:%'` and the
+   systems/snapshots reachable from those tests.
+
+3. **Safety conditions are baked into the query itself, not left to
+   memory:**
+   - **Never touch a system or test whose owner is no longer a
+     placeholder.** Once the future claim step (merge/claim flow, above)
+     exists, some imported content may already have been reassigned to a
+     real user and its placeholder deleted. The query joins through
+     `systems.owner_id`/`tests.creator_id` → `users.is_placeholder` and
+     only acts on rows still placeholder-owned — so it's automatically a
+     partial no-op for anything already claimed, rather than relying on
+     "remember not to run this once claiming starts."
+   - **Never delete a track still referenced by a surviving test.**
+     Tracks aren't exclusively owned — matched globally by (artist,
+     title) — so a track a placeholder's import created could coincidentally
+     also be referenced by an unrelated real test created independently
+     (before or after the import). The query must confirm no test outside
+     its own delete set still references a track before deleting it, not
+     just check who originally created it.
+
+4. **Placeholder accounts and `import_authors` mappings are left in
+   place, not deleted.** They're harmless on their own (no exposed
+   content once their data is gone), and `create-placeholder-author.ts`'s
+   existing `(source, external_username)` idempotency means a later
+   re-import cleanly reuses them rather than creating duplicates —
+   deleting and recreating them would just be wasted churn.
+
+5. **Time-boxed by construction, not by policy alone.** Because of
+   decision 3's ownership check, the query becomes progressively less
+   applicable as real claims happen — there's no separate "expiry"
+   mechanism to build; it falls out of the safety condition for free.
+
+6. **Dry-run first, matching this whole pipeline's philosophy.** Run the
+   same scoping conditions as a `select`/count first, review the result,
+   before ever running the real `delete` — the same "preview before a
+   destructive action" discipline steps 34's validation and 36's staging
+   rehearsal already apply elsewhere in this plan.
+
+7. **Supabase backup/PITR availability is a separate, general
+   verification — not new work this step produces.** Confirm whether
+   `audiophile-prod`/`audiophile-staging` are on a plan tier that includes
+   point-in-time recovery or daily backups, and note the retention window
+   if so. Worth knowing as ordinary production hygiene regardless of this
+   import, but not relied on as the primary undo path here, given decision
+   1's collateral-damage concern.
+
+**Files to update:**
+- A new, committed, reviewed artifact holding the query — exact location
+  TBD at build time (e.g. `docs/import-rollback.md` or a `scripts/`-
+  adjacent SQL file), not something composed ad hoc against production.
+- `testing.md` §5 — cross-reference noting its FK-safe deletion order is
+  reused here, beyond just E2E teardown.
+- This step, plus a cross-reference from step 36 (added above).
+
+**Tests:** none — this is a documented, reviewed query, not application
+code. "Testing" here means dry-running it against staging's real,
+disposable post-step-36 data to confirm it identifies exactly the imported
+rows and nothing else, before it's ever needed for real.
 
 ---
 
@@ -935,25 +1021,3 @@ shape as the manual account cleanup already performed once in this project
 outside of any build step (removing a stale test-registration account from
 `audiophile-prod` — see chat history, not a build-history entry since it
 wasn't a code change).
-
----
-
-## Explicitly deferred: import rollback
-
-`import_authors`'s public-read RLS policy (step 30) was deliberately
-designed so the UI could show provenance — now planned in full as
-`build-history.md` step 32 (import provenance UI), not deferred any
-longer. What's still open: whether a Supabase point-in-time-recovery/
-backup restore point taken immediately before the production commit (step
-36) is a better safety net than a targeted `source_ref`-based undo query,
-or a useful complement to one — full-database restore is coarse (it would
-also roll back any unrelated legitimate activity — new signups, votes,
-etc. — that happened in the same window), whereas a targeted delete only
-touches the imported rows. Also worth considering alongside step 32 and
-the future merge/claim flow above: once real users start claiming
-imported content, a blanket rollback becomes increasingly unsafe to offer
-(it would delete a real person's legitimately-claimed content along with
-everything else), so rollback is likely only meaningful in the window
-between the production commit and the first real claim. Flagged for its
-own planning pass, likely as a post-ingest (step 36+) concern rather than
-blocking 33–36.
