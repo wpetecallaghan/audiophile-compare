@@ -1122,4 +1122,113 @@ Confirmed `voting.spec.ts`'s reveal test still passes unchanged after
 
 ---
 
+### ⬜ 29 — Register with Google (planned, not yet built)
+
+**The gap this closes:** `/login` has offered "Continue with Google" since
+step 14 (tabbed alongside password/magic-link since step 16), but
+`/register` (`RegisterForm.tsx`) only ever offered email/password —
+there's no way to reach `signInWithOAuth` from the register page today.
+
+**No backend or Supabase/Google config changes needed — confirmed, not
+assumed:** `app/auth/callback/route.ts` treats every OAuth code exchange
+identically regardless of which page initiated it (no `login` vs
+`register` branch, none needed). `handle_new_user()` (the trigger that
+creates a `public.users` row) fires `after insert on auth.users for each
+row` — unconditional on auth method — so a first-time Google sign-in
+already creates the account correctly whether a user clicks the button on
+`/login` or a future `/register`. `docs/google-oauth.md` already states
+this plainly (its existing "already works for OAuth" framing was written
+about `/login`, but the same Google Cloud OAuth client and the single
+shared `/auth/callback` redirect URI cover both pages — no new redirect
+URI, no new consent-screen scope, nothing to touch in the Google Cloud
+Console or the Supabase dashboard). This step is a pure frontend addition:
+render the existing, already-generic `OAuthButtons` component
+(`components/OAuthButtons.tsx` — takes only an optional `redirectTo` prop,
+already has zero knowledge of login vs register) on the register page too.
+
+**Decisions:**
+
+1. **Divider, not a second tab bar.** `LoginTabs.tsx` uses tabs because
+   login genuinely has three parallel, equally-weighted methods a
+   returning user might reach for (password / magic link / Google).
+   Register has one primary path (fill the form) and one one-click
+   alternate (Google) — a top-of-page divider ("or register with email")
+   above the existing form fits that shape better than tabs, and avoids a
+   decision the codebase doesn't need to make yet: `components.md`
+   currently describes `LoginTabs.tsx`'s tab bar as deliberately
+   uncomponentized because it's "the only tab UI in the app" (step 22).
+   Adding a *second*, differently-shaped tab bar (two tabs, no forgot-
+   password sub-state) would force that call now, for no UX benefit over
+   a plain divider. `app/register/page.tsx` renders `<OAuthButtons />`
+   above `<RegisterForm />`, separated by that divider — mirroring where
+   `OAuthButtons` originally sat on `/login` *before* step 16 introduced
+   tabs there (step 14: "above magic link form").
+
+2. **Reuse `auth.googleButton` ("Continue with Google") as-is — don't add
+   a register-specific variant.** `OAuthButtons.tsx` hardcodes
+   `t('googleButton')` internally; a register-specific string would mean
+   either parameterizing the component (unnecessary complexity for
+   different-in-tone-only copy) or forking it. Google's own OAuth button
+   branding guidance recommends the same "Continue with Google" wording
+   regardless of sign-in vs sign-up context, so reusing the existing key
+   isn't just simpler, it's the more correct choice.
+
+3. **No `redirectTo` support added to `/register`.** `/login` threads a
+   `redirectTo` query param because middleware redirects unauthenticated
+   visitors *to* `/login?redirectTo=...` from a protected route. Nothing
+   redirects to `/register` with an intended destination today, and
+   `RegisterForm`'s own email/password path doesn't redirect anywhere
+   post-submit either (it shows `registrationSuccess` in place, since
+   email confirmation is required first). `<OAuthButtons />` on
+   `/register` is rendered with no `redirectTo` prop, defaulting to `/` —
+   consistent with there being no existing destination to preserve.
+
+4. **Known, expected asymmetry — not a bug, worth a one-line note in the
+   UI or docs so it isn't "discovered" later as a defect:** registering
+   via Google is instant (no email-confirmation step, since Google already
+   verified the address), while email/password registration requires
+   confirming via a sent link. Both are correct for their method; nothing
+   to reconcile.
+
+**Files to update:**
+- `app/register/page.tsx` — render `<OAuthButtons />` above
+  `<RegisterForm />`, with a plain divider between them (inline Tailwind,
+  no new component — matching how `RegisterForm`/`LoginTabs` already build
+  one-off layout chrome without over-componentizing something used once).
+- `messages/en.json` — one new `auth` key for the divider text (e.g.
+  `orRegisterWithEmail: "or register with email"`); no other new copy
+  (button text is reused per decision 2).
+- `docs/google-oauth.md` — reword the framing that currently reads
+  login-only (e.g. its opening line, "Enables 'Continue with Google' on
+  the sign-in page") to note the same setup covers `/register` too, and
+  state explicitly that no Google Cloud Console or Supabase dashboard
+  changes are needed for this step — so a future reader doesn't assume
+  there's a second OAuth client or redirect URI to configure.
+
+**Tests:**
+- **Unit:** none needed. `OAuthButtons.tsx` is reused completely unchanged
+  (same props, same behavior) — its existing 5 tests
+  (`__tests__/OAuthButtons.test.tsx`) already cover it and need no
+  changes. `RegisterForm.tsx` itself isn't touched, so
+  `components/__tests__/RegisterForm.test.tsx` needs no changes either.
+  No unit test for `app/register/page.tsx` — consistent with the existing
+  precedent that pages themselves aren't unit-tested (server components,
+  e2e-covered only; `app/login/page.tsx` and `LoginTabs.tsx` have no
+  dedicated unit test file either).
+- **E2E:** add one case alongside the existing
+  `'login page shows magic link form and Google sign-in button'` test in
+  `e2e/tests/public-feed.spec.ts` (unauthenticated project — `/register`
+  is a public page): navigate to `/register` and assert the Google button
+  (`m.auth.googleButton`) is visible alongside the existing form fields,
+  using the literal `'/register'` path the same way the existing test
+  uses `'/login'` (no `routes.ts` helper exists for either page). **Scope
+  limit, matching the existing Google e2e coverage exactly:** this only
+  asserts the button renders and is clickable — actually completing a
+  Google OAuth round trip isn't feasible in Playwright without a live
+  Google test account, which is why the existing login-page Google test
+  has the same limitation (`global-setup.ts` always establishes the
+  authenticated session via magic link, never real Google login).
+
+---
+
 Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`.
