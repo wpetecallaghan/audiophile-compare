@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (25 files · 256 tests · all passing)
+## 4. Unit test inventory (25 files · 263 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -86,7 +86,7 @@ indirectly through the step tests.
 | `components/systems/__tests__/AddSnapshotForm.test.tsx` | 14 | Open/close, POST, router.refresh on success, validation |
 | `components/systems/__tests__/CreateSystemForm.test.tsx` | 11 | POST /api/systems, validation, redirect, cancel |
 | `components/systems/__tests__/EditSystemForm.test.tsx` | 12 | PATCH /api/systems/[id], validation, redirect, cancel |
-| `components/systems/__tests__/SnapshotSection.test.tsx` | 20 | Display/edit mode, component rows, PATCH, router.refresh |
+| `components/systems/__tests__/SnapshotSection.test.tsx` | 27 | Display/edit mode, component rows, PATCH, router.refresh, delete confirm/cancel |
 | `lib/clips/__tests__/detect-provider.test.ts` | 9 | YouTube / Vimeo / direct / unknown URL classification |
 | `lib/clips/__tests__/to-clip-data.test.ts` | 5 | embed_id and canonical_url derivation for each provider |
 | `lib/clips/__tests__/find-shared-clips.test.ts` | 9 | Shared track finder; side A/B selection; no shared tracks |
@@ -133,6 +133,7 @@ votes → clip_mapping → clips → tests → system_snapshots → systems → 
 | `systems.spec.ts` | Create system; edit name and description; add snapshot; edit snapshot label; systems list shows test user's systems |
 | `test-creation.spec.ts` | Track search; full wizard (select track → snapshots → verify clips → publish) |
 | `voting.spec.ts` | Tally hidden before voting; vote count visible; cast vote; update existing vote; creator can reveal |
+| `delete.spec.ts` | Creator deletes a zero-vote test (redirects home); Delete hidden once a vote exists; owner deletes an unreferenced snapshot; Delete hidden when a test references the snapshot; owner deletes a snapshot-less system (redirects to systems list); Delete hidden when the system has a snapshot |
 | `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared |
 | `zz-sign-out.spec.ts` | Sign out clears the session; header reverts to unauthenticated. Runs last — see file for why |
 

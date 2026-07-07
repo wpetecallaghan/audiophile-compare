@@ -75,7 +75,7 @@ tests (
 -- One of the two media clips in a test
 clips (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  test_id     uuid NOT NULL REFERENCES tests(id),
+  test_id     uuid NOT NULL REFERENCES tests(id) ON DELETE CASCADE,
   label       text NOT NULL,         -- 'A' or 'B' only
   source_url  text NOT NULL,
   provider    text NOT NULL,         -- 'youtube' | 'vimeo' | 'direct' | 'unknown'
@@ -93,7 +93,7 @@ clips (
 -- Never returned to client until tests.status = 'revealed'
 -- or tests.creator_id = auth.uid()
 clip_mapping (
-  test_id        uuid PRIMARY KEY REFERENCES tests(id),
+  test_id        uuid PRIMARY KEY REFERENCES tests(id) ON DELETE CASCADE,
   before_clip_id uuid NOT NULL REFERENCES clips(id),
   after_clip_id  uuid NOT NULL REFERENCES clips(id)
 )
@@ -165,12 +165,12 @@ All tables have RLS enabled. Policy intent per table:
 | Table | Read | Write |
 |---|---|---|
 | users | Public | Own row only |
-| systems | Public | Owner only |
-| system_snapshots | Public | System owner only (checked via JOIN) |
+| systems | Public | Owner only (insert + update + delete) |
+| system_snapshots | Public | System owner only, checked via JOIN (insert + update + delete) |
 | tracks | Authenticated | Any authenticated user |
-| tests | Public | Creator only (insert + update) |
-| clips | Public | Test creator only (checked via JOIN) |
-| clip_mapping | Revealed tests OR creator | Test creator only |
+| tests | Public | Creator only (insert + update + delete) |
+| clips | Public | Test creator only, checked via JOIN (insert + update + delete) |
+| clip_mapping | Revealed tests OR creator | Test creator only, checked via JOIN (insert + delete) |
 | listening_techniques | Public | Nobody (migration only) |
 | votes | Own votes OR revealed test | Authenticated (own rows) |
 | comments | Public | Authenticated (insert); owner (delete) |
@@ -195,6 +195,25 @@ CREATE POLICY "clip_mapping: revealed or creator"
     )
   );
 ```
+
+### Delete rules (step 26)
+
+A creator can delete a **test** only if it has zero votes — once a vote
+exists the test is frozen forever, no delete or edit. A creator can delete
+a **snapshot** only if no test references it; an owner can delete a
+**system** only if it has no snapshots. All three are hard deletes (no
+`deleted_at` column), enforced at two layers:
+
+- **App layer:** each `DELETE` route checks the relevant condition itself
+  and returns 409 with a friendly message if it doesn't hold.
+- **Database layer, as a backstop:** `clips.test_id` and
+  `clip_mapping.test_id` cascade (`ON DELETE CASCADE`) since those rows are
+  wholly owned by their test. `tests.snapshot_a_id`/`snapshot_b_id` and
+  `system_snapshots.system_id` keep their default (non-cascading, `RESTRICT`-
+  like) foreign keys — that's what makes a referenced snapshot/system
+  physically undeletable regardless of the app-layer check.
+  `votes.test_id` also keeps its default foreign key, so even a buggy
+  app-layer check can't delete a test a vote references.
 
 ### test_vote_count function (public vote count)
 

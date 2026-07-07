@@ -42,6 +42,7 @@ function renderSection(
     wins?: number
     losses?: number
     draws?: number
+    testCount?: number
     isOwner?: boolean
   } = {},
 ) {
@@ -50,6 +51,7 @@ function renderSection(
     wins = 0,
     losses = 0,
     draws = 0,
+    testCount = 0,
     isOwner = true,
   } = opts
 
@@ -60,6 +62,7 @@ function renderSection(
       wins={wins}
       losses={losses}
       draws={draws}
+      testCount={testCount}
       isOwner={isOwner}
     >
       <p>Test history</p>
@@ -347,6 +350,86 @@ describe('SnapshotSection', () => {
         expect(screen.getByText(/network error/i)).toBeInTheDocument()
       })
       expect(mockRefresh).not.toHaveBeenCalled()
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Delete
+  // ---------------------------------------------------------------------------
+
+  describe('Delete', () => {
+    it('shows the Delete button when owner and no test references this snapshot', () => {
+      renderSection({ isOwner: true, testCount: 0 })
+      expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument()
+    })
+
+    it('hides the Delete button when a test references this snapshot', () => {
+      renderSection({ isOwner: true, testCount: 1 })
+      expect(screen.queryByRole('button', { name: /^delete$/i })).not.toBeInTheDocument()
+    })
+
+    it('hides the Delete button when isOwner is false', () => {
+      renderSection({ isOwner: false, testCount: 0 })
+      expect(screen.queryByRole('button', { name: /^delete$/i })).not.toBeInTheDocument()
+    })
+
+    it('shows an inline confirm/cancel step before deleting', async () => {
+      const user = userEvent.setup()
+      renderSection({ testCount: 0 })
+
+      await user.click(screen.getByRole('button', { name: /^delete$/i }))
+
+      expect(screen.getByText('Delete this snapshot?')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /yes, delete/i })).toBeInTheDocument()
+    })
+
+    it('DELETEs to the correct URL and refreshes on confirm', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+      renderSection({ testCount: 0 })
+
+      await user.click(screen.getByRole('button', { name: /^delete$/i }))
+      await user.click(screen.getByRole('button', { name: /yes, delete/i }))
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          `/api/systems/${SYSTEM_ID}/snapshots/${SNAPSHOT_ID}`,
+          expect.objectContaining({ method: 'DELETE' }),
+        )
+        expect(mockRefresh).toHaveBeenCalledOnce()
+      })
+    })
+
+    it('shows a server error and stays on the confirm step when the delete fails', async () => {
+      const user = userEvent.setup()
+      mockFetch.mockResolvedValue(
+        new Response(
+          JSON.stringify({ error: 'This snapshot is used by a test and can no longer be deleted' }),
+          { status: 409 },
+        ),
+      )
+      renderSection({ testCount: 0 })
+
+      await user.click(screen.getByRole('button', { name: /^delete$/i }))
+      await user.click(screen.getByRole('button', { name: /yes, delete/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('This snapshot is used by a test and can no longer be deleted'),
+        ).toBeInTheDocument()
+      })
+      expect(mockRefresh).not.toHaveBeenCalled()
+    })
+
+    it('returns to the trigger button when Cancel is clicked', async () => {
+      const user = userEvent.setup()
+      renderSection({ testCount: 0 })
+
+      await user.click(screen.getByRole('button', { name: /^delete$/i }))
+      await user.click(screen.getByRole('button', { name: /cancel/i }))
+
+      expect(screen.queryByText('Delete this snapshot?')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument()
     })
   })
 })

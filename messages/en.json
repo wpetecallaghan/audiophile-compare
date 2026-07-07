@@ -66,7 +66,15 @@
     "cancel": "Cancel",
     "failedToCreate": "Failed to create system",
     "failedToUpdate": "Failed to update system",
-    "networkError": "Network error — please try again"
+    "networkError": "Network error — please try again",
+    "delete": {
+      "button": "Delete system",
+      "confirmHeading": "Delete this system?",
+      "confirmWarning": "This cannot be undone.",
+      "confirmButton": "Yes, delete",
+      "deleting": "Deleting…",
+      "cancelButton": "Cancel"
+    }
   },
   "snapshots": {
     "addButton": "+ Add new snapshot",
@@ -93,7 +101,15 @@
     "saveButton": "Save changes",
     "saving": "Saving…",
     "failedToCreate": "Failed to create snapshot",
-    "networkError": "Network error — please try again"
+    "networkError": "Network error — please try again",
+    "delete": {
+      "button": "Delete",
+      "confirmHeading": "Delete this snapshot?",
+      "confirmWarning": "This cannot be undone.",
+      "confirmButton": "Yes, delete",
+      "deleting": "Deleting…",
+      "cancelButton": "Cancel"
+    }
   },
   "tests": {
     "newHeading": "New test",
@@ -159,6 +175,14 @@
       "confirmWarning": "This cannot be undone. Listeners who haven't voted yet will see the result before they vote.",
       "confirmButton": "Yes, reveal",
       "revealing": "Revealing…",
+      "cancelButton": "Cancel"
+    },
+    "delete": {
+      "button": "Delete test",
+      "confirmHeading": "Delete this test?",
+      "confirmWarning": "This cannot be undone. The clips for this test will also be deleted.",
+      "confirmButton": "Yes, delete",
+      "deleting": "Deleting…",
       "cancelButton": "Cancel"
     },
     "results": {

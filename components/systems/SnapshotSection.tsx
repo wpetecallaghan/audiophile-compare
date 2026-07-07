@@ -9,6 +9,7 @@ import { Heading } from '@/components/ui/Heading'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { TextInput, TextArea } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
+import { ConfirmButton } from '@/components/ui/ConfirmButton'
 
 type ComponentDisplay = {
   role?: string
@@ -39,6 +40,7 @@ type Props = {
   wins: number
   losses: number
   draws: number
+  testCount: number
   isOwner: boolean
   children: ReactNode
 }
@@ -63,12 +65,27 @@ export default function SnapshotSection({
   wins,
   losses,
   draws,
+  testCount,
   isOwner,
   children,
 }: Props) {
   const router = useRouter()
   const t = useTranslations('snapshots')
+  const tDelete = useTranslations('snapshots.delete')
   const hasRevealedTests = wins + losses + draws > 0
+
+  async function handleDelete() {
+    const res = await fetch(`/api/systems/${systemId}/snapshots/${snapshot.id}`, {
+      method: 'DELETE',
+    })
+    const json = await res.json()
+
+    if (!res.ok) {
+      return { error: json.error ?? 'Something went wrong' }
+    }
+
+    router.refresh()
+  }
 
   const [editing, setEditing] = useState(false)
   const [label, setLabel] = useState(snapshot.label)
@@ -296,6 +313,19 @@ export default function SnapshotSection({
             </div>
           )}
         </div>
+      )}
+
+      {/* Delete — owner only, and only while no test references this snapshot */}
+      {!editing && isOwner && testCount === 0 && (
+        <ConfirmButton
+          label={tDelete('button')}
+          confirmHeading={tDelete('confirmHeading')}
+          confirmWarning={tDelete('confirmWarning')}
+          confirmLabel={tDelete('confirmButton')}
+          pendingLabel={tDelete('deleting')}
+          cancelLabel={tDelete('cancelButton')}
+          onConfirm={handleDelete}
+        />
       )}
 
       {/* Component list — display mode only */}

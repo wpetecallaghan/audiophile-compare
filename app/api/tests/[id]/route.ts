@@ -64,3 +64,54 @@ export async function GET(
     mapping,    // null unless entitled
   })
 }
+
+// DELETE /api/tests/[id] — creator only, and only if the test has zero votes.
+// Once a vote exists the test is frozen forever — listening is a real time
+// commitment, so it must be respected. Cascades to the test's own `clips`/
+// `clip_mapping` rows (ON DELETE CASCADE) — nothing else references them.
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+  }
+
+  // Verify ownership — return 404 to avoid leaking test existence
+  const { data: test } = await supabase
+    .from('tests')
+    .select('id, creator_id')
+    .eq('id', id)
+    .single()
+
+  if (!test || test.creator_id !== user.id) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  const { count } = await supabase
+    .from('votes')
+    .select('*', { count: 'exact', head: true })
+    .eq('test_id', id)
+
+  if ((count ?? 0) > 0) {
+    return NextResponse.json(
+      { error: 'This test has votes and can no longer be deleted' },
+      { status: 409 },
+    )
+  }
+
+  const { error } = await supabase
+    .from('tests')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    return NextResponse.json({ error: 'Failed to delete test' }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true })
+}

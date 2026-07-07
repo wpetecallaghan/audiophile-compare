@@ -7,6 +7,7 @@ import type { Outcome } from '@/lib/votes/compute-outcome'
 import CrossCheckSelector from '@/components/tests/CrossCheckSelector'
 import AddSnapshotForm from '@/components/systems/AddSnapshotForm'
 import SnapshotSection from '@/components/systems/SnapshotSection'
+import DeleteSystemButton from '@/components/systems/DeleteSystemButton'
 import { Badge } from '@/components/ui/Badge'
 import { buttonVariants } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
@@ -165,12 +166,15 @@ export default async function SystemDetailPage({ params }: Props) {
         <div className="flex items-start justify-between gap-4">
           <Heading level={1}>{system.name}</Heading>
           {isOwner && (
-            <NextLink
-              href={`/systems/${id}/edit`}
-              className={buttonVariants({ variant: 'secondary', size: 'compact', className: 'shrink-0' })}
-            >
-              Edit
-            </NextLink>
+            <div className="shrink-0 flex gap-3">
+              <NextLink
+                href={`/systems/${id}/edit`}
+                className={buttonVariants({ variant: 'secondary', size: 'compact' })}
+              >
+                Edit
+              </NextLink>
+              {snapshots.length === 0 && <DeleteSystemButton systemId={id} />}
+            </div>
           )}
         </div>
         {system.description && (
@@ -219,6 +223,7 @@ export default async function SystemDetailPage({ params }: Props) {
                 wins={snapshot.wins}
                 losses={snapshot.losses}
                 draws={snapshot.draws}
+                testCount={snapshot.tests.length}
                 isOwner={isOwner}
               >
                 {snapshot.tests.length === 0 ? (

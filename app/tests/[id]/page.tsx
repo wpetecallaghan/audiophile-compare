@@ -4,6 +4,7 @@ import { Link } from '@/components/ui/Link'
 import { Callout } from '@/components/ui/Callout'
 import ABPlayer from '@/components/media/ABPlayer'
 import RevealButton from '@/components/tests/RevealButton'
+import DeleteTestButton from '@/components/tests/DeleteTestButton'
 import MappingBadge from '@/components/tests/MappingBadge'
 import VoteForm from '@/components/tests/VoteForm'
 import TallyDisplay from '@/components/tests/TallyDisplay'
@@ -162,8 +163,11 @@ export default async function TestDetailPage({ params }: Props) {
       </div>
 
       {/* Creator controls */}
-      {isCreator && !isRevealed && (
-        <RevealButton testId={test.id} />
+      {isCreator && (!isRevealed || voteCount === 0) && (
+        <div className="flex flex-wrap gap-3">
+          {!isRevealed && <RevealButton testId={test.id} />}
+          {voteCount === 0 && <DeleteTestButton testId={test.id} />}
+        </div>
       )}
 
       {/* Vote tally */}

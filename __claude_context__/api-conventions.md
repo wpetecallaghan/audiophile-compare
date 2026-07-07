@@ -176,11 +176,30 @@ await supabase
 
 ### Rule 5 — audit RLS policies when a route writes to a table
 
-When a route performs both `INSERT` and `UPDATE` on a table, both operations must have explicit RLS policies. A missing `UPDATE` policy causes the Supabase client to return an error object even when application-level ownership checks pass — the route sees `error` truthy and returns 500. Always audit schema migrations when a write route returns 500 unexpectedly.
+When a route performs `INSERT`, `UPDATE`, or `DELETE` on a table, that operation must have an explicit RLS policy. A missing policy causes the Supabase client to return an error object (or silently affect zero rows) even when application-level ownership checks pass. Always audit schema migrations when a write route returns 500 unexpectedly, or when a `DELETE` reports success but the row is still there.
 
-Example: `system_snapshots` requires two write policies:
+Example: `system_snapshots` requires three write policies:
 - `snapshots: owner insert` — for `POST /api/systems/[id]/snapshots`
 - `snapshots: owner update` — for `PATCH /api/systems/[id]/snapshots/[snapshotId]`
+- `snapshots: owner delete` — for `DELETE /api/systems/[id]/snapshots/[snapshotId]`
+
+**This bit step 26 for real:** `tests`, `clips`, and `clip_mapping` only had
+select/insert/update policies before that step — no delete policy at all.
+`ON DELETE CASCADE` on `clips.test_id`/`clip_mapping.test_id` doesn't bypass
+RLS either — a cascaded delete triggered by deleting the parent `tests` row
+is still subject to RLS for the acting role, so both tables needed their own
+`… : test creator delete` policy for the cascade to actually go through.
+
+### Rule 6 — delete rules (step 26)
+
+- `DELETE /api/tests/[id]` — creator only; 409 if the test has any vote.
+- `DELETE /api/systems/[id]/snapshots/[snapshotId]` — system-owner only; 409
+  if any test still references this snapshot (`snapshot_a_id`/`snapshot_b_id`).
+- `DELETE /api/systems/[id]` — owner only; 409 if the system has any snapshot.
+
+All three are hard deletes — no `deleted_at` column, no restore/undo. See
+`audiophile-compare-schema.md`'s "Delete rules" section for the full
+cascade/RESTRICT design.
 
 ---
 

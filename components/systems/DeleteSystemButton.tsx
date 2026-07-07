@@ -5,25 +5,23 @@ import { useTranslations } from 'next-intl'
 import { ConfirmButton } from '@/components/ui/ConfirmButton'
 
 type Props = {
-  testId: string
+  systemId: string
 }
 
-export default function RevealButton({ testId }: Props) {
-  const t = useTranslations('tests.reveal')
+export default function DeleteSystemButton({ systemId }: Props) {
+  const t = useTranslations('systems.delete')
   const router = useRouter()
 
-  async function handleReveal() {
-    const res = await fetch(`/api/tests/${testId}/reveal`, { method: 'POST' })
+  async function handleDelete() {
+    const res = await fetch(`/api/systems/${systemId}`, { method: 'DELETE' })
     const json = await res.json()
 
     if (!res.ok) {
       return { error: json.error ?? 'Something went wrong' }
     }
 
-    // Refresh the page — the server component will re-fetch with revealed status
-    // router.refresh() tells Next.js to re-run server components for this page
-    // without a full browser navigation
-    router.refresh()
+    // The system no longer exists — leave its page rather than refresh it
+    router.push('/systems')
   }
 
   return (
@@ -32,9 +30,9 @@ export default function RevealButton({ testId }: Props) {
       confirmHeading={t('confirmHeading')}
       confirmWarning={t('confirmWarning')}
       confirmLabel={t('confirmButton')}
-      pendingLabel={t('revealing')}
+      pendingLabel={t('deleting')}
       cancelLabel={t('cancelButton')}
-      onConfirm={handleReveal}
+      onConfirm={handleDelete}
     />
   )
 }

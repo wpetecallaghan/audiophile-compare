@@ -635,7 +635,7 @@ underneath, `/login` centers correctly in dark mode with good contrast, and
 the mobile view shows the same fixed-chrome behavior. All passed on the
 first attempt — no fixes needed.
 
-### ⬜ 26 — Delete tests, snapshots, and systems (planned, not yet built)
+### ✅ 26 — Delete tests, snapshots, and systems
 User-requested rules: a creator can delete a **test** they created, but
 only if it has **zero votes recorded** — listening is a real time
 commitment, so once a vote exists it must be respected and the test is
@@ -644,7 +644,8 @@ nothing about tests is currently editable post-creation anyway). A creator
 can delete a **snapshot** they created only if it has no undeleted tests
 referencing it (as `snapshot_a_id` or `snapshot_b_id`). A creator can
 delete a **system** they created only if it has no undeleted snapshots.
-Plan only — no code or migration written yet.
+Built per plan below, plus two things the plan missed — see "Deviations
+from the plan" at the end.
 
 **Decision: hard delete (real `DELETE`), relying on the existing foreign
 keys' default `RESTRICT` behavior for the cascade ordering — not soft
@@ -704,8 +705,9 @@ ALTER TABLE public.clip_mapping
   ADD CONSTRAINT clip_mapping_test_id_fkey
     FOREIGN KEY (test_id) REFERENCES public.tests(id) ON DELETE CASCADE;
 ```
-(Constraint names above are illustrative — confirm actual names via `\d
-tests`/`\d clips` at build time before writing the migration.)
+(Constraint names confirmed exactly as written via a direct `pg_constraint`
+query against staging before writing the migration — no `\d` guessing
+needed.)
 `votes.test_id` deliberately keeps its default (non-cascading) foreign key
 as a **second, database-enforced layer of protection**: even if the
 app-layer "zero votes" check had a bug, the database itself would still
@@ -731,16 +733,86 @@ track detail's test list, systems list/detail, and both snapshot pickers
 (`CrossCheckSelector.tsx`, `steps/StepSnapshots.tsx`) all keep working
 exactly as they do today with no new filter to add or forget.
 
-**UI:** a "Delete" action on the test detail page (creator only, hidden or
-disabled once `vote_count > 0` — the page already computes this for the
-existing vote-count display), the snapshot list in `SnapshotSection.tsx`
-(creator only), and the systems list/detail page (owner only) — reusing
-`RevealButton.tsx`'s existing two-step confirm pattern (click → inline
-confirm/cancel) rather than inventing a new one. Snapshot/system delete
-actions can be **proactively disabled** (not just left to fail on submit)
-since the page already has the child count in hand — `app/systems/[id]/
-page.tsx` already fetches each snapshot's tests, and each system's
-snapshots, to render the existing lists.
+**UI:** a "Delete" action on the test detail page (creator only, hidden
+once `voteCount > 0` — the page already computes this for the existing
+vote-count display), the snapshot list in `SnapshotSection.tsx` (owner
+only, hidden once any test references it), and the system detail page
+(owner only, hidden once any snapshot exists) — all proactively hidden, not
+just left to fail on submit, since each page already has the relevant
+child count in hand (`app/systems/[id]/page.tsx` already fetches every
+snapshot's tests to render the existing lists; `system_snapshots.length`
+gives the system's own count for free).
+
+The plan said to reuse `RevealButton.tsx`'s two-step confirm pattern —
+that held, but the pattern itself moved. With three new call sites
+(`DeleteTestButton.tsx`, `SnapshotSection.tsx`, `DeleteSystemButton.tsx`)
+needing the exact same confirm/cancel interaction as `RevealButton.tsx`,
+copy-pasting a fourth ~25-line block was worse than extracting it once it
+actually repeated — see `components/ui/ConfirmButton.tsx` and
+`components.md`'s new entry for it. `RevealButton.tsx` itself was
+refactored to use it too, so there's now exactly one implementation of
+this interaction, not four.
+
+**Deviations from the plan (found during implementation, not anticipated
+by it):**
+
+1. **The plan said "no RLS policy changes" but meant read policies only —
+   there were no DELETE policies at all.** `tests`, `clips`, and
+   `clip_mapping` only had select/insert/update RLS policies; `system_snapshots`
+   only had select/insert/update too (`systems` was the only one of the
+   five with a blanket `for all` policy already covering delete). Without a
+   delete policy, RLS silently blocks both a direct `DELETE` and — this is
+   the sharper trap — the `ON DELETE CASCADE` this step's other migration
+   depends on, since a cascaded delete is still subject to RLS for the
+   acting role. Fixed with a second migration
+   (`20260707074919_delete_rls_policies.sql`) adding `tests: creator
+   delete`, `clips: test creator delete`, `clip_mapping: test creator
+   delete`, and `snapshots: owner delete`. Also documented as
+   `api-conventions.md` Rule 5 (extended) and Rule 6 (new).
+2. **Staging's migration history had already drifted before this step
+   started** — a function (`public.test_vote_counts`, a bulk variant of
+   `test_vote_count` for the feed page) existed on staging but was never
+   committed as a migration file, so `supabase db push` refused to run
+   until reconciled: `supabase migration repair --status reverted
+   20260630163029` (bookkeeping only, does not touch schema) to clear the
+   phantom remote entry. Adopting that drift into a local migration file
+   via `supabase db pull` was attempted but needs Docker for its shadow
+   database, unavailable in this environment — left as a follow-up, not
+   blocking this step.
+
+**Migrations applied to staging only** (`audiophile-staging`), not
+production, per the documented "staging first" deployment topology:
+`20260707074426_cascade_delete_clips_and_mapping.sql` and
+`20260707074919_delete_rls_policies.sql`.
+
+**Tests:**
+- **Unit:** no new file — extended the existing
+  `components/systems/__tests__/SnapshotSection.test.tsx` (20 → 27 tests)
+  with a `Delete` describe block: shown for owner with zero referencing
+  tests, hidden with a referencing test, hidden for non-owner, confirm/cancel
+  step, successful `DELETE` + `router.refresh()`, server-error handling.
+  `DeleteTestButton.tsx`/`DeleteSystemButton.tsx`/`ConfirmButton.tsx` have no
+  dedicated unit tests, consistent with `RevealButton.tsx`'s existing
+  precedent (e2e-only) and the rest of `components/ui/*` (no primitive there
+  has its own unit test file either).
+- **E2E:** new `e2e/tests/delete.spec.ts` (authenticated project), 6 tests —
+  creator deletes a zero-vote test (redirects to `/`); Delete hidden once a
+  vote exists; owner deletes an unreferenced snapshot; Delete hidden when a
+  test references the snapshot; owner deletes a snapshot-less system
+  (redirects to `/systems`); Delete hidden when the system has a snapshot.
+
+**Verified:** `npm run test` — 25 files / 263 tests, all passing (up from
+256; the 7 new are in `SnapshotSection.test.tsx`). `npx tsc --noEmit` — no
+new errors (same 32 pre-existing, unrelated `__tests__/supabase-*.test.ts`
+mock-typing failures as every prior step). `npm run test:e2e` — full suite
+36/36 passing (30 pre-existing + 6 new), run against a local dev server
+(`E2E_BASE_URL` overridden to `http://localhost:3000` — `.env.local`'s
+default points at staging, which doesn't have this branch's code yet).
+Confirmed via the teardown counts, not just UI assertions, that the
+"successful delete" tests actually removed rows rather than merely hiding
+them client-side. Migrations verified applied on staging via a direct
+`pg_constraint`/`pg_policies` query (`confdeltype = 'c'` on both FKs, all
+four new delete policies present) before any app-layer testing began.
 
 ### ⬜ 27 — Handle verified-broken clip URLs (planned, not yet built)
 **The gap this closes:** the URL health-check cron (step 10) already writes
@@ -797,13 +869,13 @@ behavior change.
    message instead of the normal vote controls when true. Server-side,
    `POST /api/votes` re-checks clip status before accepting and returns 409
    if a chosen clip is dead — defense in depth against a direct API call
-   bypassing the UI gate, same pattern as step 24's DB-level backstop on
+   bypassing the UI gate, same pattern as step 26's DB-level backstop on
    vote-blocked test deletion. `degraded` alone never blocks voting — it
    may be transient (a 5xx or a timeout), and blocking on it would punish
    listeners for a possibly-temporary failure.
 
 3. **Remediation — creator can replace a dead clip's URL, but only if the
-   test has zero votes, mirroring step 24's "once voted, frozen forever"
+   test has zero votes, mirroring step 26's "once voted, frozen forever"
    principle exactly.** Replacing a clip's URL changes what's being
    compared; on a voted test that risks retroactively misrepresenting what
    earlier listeners actually heard, the same integrity concern that

@@ -396,11 +396,14 @@ Reserve unstyled/underlined links for real page-to-page navigation
 (breadcrumbs, pagination, CTAs to `/login`/`/register`) — not in-place
 actions like edit/cancel/back, which use `Button`.
 
-A one-off, single-use special case that doesn't fit either role (e.g. the
-amber confirm/trigger buttons in `RevealButton.tsx`) can stay as raw classes
-— don't add a variant to `Button`/`Badge` for something used exactly once;
-that's the same "don't force an abstraction for its own sake" rule as
-everywhere else in this codebase.
+A one-off, single-use special case that doesn't fit either role can stay as
+raw classes — don't add a variant to `Button`/`Badge` for something used
+exactly once; that's the same "don't force an abstraction for its own sake"
+rule as everywhere else in this codebase. The amber confirm/trigger buttons
+originally in `RevealButton.tsx` were exactly this kind of one-off — until
+step 26 needed the identical interaction for deleting a test, snapshot, and
+system too. A fourth copy-paste was worse than extracting it once it
+actually repeated, so it's now `<ConfirmButton />` (below), not raw classes.
 
 **Links — use `<Link variant size />` (`components/ui/Link.tsx`), never
 raw `text-gray-500`/`text-blue-600`/border classes on a `next/link` `Link`:**
@@ -482,6 +485,37 @@ import { Callout } from '@/components/ui/Callout'
 Padding/text-size that differs per instance (e.g. `TallyDisplay.tsx`'s
 tighter `px-3 py-2.5`) is a `className` override, not a variant — same
 reasoning as `Link`'s `card` variant.
+
+**Two-step confirm/cancel actions — use `<ConfirmButton />`
+(`components/ui/ConfirmButton.tsx`), not a hand-rolled `confirming` state +
+`Callout` + raw amber buttons:**
+```tsx
+import { ConfirmButton } from '@/components/ui/ConfirmButton'
+
+async function handleDelete() {
+  const res = await fetch(`/api/tests/${testId}`, { method: 'DELETE' })
+  const json = await res.json()
+  if (!res.ok) return { error: json.error ?? 'Something went wrong' }
+  router.push('/')   // caller navigates/refreshes on success; no return value needed
+}
+
+<ConfirmButton
+  label={t('button')}
+  confirmHeading={t('confirmHeading')}
+  confirmWarning={t('confirmWarning')}
+  confirmLabel={t('confirmButton')}
+  pendingLabel={t('deleting')}
+  cancelLabel={t('cancelButton')}
+  onConfirm={handleDelete}
+/>
+```
+Extracted in step 26 from `RevealButton.tsx`'s original click → inline
+confirm/cancel pattern once `DeleteTestButton.tsx`, `SnapshotSection.tsx`,
+and `DeleteSystemButton.tsx` needed the exact same interaction. `onConfirm`
+owns the actual `fetch` call and what happens after: return `{ error }` to
+show an inline `FormMessage` and stay on the confirm step, or navigate/
+`router.refresh()` and return nothing when the action succeeded (the
+component doesn't assume the caller's target still exists to render into).
 
 See `build-history.md` step 22 for the full audit behind these five
 components (exact occurrence counts, and the bugs found and fixed along
