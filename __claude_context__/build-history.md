@@ -1264,28 +1264,43 @@ verification detail: `build-history-ingestion.md`.
 ### ⬜ 32 — Forum ingestion: scraper (planned, not yet built)
 
 Standalone script — fetch the Lejonklou thread, walk its pagination, parse
-each post's author/timestamp/raw body/links deterministically (no LLM
-here). Writes a raw-posts JSON artifact consumed by step 33; doesn't call
-the ingest route or need any credentials. Full plan: `build-history-ingestion.md`.
+each post's author/timestamp/body (converted to markdown, not raw HTML)/
+quoted-post reference/links deterministically (no LLM here), enriched with
+oEmbed title/author lookups for YouTube/Vimeo links to aid track
+identification downstream. Writes a raw-posts JSON artifact consumed by
+step 33; doesn't call the ingest route or need any credentials. Full plan:
+`build-history-ingestion.md`.
 
 ### ⬜ 33 — Forum ingestion: extraction (planned, not yet built)
 
-Takes step 32's raw posts and does the hard semantic work: per-author
-system/snapshot continuity tracking (the cross-post continuity problem,
-flagged as the highest-risk, most-open part of this whole plan), clip-
-health filtering (reusing existing verify logic), mapping free-text
-commentary onto the fixed `listening_techniques` vocabulary, and — outside
-dry-run mode — POSTing validated payloads to `/api/internal/ingest`. Full
-plan: `build-history-ingestion.md`.
-
-### ⬜ 34 — Forum ingestion: run the import, staging then production (planned, not yet built)
-
-The actual one-time deliverable — dry-run review, then a real run against
-`audiophile-staging`, manual verification in the app, then
-`audiophile-prod`. No new code; exercises steps 30–33. Full plan:
+Takes step 32's raw posts and does the hard semantic work — per-author
+system/snapshot continuity (simplified to one placeholder system per
+creator; reply-to-test attribution via quote references remains the
+highest-risk, most-open part of this whole plan), clip-health filtering
+(reusing existing verify logic), technique hardcoded to 'Tune Method' (the
+forum's stated convention), and a flagged placeholder for tracks that
+can't be identified from text or clip metadata. Uses the Vercel AI SDK
+(`generateObject` + Zod, via the AI Gateway) rather than calling ingest
+directly — output is a local, human-editable candidate repository (one
+JSON file per candidate, with a `pending`/`needs_review`/`ready`/
+`approved`/`ingested` status), never a live API call. Full plan:
 `build-history-ingestion.md`.
 
-**Explicitly deferred, not part of steps 30–34:** the user-merge/claim flow
+### ⬜ 34 — Forum ingestion: commit (planned, not yet built)
+
+Separate, simple script — reads only `approved` candidates from step 33's
+repository and POSTs each to `/api/internal/ingest`, marking it `ingested`
+on success. The only step that touches a deployed environment; no LLM, no
+judgment calls. Full plan: `build-history-ingestion.md`.
+
+### ⬜ 35 — Forum ingestion: run the import, staging then production (planned, not yet built)
+
+The actual one-time deliverable — scrape, extract into candidates, review
+and approve them, commit for real against `audiophile-staging`, manually
+verify in the app, then repeat against `audiophile-prod`. No new code;
+exercises steps 30–34. Full plan: `build-history-ingestion.md`.
+
+**Explicitly deferred, not part of steps 30–35:** the user-merge/claim flow
 (letting a real Lejonklou member claim their imported content once they
 join) — anticipated to be mechanically simple given every placeholder is a
 full real user row, but intentionally not designed in detail until
@@ -1294,4 +1309,4 @@ section.
 
 ---
 
-Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30–34 above have their full detailed plan in `build-history-ingestion.md`, not inline here — see that file's frontmatter for why.
+Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30–35 above have their full detailed plan in `build-history-ingestion.md`, not inline here — see that file's frontmatter for why.

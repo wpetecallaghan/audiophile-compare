@@ -2,7 +2,7 @@
 name: audiophile-compare-build-history-ingestion
 description: >
   Detailed step-by-step build plan for the Lejonklou forum ingestion
-  pipeline (build-history.md steps 30-34). Companion to build-history.md
+  pipeline (build-history.md steps 30-35). Companion to build-history.md
   (which holds only short pointer entries for these steps, to keep the
   main index scannable) and deferred-features.md (original architecture
   notes and rationale — the "why", not the "how"). Load this when working
@@ -11,7 +11,7 @@ description: >
 
 # Forum Ingestion Pipeline — Detailed Build Plan
 
-Full detail for `build-history.md` steps 30–34. See `deferred-features.md`'s
+Full detail for `build-history.md` steps 30–35. See `deferred-features.md`'s
 "Forum ingestion pipeline" section for the original architecture notes this
 plan builds on and, in one place, deliberately diverges from — the original
 doc assumed a single `ingestion_bot` user owns everything imported; this plan
@@ -312,12 +312,14 @@ is currently implemented."
    rather than erroring, so re-running the importer over the same thread
    is always safe.
 
-7. **Clip verification is *not* this route's job.** The route trusts the
-   caller (step 33's extraction pipeline) to have already confirmed both
-   clip URLs are reachable — same "client already verified, server
-   persists" pattern `POST /api/tests` already uses for browser-submitted
-   clips. Re-verifying server-side here would just duplicate step 33's
-   clip-health filter for no benefit.
+7. **Clip verification is *not* this route's job.** The route trusts that
+   clip health was already confirmed upstream — by step 33's extraction,
+   before a candidate was ever marked `ready`/`approved` — not by step 34's
+   commit script, which is the one actually calling this route but does no
+   validation of its own. Same "client already verified, server persists"
+   pattern `POST /api/tests` already uses for browser-submitted clips.
+   Re-verifying server-side here would just duplicate step 33's clip-health
+   filter for no benefit.
 
 **Files to update:**
 - `app/api/internal/ingest/route.ts` (new).
@@ -441,24 +443,57 @@ re-scraping the forum each time.
    without changing anything else in this plan.
 
 2. **Deterministic HTML parsing only — no LLM, no network calls beyond
-   fetching thread pages.** Walk the thread's pagination and, for each
-   post, extract: `post_url` (permalink), `author` (raw forum
-   username/display name as shown), `posted_at` (ISO 8601, parsed from the
-   forum's displayed timestamp), `body_html` (raw, unmodified — kept as
-   HTML rather than stripped to plain text, since step 33's extraction
-   pass likely needs structure: an embedded YouTube/audio iframe or link,
-   or a quote block distinguishing quoted prior commentary from new text,
-   would be lost if flattened here), and `links` (every outbound URL found
-   in the body via `a[href]` — a flat list, no judgement about which ones
-   are "the" comparison clips; that's a semantic call, correctly left to
-   step 33). Output shape:
+   fetching thread pages and per-link oEmbed lookups (decision 8).** Walk
+   the thread's pagination and, for each post, extract: `post_url`
+   (permalink), `author` (raw forum username/display name as shown),
+   `posted_at` (ISO 8601, parsed from the forum's displayed timestamp),
+   `body_markdown` (converted deterministically from the raw HTML — quote
+   blocks become `> text`, links become `[text](url)` — rather than kept
+   as raw HTML: extraction (step 33) is an LLM call, and clean, structured
+   text is cheaper and more reliable input than HTML tag soup), and
+   `links` (every outbound URL found in the body — a flat list, no
+   judgement about which ones are "the" comparison clips; that's a
+   semantic call, correctly left to step 33).
+
+3. **Reply attribution needs a structured signal, not just prose.**
+   Real thread behaviour (confirmed against how this specific forum is
+   actually used): a listener's reply sometimes quotes the original test
+   post, or an earlier reply, to indicate which test it's about — but
+   votes also interleave across multiple open tests, so position in the
+   thread alone isn't reliable. Capture `quoted_post_url: string | null`
+   — the `post_url` this post quotes/replies to, when the forum's quote
+   markup resolves to one — as the primary signal step 33 uses for
+   attributing a reply to the right test. This won't always be present;
+   step 33 still needs a fallback for replies without one (see step 33's
+   decision 10).
+
+4. **Track identification enrichment: fetch oEmbed metadata for
+   YouTube/Vimeo links, deterministically, no LLM.** Forum creators rarely
+   name the track in text — "sometimes... but often do not." A YouTube/
+   Vimeo oEmbed lookup (public, unauthenticated, just another HTTP fetch)
+   often surfaces a real title/author for official-style uploads, though
+   it won't help for clips that are personal recordings of someone's own
+   system (a plausible and possibly common case here) — it's a best-effort
+   signal, not a guarantee. Extends each link to:
+   ```typescript
+   type ScrapedLink = {
+     url: string
+     oembed_title?: string
+     oembed_author?: string
+   }
+   ```
+   Reuses `detectProvider` (`lib/clips/detect-provider.ts`) to decide which
+   links are worth an oEmbed call at all.
+
+   Full output shape after decisions 2–4:
    ```typescript
    type ScrapedPost = {
      post_url: string
      author: string
      posted_at: string
-     body_html: string
-     links: string[]
+     body_markdown: string
+     quoted_post_url: string | null
+     links: ScrapedLink[]
    }
 
    type ScrapedThread = {
@@ -473,53 +508,67 @@ re-scraping the forum each time.
    on without re-hitting the forum. Scraped output shouldn't be committed —
    add its default output location to `.gitignore`.
 
-3. **This step never calls `/api/internal/ingest` and needs no
-   credentials.** It only reads a public forum thread. `INGEST_SECRET` and
-   payload construction belong entirely to step 33 — resolves what was
-   previously an unstated gap (the combined step never said how the
-   scraper would authenticate to the route; splitting makes the answer
-   "it doesn't, because it isn't the part that calls it").
+5. **This step never calls `/api/internal/ingest` and needs no
+   ingest-related credentials.** It only reads a public forum thread and
+   makes public oEmbed lookups. `INGEST_SECRET` and payload construction
+   belong entirely to steps 33/34 — resolves what was previously an
+   unstated gap (the original combined step never said how the scraper
+   would authenticate to the route; splitting makes the answer "it
+   doesn't, because it isn't the part that calls it").
 
-4. **Reuse `jsdom` for HTML parsing rather than adding a new dependency
+6. **Reuse `jsdom` for HTML parsing rather than adding a new dependency
    (e.g. `cheerio`).** `jsdom` is already a devDependency (used for
    component tests) and works fine for loading a fetched HTML string into
    a queryable DOM (`new JSDOM(html).window.document.querySelectorAll(...)`)
    outside of a test context. Fetching itself uses the built-in global
    `fetch` — no new dependency there either.
 
-5. **Runtime: add `tsx` as a new devDependency.** Nothing in this repo can
+7. **Runtime: add `tsx` as a new devDependency.** Nothing in this repo can
    currently execute a standalone `.ts` file that resolves the `@/lib/...`
    path alias — there's no `ts-node`/`tsx` today, and this script needs
    that alias (it imports shared types alongside the plain parsing logic).
    `tsx` is zero-config and handles both TS and path-mapping. Add an npm
    script: `"scrape:lejonklou": "tsx scripts/scrape-lejonklou.ts"`.
 
-6. **Parsing logic lives in `lib/`, not the script — same pattern as
+8. **Parsing logic lives in `lib/`, not the script — same pattern as
    `create-placeholder-author.ts` (step 30) and `ingest-test-payload.ts`
    (step 31).** The script itself (`scripts/scrape-lejonklou.ts`) is a
    thin CLI wrapper: fetch each page, call the pure parsing functions, walk
    pagination, write the JSON file. The actual parsing —
-   `parsePostsFromPage(html, pageUrl): ScrapedPost[]` and
+   `parsePostsFromPage(html, pageUrl): ScrapedPost[]` (including the
+   HTML→markdown conversion and quote-URL resolution) and
    `findNextPageUrl(html, currentUrl): string | null` — lives in
    `lib/ingestion/scrape/parse-thread-page.ts`, so it's unit-testable
-   against fixture HTML without a live network call or a `.ts` runner.
+   against fixture HTML without a live network call or a `.ts` runner. The
+   oEmbed fetch (decision 4) is a separate, mockable function so it can be
+   unit-tested without a live network call either.
 
 **Files to update:**
 - `lib/ingestion/scrape/parse-thread-page.ts` (new) — `ScrapedPost`/
-  `ScrapedThread` types, `parsePostsFromPage`, `findNextPageUrl`.
+  `ScrapedLink`/`ScrapedThread` types, `parsePostsFromPage`,
+  `findNextPageUrl`.
+- `lib/ingestion/scrape/fetch-oembed.ts` (new) — oEmbed lookup for
+  YouTube/Vimeo links.
 - `scripts/scrape-lejonklou.ts` (new) — CLI entrypoint.
 - `package.json` — new `tsx` devDependency; new `scrape:lejonklou` script.
 - `.gitignore` — ignore the scraped-output location.
-- `core.md` — build status line (32 done, 33–34 still planned) once built.
-- `testing.md` — inventory row(s) for the new parsing unit tests.
+- `core.md` — build status line (32 done, 33–35 still planned) once built.
+- `testing.md` — inventory row(s) for the new parsing/oEmbed unit tests.
 
 **Tests:**
 - **Unit:** `lib/ingestion/scrape/__tests__/parse-thread-page.test.ts` —
   post extraction from a fixture HTML fragment (author/timestamp/body/
-  links all correctly extracted); pagination detection (next-page link
-  present → returns its URL; absent, i.e. last page → returns null);
-  handles a malformed or partially-anonymized post (e.g. a deleted user)
-  without throwing.
+  links all correctly extracted; HTML→markdown conversion for a quote
+  block and a link); quote-URL resolution when the forum's markup
+  identifies the quoted post, and `null` when it doesn't; pagination
+  detection (next-page link present → returns its URL; absent, i.e. last
+  page → returns null); handles a malformed or partially-anonymized post
+  (e.g. a deleted user) without throwing.
+  `lib/ingestion/scrape/__tests__/fetch-oembed.test.ts` — successful
+  lookup populates `oembed_title`/`oembed_author`; a non-YouTube/Vimeo
+  link is skipped entirely (no network call); a failed/404 oEmbed lookup
+  is swallowed, leaving the link's oEmbed fields undefined rather than
+  throwing.
 - **E2E / integration:** none — no app code, no deployed route, no DB.
 
 ---
@@ -529,82 +578,244 @@ re-scraping the forum each time.
 **The gap this closes:** phases 2–3 of the pipeline (semantic extraction,
 clip-health filtering) don't exist. This is genuinely new capability, not
 a variation on an existing pattern, and remains the highest-risk step in
-this plan — split out from the (now-built) scraper specifically so it can
-get its own focused design pass rather than being planned as an
-afterthought alongside deterministic HTML parsing.
+this plan.
 
-**Carried over from the original combined step, still open:**
+**Decisions:**
 
-1. **Per-author continuity across posts is the hardest open problem in
-   the whole plan.** A single forum author's system evolves across many
-   posts (v1 → v2 → v3), and the point of the snapshot-history feature is
-   capturing that continuity — not minting a new one-off system per post.
-   A fully independent per-post extraction call has no way to know "this
-   is snapshot v2 of the system I saw four posts ago." Likely approach:
-   group all of one author's `ScrapedPost`s (step 32's output) together
-   and give the extraction pass running state across them ("here are this
-   author's prior posts and the systems/snapshots already derived from
-   them — does this new post describe one of those, a new version, or a
-   new system entirely?"). Extraction's job here is to produce *consistent
-   naming* (`system_name`/`version_label` strings) — the actual dedup/
-   matching-by-name already happens inside `ingest_test` (step 31); this
-   step doesn't need its own separate system-matching logic, just stable
-   names that the RPC's existing matching will recognize correctly.
-   **Still likely deserves its own short design/prototyping pass before
-   full implementation.**
+1. **Output is a candidate repository, not direct calls to
+   `/api/internal/ingest`.** Extraction never talks to the deployed app at
+   all — it reads step 32's `ScrapedThread` JSON and writes one JSON file
+   per candidate test to a local folder, e.g.
+   `scripts/output/candidates/<source_ref>.json`, each holding a draft
+   `IngestPayload` plus `status` and `issues`. Committing (calling the
+   ingest route) is entirely step 34's job — see that step. This is the
+   mechanism that lets a human fix a problem (like an unidentified track)
+   *before* anything is ever sent, so the app itself never needs a
+   "correct a field after ingest" feature.
 
-2. **"Unbroken" is enforced here, not in the ingest route** — for every
-   candidate pair of clip URLs a post appears to describe (drawn from
-   step 32's `links`, plus whatever this step infers about which links are
-   the actual A/B clips), run the *existing* `detectProvider`/
-   `checkDirectUrl` logic (`lib/clips/detect-provider.ts`, `lib/clips/
-   check-url.ts` — the same code `POST /api/clips/verify` already uses)
-   and drop the candidate if either URL is dead. Zero new clip-validation
-   logic.
+2. **`source_ref` gets a pair index.** A single post can describe more
+   than one clip pair — "if there is more than one pair, each pair is a
+   before/after of the same change, but with different tracks" — so one
+   post can yield multiple independent candidates, each its own test. Key
+   candidates as `<thread>:post-<n>:pair-<i>` (`pair-1` even when there's
+   only one, for consistency).
 
-3. **Dry-run mode is required, not optional, and must validate — not just
-   preview.** Given this step's inherent uncertainty (forum prose is
-   messy; most posts won't cleanly fit the blind-A/B-test pattern at all),
-   dry-run mode must check each candidate `IngestPayload` against the same
-   constraints `ingest_test` would enforce — `chosen_label` is `'A'`/`'B'`,
-   `technique_name` matches a real `listening_techniques` row (see the new
-   gap below), clip URLs pass the health filter — and surface failures for
-   human review, not just pretty-print raw guesses that would blow up on
-   a real run.
+3. **Status lifecycle:**
+   - `pending` — something required is still missing from the thread,
+     most commonly no reveal post found yet (decision 5). Materialized as
+     soon as the initiating clip-pair post is found, even before any votes
+     or reveal exist, so the repository shows what's still "in flight."
+   - `needs_review` — everything required is present, but extraction
+     flagged an issue (decision 7's unidentified-track case is the
+     expected common one). Requires a human look before it can proceed.
+   - `ready` — complete, no flagged issues. Assigned automatically —
+     unambiguous candidates don't need individual human sign-off just to
+     reach this state.
+   - `approved` — a human has explicitly said this candidate should be
+     committed (resolved a `needs_review` issue and flipped the status, or
+     bulk-approved a batch of `ready` ones). The only status step 34 acts
+     on.
+   - `ingested` — step 34 successfully POSTed it. Kept for local
+     bookkeeping; `tests.source_ref`'s uniqueness in `ingest_test` is the
+     real idempotency backstop regardless.
 
-**New gaps found reviewing the combined plan, not yet resolved — needs its
-own decision pass before this step is ready to build:**
+4. **Extraction is incremental and safe to re-run.** Re-running against an
+   updated scrape (e.g. after a re-scrape picks up new posts) updates or
+   creates `pending`/`needs_review`/`ready` candidates as more of the
+   thread resolves, but **never overwrites a candidate already at
+   `approved` or `ingested`** — a human decision, once made, isn't
+   silently clobbered by a later run.
 
-4. **Extraction technology is unspecified.** `deferred-features.md`'s
-   original framing ("an AI process reads forum threads") was never made
-   concrete. Needs: which model/API, called via what (a new dependency
-   such as `@anthropic-ai/sdk`? something else?), and what credential env
-   var it needs — which, if it's expected to run anywhere other than a
-   local machine, also needs a `docs/vercel-setup.md`-style entry.
+5. **Three distinct concepts, not one — clarified against how the forum
+   actually works:** the *forum label* (`A`/`B`, `X`/`Y`, `A1`/`B1`, etc.
+   — arbitrary, assigned by the creator per post, for discussion); the
+   *app's internal blind label* (`clips.label`, assigned by us at ingest
+   time, unrelated to the forum's scheme); and *before/after*
+   (`clip_mapping`), stated by the creator in a separate, later reveal
+   post — sometimes disclosed alongside the tracks (decision 7), often not
+   disclosed at all. Votes resolve against the *forum* label as soon as a
+   vote post is seen (mapped to whichever of our internal `A`/`B` the
+   corresponding clip URL was assigned); before/after resolves only from a
+   reveal post.
 
-5. **Votes extraction isn't addressed at all.** Step 31's design gives
-   each vote its own `voter.forum_username`, resolved separately from the
-   post's author — because in a real thread, votes come from *reply*
-   posts by different members, not the original post. This step's plan
-   says nothing about how it decides "this reply is a vote on test X" vs.
-   ordinary chatter, nor how free-text commentary maps onto the fixed
-   six-row `listening_techniques` vocabulary (an unmatched guess makes
-   `ingest_test` throw and roll back that entire test's import).
+6. **A test that never gets revealed stays `pending` forever and is never
+   promoted.** `before_is_a` is mandatory for `ingest_test` and has no
+   other source — rather than guess, or add an update-after-ingest
+   mechanism (which the app has no other use for and shouldn't grow just
+   for this), an unrevealed test is explicitly out of scope for this
+   import. Votes and snapshot data for it are simply never committed.
 
-**Files to update:** not finalized — depends on resolving gaps 4–5 above.
-Expected at minimum: `scripts/extract-lejonklou.ts` (or similar, consuming
-step 32's JSON output) and supporting `lib/ingestion/extract/` modules;
-`api-conventions.md` / `docs/vercel-setup.md` if a new credential env var
-is introduced; `core.md` / `testing.md` per the usual pattern.
+7. **Track identification: try text, then step 32's oEmbed enrichment;
+   if both fail, don't skip — create a flagged placeholder.** Order of
+   attempts: (a) explicit track naming in the reveal or original post,
+   when present; (b) `oembed_title`/`oembed_author` from step 32, when
+   present and plausible. If neither resolves, still create the candidate
+   with a **per-post-unique** placeholder (e.g. `artist: "Unidentified"`,
+   `title: "Unidentified passage — <source_ref>"` — never one shared
+   "Unknown" row, which would incorrectly merge unrelated tracks under
+   `ingest_test`'s exact-match lookup) and mark the candidate
+   `needs_review` with `issues: ["unidentified_track"]`. A human resolves
+   it by editing the candidate file directly — typing in the real name if
+   they recognize it, or leaving the placeholder and approving anyway if
+   they're satisfied with that outcome.
 
-**Tests:** not finalized — the deterministic parts (technique-name
-matching, clip-health filtering, payload validation) are unit-testable;
-the model-driven extraction itself isn't unit-testable in the traditional
-sense, validated instead by the dry-run review in step 34.
+8. **System naming is simplified: one placeholder system per creator,
+   not inferred per post.** Creator posts "rarely provide much information
+   about systems... to infer this would require a much deeper scan... 
+   probably out of scope," but "generally say what has changed." So:
+   one system per resolved creator placeholder (not named from post
+   content — named from the creator's identity, e.g. `"<display name>'s
+   system"`), with each post's "what changed" text becoming the new
+   snapshot's `version_label`. This deliberately doesn't try to detect "is
+   this description a new system entirely" — a creator with two genuinely
+   distinct systems would incorrectly get merged into one, an accepted,
+   documented limitation for this historical import rather than something
+   worth deep inference. De-risks, but doesn't eliminate, the harder half
+   of the old "continuity" problem — see decision 10.
+
+9. **Vote revisions are resolved entirely within extraction — no change
+   to `ingest_test`.** "Listeners sometimes change their vote or add a
+   comment" is a real, expected occurrence, but since a candidate is only
+   written once its underlying state is gathered (and re-extraction
+   updates a non-`approved` candidate rather than appending to it),
+   extraction always resolves to the *final* vote per (voter, technique)
+   before it's ever written to a candidate file. `ingest_test`'s
+   `ON CONFLICT ... DO NOTHING` remains a defensive backstop only — it
+   should never actually fire if extraction has done its job; if it does,
+   that's a signal of an extraction bug, not something the SQL layer
+   should try to paper over.
+
+10. **Reply-to-test attribution is the hardest remaining open problem —
+    still not fully resolved, needs its own design/prototyping pass.**
+    Primary signal is step 32's `quoted_post_url`. Not always present or
+    unambiguous (interleaved tests mean position alone isn't reliable, and
+    "sometimes" quoting isn't "always"), so a fallback heuristic is still
+    needed — e.g. matching a reply's mentioned clip labels/links against
+    the set of currently-`pending`/open candidates from the same or a
+    plausibly-related creator. This is exactly the kind of ambiguity
+    decision 7's `needs_review` mechanism exists for: an extraction that
+    isn't confident which test a vote belongs to should flag it rather
+    than guess silently.
+
+11. **Technique is hardcoded to `'Tune Method'` for every vote.** The
+    forum's stated convention is that all listeners use this evaluation
+    method — a valid cross-test assumption for this dataset. Removes the
+    free-text-to-vocabulary mapping risk entirely for the common case; no
+    attempt is made to detect a listener using a different technique.
+
+12. **"Unbroken" is enforced here, not in the ingest route** — for
+    whichever links a candidate resolves as its actual clip pair, run the
+    *existing* `detectProvider`/`checkDirectUrl` logic (`lib/clips/
+    detect-provider.ts`, `lib/clips/check-url.ts` — the same code
+    `POST /api/clips/verify` already uses) and drop the candidate (or mark
+    it `needs_review`) if either URL is dead. Zero new clip-validation
+    logic.
+
+13. **Validation happens continuously, not as a separate "dry-run mode."**
+    Because extraction only ever writes local candidate files and never
+    calls the ingest route itself, there's no live/dry-run mode
+    distinction to design — every run is inherently side-effect-free
+    against the app. Each candidate is validated against the same
+    constraints `ingest_test` would enforce (`chosen_label` is `'A'`/`'B'`,
+    clip URLs pass the health filter, required fields present) before
+    being marked `ready`; a failure keeps it at `needs_review` with the
+    specific problem recorded in `issues`, rather than emitting a payload
+    that would only fail later, at commit time.
+
+14. **Extraction technology: Vercel AI SDK (`ai` package), `generateObject`
+    with a Zod schema, via the AI Gateway using a plain
+    `"anthropic/claude-..."` model string** (no separate `@ai-sdk/anthropic`
+    package). Chosen over calling the Anthropic API directly or using the
+    Claude Agent SDK: it fits this project's Vercel-native conventions,
+    and schema-validated structured output directly satisfies decision 13
+    — a malformed extraction is a catchable Zod error, not something to
+    hand-roll validation for. One `generateObject` call per post (or small
+    batch), with a rolling summary of the author's previously-derived
+    system/snapshot state passed as context for decision 8's continuity
+    tracking — deliberately simpler than giving the model its own
+    tool-using agent session, which isn't needed for what's fundamentally
+    single-shot structured extraction repeated with accumulated context.
+    Needs a new `ai` (and `zod`, not currently a dependency) package, and
+    an AI Gateway credential — exact env var/provisioning mechanism to be
+    resolved at build time.
+
+**Files to update:**
+- `lib/ingestion/extract/candidate.ts` (new) — candidate JSON shape,
+  status type, read/write helpers that respect decision 4 (never
+  overwrite `approved`/`ingested`).
+- `lib/ingestion/extract/extract-post.ts` (new) — the `generateObject`
+  call plus the deterministic wrapping around it (clip-health filtering,
+  technique hardcoding, track-identification fallback, per-author running
+  state).
+- `scripts/extract-lejonklou.ts` (new) — CLI entrypoint: reads step 32's
+  JSON, groups by author, walks posts building/updating candidates.
+- `package.json` — new `ai`/`zod` dependencies; new `extract:lejonklou`
+  script.
+- `.gitignore` — ignore the candidates output location (human-edited
+  working state, not committed source).
+- `docs/vercel-setup.md` / `api-conventions.md` — once the AI Gateway
+  credential mechanism is resolved.
+- `core.md` / `testing.md` — per the usual pattern, once built.
+
+**Tests:**
+- **Unit:** candidate status-transition logic (new candidate → `pending`;
+  becomes `ready`/`needs_review` once complete; re-running never
+  regresses an `approved`/`ingested` candidate); track-identification
+  fallback (produces a unique placeholder per `source_ref`, never a shared
+  one); the clip-health filter (thin wrapper over already-tested
+  `detect-provider`/`check-url` — just confirm correct usage); Zod schema
+  validation itself. The `generateObject` call is mocked in these tests —
+  the model call itself isn't unit-testable in the traditional sense.
+- **E2E / integration:** none — no deployed route is touched.
 
 ---
 
-## ⬜ 34 — Run the import: staging, then production
+## ⬜ 34 — Commit
+
+**The gap this closes:** approved candidates need to actually reach the
+app. This is the only step in the whole pipeline that makes a real HTTP
+call to a deployed environment — deliberately separated from extraction
+(step 33) since it has none of extraction's uncertainty: no LLM, no
+judgment calls, nothing to review.
+
+**Decisions:**
+
+1. **A separate, simple script** — `scripts/commit-lejonklou.ts` — reads
+   only candidate files with `status: "approved"` from step 33's output
+   folder, POSTs each as an `IngestPayload` body to
+   `POST /api/internal/ingest` (target base URL and `INGEST_SECRET` read
+   from the environment, same wiring step 31 already set up), and marks
+   the candidate `ingested` on a successful response.
+2. **A non-2xx response leaves the candidate at `approved`**, with the
+   error recorded (e.g. appended to `issues`), so it's retried on the next
+   run rather than silently lost.
+3. **Idempotent by construction, independent of this script's own
+   bookkeeping.** Even if `commit-lejonklou.ts` is run twice against the
+   same candidate, `ingest_test`'s `source_ref` uniqueness means a repeat
+   POST just returns `already_imported: true` rather than duplicating —
+   the local `ingested` status is a convenience, not the safety mechanism.
+4. **No new library code beyond the CLI script itself** — it's a thin
+   loop (read folder → filter by status → POST → update status), fully
+   testable with a mocked `fetch`.
+
+**Files to update:**
+- `scripts/commit-lejonklou.ts` (new).
+- `package.json` — new `commit:lejonklou` script.
+- `core.md` / `testing.md` — per the usual pattern, once built.
+
+**Tests:**
+- **Unit:** given a fixture folder of candidate files in a mix of
+  statuses, confirms only `approved` ones are POSTed; confirms a 2xx
+  response transitions a candidate to `ingested`; confirms a non-2xx
+  response leaves it at `approved` with the error recorded rather than
+  silently dropping it. `fetch` is mocked — no real network call, no live
+  Supabase/Vercel dependency in this test.
+- **E2E / integration:** none beyond what step 31 already has for the
+  ingest route itself.
+
+---
+
+## ⬜ 35 — Run the import: staging, then production
 
 **The gap this closes:** everything above is infrastructure; this step is
 the actual, one-time deliverable the user asked for — Lejonklou playground
@@ -616,20 +827,24 @@ thread content actually present in the app.
    established migration convention (`CLAUDE.md`: "Migrations apply
    independently to each project — apply to staging first, then
    production") extended to data operations, not just schema.
-2. Run in dry-run mode first, manually review a sample of extracted
-   payloads (spot-check track/system/snapshot matching, before/after
-   correctness, clip health) before allowing any real POSTs.
-3. Run for real against `audiophile-staging`. Manually verify a sample of
-   imported tests render correctly in the actual app (test detail page,
-   system snapshot history, track pages) — not just "the API call
-   succeeded."
-4. Once satisfied, re-run against `audiophile-prod`.
+2. **Not a single rigid pass — scrape/extract can loop.** Scrape the
+   thread; run extraction; review the resulting `needs_review` candidates
+   (resolve or accept each) and spot-check `ready` ones; approve what's
+   ready to go. Re-scraping and re-running extraction is safe and
+   incremental (step 33 decision 4), so this can repeat as needed before
+   anything is committed — there's no reason to treat it as one-shot.
+3. Run `commit-lejonklou.ts` for real against `audiophile-staging`.
+   Manually verify a sample of imported tests render correctly in the
+   actual app (test detail page, system snapshot history, track pages) —
+   not just "the API call succeeded."
+4. Once satisfied, repeat scrape → extract → review/approve → commit
+   against `audiophile-prod`.
 
 **Not part of this step:** the user-merge/claim flow (letting a real
 Lejonklou member claim their imported content once they join) is
 explicitly deferred — see below.
 
-**Tests:** none new — this step *exercises* steps 30–33, it doesn't add
+**Tests:** none new — this step *exercises* steps 30–34, it doesn't add
 code. Verification is the manual review described above.
 
 ---
