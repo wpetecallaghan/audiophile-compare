@@ -10,6 +10,7 @@ import MappingBadge from '@/components/tests/MappingBadge'
 import VoteForm from '@/components/tests/VoteForm'
 import TallyDisplay from '@/components/tests/TallyDisplay'
 import { toClipData } from '@/lib/clips/to-clip-data'
+import { isUnsupportedClip } from '@/lib/clips/is-unsupported'
 import { computeTally } from '@/lib/votes/compute-tally'
 import type { Technique, ExistingVote } from '@/components/tests/VoteForm'
 import type { RawVoteRow, TallyResult } from '@/lib/votes/compute-tally'
@@ -109,6 +110,14 @@ export default async function TestDetailPage({ params }: Props) {
   // Clip health — dead blocks voting; degraded is a lighter-touch note only
   const hasDeadClip = rawA.url_status === 'dead' || rawB.url_status === 'dead'
 
+  // Once revealed, a clip that can't be embedded gets its link folded into
+  // MappingBadge's Before/After label instead of a separate box below —
+  // gated on `mapping` too (matching MappingBadge's own render condition
+  // below), so a hidden slot is never left with nothing to show
+  const canShowMappingLinks = isRevealed && !!mapping
+  const hideClipA = canShowMappingLinks && isUnsupportedClip(rawA)
+  const hideClipB = canShowMappingLinks && isUnsupportedClip(rawB)
+
   // Vote tally — fetch all votes for this test when the viewer is entitled
   let tally: TallyResult | null = null
   if (canSeeTally) {
@@ -158,12 +167,14 @@ export default async function TestDetailPage({ params }: Props) {
           clipAId={clipA.id}
           beforeClipId={mapping.before_clip_id}
           afterClipId={mapping.after_clip_id}
+          clipAUnsupportedUrl={hideClipA ? rawA.source_url : null}
+          clipBUnsupportedUrl={hideClipB ? rawB.source_url : null}
         />
       )}
 
       {/* Player — playback is public */}
       <div className="w-full max-w-full min-w-0">
-        <ABPlayer clipA={clipA} clipB={clipB} />
+        <ABPlayer clipA={clipA} clipB={clipB} hideClipA={hideClipA} hideClipB={hideClipB} />
       </div>
 
       {/* Clip health warnings — safe to say which label is affected without

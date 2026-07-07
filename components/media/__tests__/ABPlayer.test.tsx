@@ -29,4 +29,24 @@ describe('ABPlayer', () => {
     expect(screen.getByText('Clip A')).toBeDefined()
     expect(screen.getByText('Clip B')).toBeDefined()
   })
+
+  it('hides Clip A entirely when hideClipA is true', () => {
+    const clipA = makeClip({ label: 'A' })
+    const clipB = makeClip({ label: 'B' })
+
+    render(<ABPlayer clipA={clipA} clipB={clipB} hideClipA />)
+
+    expect(screen.queryByText('Clip A')).not.toBeInTheDocument()
+    expect(screen.getByText('Clip B')).toBeInTheDocument()
+  })
+
+  it('hides Clip B entirely when hideClipB is true', () => {
+    const clipA = makeClip({ label: 'A' })
+    const clipB = makeClip({ label: 'B' })
+
+    render(<ABPlayer clipA={clipA} clipB={clipB} hideClipB />)
+
+    expect(screen.getByText('Clip A')).toBeInTheDocument()
+    expect(screen.queryByText('Clip B')).not.toBeInTheDocument()
+  })
 })

@@ -118,6 +118,7 @@
     "anonymous": "Anonymous",
     "signIn": "Sign in",
     "signInToVote": "to vote.",
+    "openClipLink": "Open link directly",
     "wizard": {
       "stepTrack": "Track",
       "stepSystems": "Systems",

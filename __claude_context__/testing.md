@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (25 files · 265 tests · all passing)
+## 4. Unit test inventory (25 files · 267 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -80,7 +80,7 @@ indirectly through the step tests.
 | `components/__tests__/ProfileForm.test.tsx` | 13 | PATCH /api/profile, trim, validation, success/error states |
 | `components/__tests__/ChangeEmailForm.test.tsx` | 4 | updateUser({ email }), confirmation message, loading state |
 | `components/__tests__/ChangePasswordForm.test.tsx` | 9 | updateUser({ password }), validation, autoOpen prop, loading state |
-| `components/media/__tests__/ABPlayer.test.tsx` | 1 | Renders A and B labels |
+| `components/media/__tests__/ABPlayer.test.tsx` | 3 | Renders A and B labels; hideClipA/hideClipB hide that slot entirely |
 | `components/tests/__tests__/VoteForm.test.tsx` | 22 | Rendering, Other field visibility, validation, submission, pre-population, hasDeadClip |
 | `components/tests/__tests__/StepSnapshots.test.tsx` | 28 | Open/close, validation, POST, onSnapshotCreated, inline system creation |
 | `components/systems/__tests__/AddSnapshotForm.test.tsx` | 14 | Open/close, POST, router.refresh on success, validation |
@@ -134,7 +134,7 @@ votes → clip_mapping → clips → tests → system_snapshots → systems → 
 | `test-creation.spec.ts` | Track search; full wizard (select track → snapshots → verify clips → publish) |
 | `voting.spec.ts` | Tally hidden before voting; vote count visible; cast vote; update existing vote; creator can reveal |
 | `delete.spec.ts` | Creator deletes a zero-vote test (redirects home); Delete hidden once a vote exists; owner deletes an unreferenced snapshot; Delete hidden when a test references the snapshot; owner deletes a snapshot-less system (redirects to systems list); Delete hidden when the system has a snapshot |
-| `clip-health.spec.ts` | Dead clip shows a warning and player still renders; vote form replaced with an explanatory message; creator replaces a dead clip's URL, clearing the warning; "Broken" badge shown on the track and system detail pages |
+| `clip-health.spec.ts` | Dead clip shows a warning and player still renders; vote form replaced with an explanatory message; creator replaces a dead clip's URL, clearing the warning; "Broken" badge shown on the track and system detail pages; unsupported-playback clip shows a bare link in blind view with no "could not be identified" message; once revealed, its Before/After label in the mapping badge links directly to it with no separate link below |
 | `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared |
 | `zz-sign-out.spec.ts` | Sign out clears the session; header reverts to unauthenticated. Runs last — see file for why |
 

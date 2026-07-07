@@ -2,7 +2,9 @@
  * clip-health.spec.ts
  *
  * Handling of verified-broken clip URLs (step 27): warnings, vote gating,
- * creator remediation, and the "Broken" badge on list surfaces.
+ * creator remediation, and the "Broken" badge on list surfaces. Also
+ * covers the concise presentation for clips with unsupported playback
+ * (step 28).
  */
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
@@ -64,5 +66,43 @@ test.describe('Dead clip handling', () => {
     // outcomeLabel() hardcodes badge text directly, a pre-existing gap
     // (see components.md)
     await expect(page.getByText('Broken')).toBeVisible()
+  })
+})
+
+test.describe('Unsupported-playback clip handling', () => {
+  test('blind view: shows a bare link with no "could not be identified" message', async ({ page }) => {
+    const fixture = await seedCompleteTest(`unsupported-${Date.now()}`, {
+      clipAProvider: 'direct',
+      clipAMediaType: 'unknown',
+    })
+    await page.goto(routes.test(fixture.test.id))
+
+    const link = page.getByRole(ROLE.link, { name: m.tests.openClipLink })
+    await expect(link).toBeVisible()
+    await expect(link).toHaveAttribute('href', fixture.clipA.source_url)
+    await expect(page.getByText(/could not be identified/i)).not.toBeVisible()
+
+    // Clip B (a normal youtube clip, unaffected) still renders as usual
+    await expect(page.getByRole(ROLE.heading, { name: 'Clip B' })).toBeVisible()
+  })
+
+  test('revealed view: the mapping badge\'s Before/After label links directly to the clip, with no separate link below', async ({ page }) => {
+    const fixture = await seedCompleteTest(`unsupported-mapping-${Date.now()}`, {
+      clipAProvider: 'direct',
+      clipAMediaType: 'unknown',
+    })
+    await page.goto(routes.test(fixture.test.id))
+
+    await page.getByRole(ROLE.button, { name: m.tests.reveal.button }).click()
+    await page.getByRole(ROLE.button, { name: m.tests.reveal.confirmButton }).click()
+    await expect(page.getByText(m.tests.revealedStatus).first()).toBeVisible({ timeout: 5_000 })
+
+    // Clip A's slot in the player is gone — no heading, no player, no link
+    await expect(page.getByRole(ROLE.heading, { name: 'Clip A' })).not.toBeVisible()
+
+    // Exactly one link to the clip's URL exists, and it's the Before/After label
+    const links = page.locator(`a[href="${fixture.clipA.source_url}"]`)
+    await expect(links).toHaveCount(1)
+    await expect(links.first()).toHaveText(/before|after/i)
   })
 })

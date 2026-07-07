@@ -203,4 +203,4 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-All 27 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ✅ 19 about page; ✅ 20 visual polish; ✅ 21 Link component; ✅ 22 Heading/FieldLabel/TextField/FormMessage/Callout components; ✅ 23 anonymous clip playback; ✅ 24 privacy/terms pages; ✅ 25 fixed header/footer app shell; ✅ 26 delete tests/snapshots/systems; ✅ 27 handle verified-broken clip URLs). The current unit test suite is 25 files / 265 tests passing. See `testing.md` for the full inventory.
+All 28 planned build steps are complete (✅ 1–16 core features; ✅ 17 E2E coverage; ✅ 18 version/commit info page; ✅ 19 about page; ✅ 20 visual polish; ✅ 21 Link component; ✅ 22 Heading/FieldLabel/TextField/FormMessage/Callout components; ✅ 23 anonymous clip playback; ✅ 24 privacy/terms pages; ✅ 25 fixed header/footer app shell; ✅ 26 delete tests/snapshots/systems; ✅ 27 handle verified-broken clip URLs; ✅ 28 concise presentation for unsupported-playback clips). The current unit test suite is 25 files / 267 tests passing. See `testing.md` for the full inventory.

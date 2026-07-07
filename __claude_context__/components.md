@@ -111,6 +111,14 @@ export type PlayerHandle = {
 
 **Rules:**
 - Pages always render `<ABPlayer clipA={...} clipB={...} />`. Never import `MediaPlayer` or individual player components directly from a page.
+- `ABPlayer` also takes optional `hideClipA`/`hideClipB` (step 28) — skips
+  that slot (heading + player) entirely. Used by `app/tests/[id]/page.tsx`
+  once revealed, for a clip whose player would be `UnknownPlayer` (see
+  `lib/clips/is-unsupported.ts`) — its link moves into `MappingBadge`'s
+  Before/After label instead, so the slot below would otherwise duplicate
+  it. `ABPlayer` itself stays unaware of *why* — it only receives a
+  boolean, the same "page.tsx decides, player components don't" boundary
+  `isCreator`/`isRevealed` already follow everywhere else.
 - All player components use `forwardRef` + `useImperativeHandle`. Do not deviate from this structure:
 
 ```typescript

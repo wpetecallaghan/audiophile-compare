@@ -42,7 +42,7 @@ export type SeededSystem = { id: string; name: string }
 export type SeededSnapshot = { id: string; system_id: string; version: number; label: string }
 export type SeededTrack = { id: string; artist: string; title: string }
 export type SeededTest = { id: string; title: string }
-export type SeededClip = { id: string; test_id: string; label: string }
+export type SeededClip = { id: string; test_id: string; label: string; source_url: string }
 
 export async function seedSystem(name: string): Promise<SeededSystem> {
   const admin = createAdminClient()
@@ -107,11 +107,25 @@ export async function seedTest(
   return data as SeededTest
 }
 
+export async function seedClipMapping(
+  testId: string,
+  beforeClipId: string,
+  afterClipId: string,
+): Promise<void> {
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('clip_mapping')
+    .insert({ test_id: testId, before_clip_id: beforeClipId, after_clip_id: afterClipId })
+  if (error) throw new Error(`seedClipMapping: ${error.message}`)
+}
+
 export async function seedClip(
   testId: string,
   label: 'A' | 'B',
   sourceUrl: string,
   urlStatus: 'ok' | 'degraded' | 'dead' = 'ok',
+  provider: 'youtube' | 'vimeo' | 'direct' | 'unknown' = 'youtube',
+  mediaType: 'audio' | 'video' | 'unknown' = 'video',
 ): Promise<SeededClip> {
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -120,11 +134,11 @@ export async function seedClip(
       test_id: testId,
       label,
       source_url: sourceUrl,
-      provider: 'youtube',
-      media_type: 'video',
+      provider,
+      media_type: mediaType,
       url_status: urlStatus,
     })
-    .select('id, test_id, label')
+    .select('id, test_id, label, source_url')
     .single()
   if (error) throw new Error(`seedClip: ${error.message}`)
   return data as SeededClip
@@ -151,7 +165,14 @@ const YOUTUBE_B = 'https://www.youtube.com/watch?v=9bZkp7q19f0'
 
 export async function seedCompleteTest(
   suffix: string,
-  opts: { clipAStatus?: 'ok' | 'degraded' | 'dead'; clipBStatus?: 'ok' | 'degraded' | 'dead' } = {},
+  opts: {
+    clipAStatus?: 'ok' | 'degraded' | 'dead'
+    clipBStatus?: 'ok' | 'degraded' | 'dead'
+    clipAProvider?: 'youtube' | 'vimeo' | 'direct' | 'unknown'
+    clipBProvider?: 'youtube' | 'vimeo' | 'direct' | 'unknown'
+    clipAMediaType?: 'audio' | 'video' | 'unknown'
+    clipBMediaType?: 'audio' | 'video' | 'unknown'
+  } = {},
 ): Promise<SeedTestFixture> {
   const track = await seedTrack('Test Artist', `Track ${suffix}`)
   const systemA = await seedSystem(`System A ${suffix}`)
@@ -159,7 +180,21 @@ export async function seedCompleteTest(
   const snapshotA = await seedSnapshot(systemA.id, `Snapshot A ${suffix}`)
   const snapshotB = await seedSnapshot(systemB.id, `Snapshot B ${suffix}`)
   const test = await seedTest(track.id, snapshotA.id, snapshotB.id, `Test ${suffix}`)
-  const clipA = await seedClip(test.id, 'A', YOUTUBE_A, opts.clipAStatus ?? 'ok')
-  const clipB = await seedClip(test.id, 'B', YOUTUBE_B, opts.clipBStatus ?? 'ok')
+  const clipA = await seedClip(
+    test.id, 'A', YOUTUBE_A,
+    opts.clipAStatus ?? 'ok',
+    opts.clipAProvider ?? 'youtube',
+    opts.clipAMediaType ?? 'video',
+  )
+  const clipB = await seedClip(
+    test.id, 'B', YOUTUBE_B,
+    opts.clipBStatus ?? 'ok',
+    opts.clipBProvider ?? 'youtube',
+    opts.clipBMediaType ?? 'video',
+  )
+  // Clip A is "before", Clip B is "after" — a real test always has this
+  // row (created by POST /api/tests); without it MappingBadge never
+  // renders, so no e2e spec could actually exercise it once revealed.
+  await seedClipMapping(test.id, clipA.id, clipB.id)
   return { track, systemA, systemB, snapshotA, snapshotB, test, clipA, clipB }
 }

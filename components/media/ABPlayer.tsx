@@ -7,9 +7,15 @@ import type { PlayerHandle } from './players/NativePlayer'
 type Props = {
   clipA: ClipData
   clipB: ClipData
+  // Skip rendering that slot entirely (heading + player) — used once
+  // revealed for a clip that can't be embedded, whose link now lives in
+  // MappingBadge instead. ABPlayer stays unaware of *why*; the caller
+  // decides. See build-history.md step 28.
+  hideClipA?: boolean
+  hideClipB?: boolean
 }
 
-export default function ABPlayer({ clipA, clipB }: Props) {
+export default function ABPlayer({ clipA, clipB, hideClipA = false, hideClipB = false }: Props) {
   const playerARef = useRef<PlayerHandle>(null)
   const playerBRef = useRef<PlayerHandle>(null)
 
@@ -26,26 +32,30 @@ export default function ABPlayer({ clipA, clipB }: Props) {
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:gap-6 w-full max-w-full">
-      <div className="space-y-2 min-w-0">
-        <h2 className="text-sm font-semibold uppercase tracking-wide">
-          Clip A
-        </h2>
-        <MediaPlayer
-          ref={playerARef}
-          clip={clipA}
-          onPlay={handleAPlay}
-        />
-      </div>
-      <div className="space-y-2 min-w-0">
-        <h2 className="text-sm font-semibold uppercase tracking-wide">
-          Clip B
-        </h2>
-        <MediaPlayer
-          ref={playerBRef}
-          clip={clipB}
-          onPlay={handleBPlay}
-        />
-      </div>
+      {!hideClipA && (
+        <div className="space-y-2 min-w-0">
+          <h2 className="text-sm font-semibold uppercase tracking-wide">
+            Clip A
+          </h2>
+          <MediaPlayer
+            ref={playerARef}
+            clip={clipA}
+            onPlay={handleAPlay}
+          />
+        </div>
+      )}
+      {!hideClipB && (
+        <div className="space-y-2 min-w-0">
+          <h2 className="text-sm font-semibold uppercase tracking-wide">
+            Clip B
+          </h2>
+          <MediaPlayer
+            ref={playerBRef}
+            clip={clipB}
+            onPlay={handleBPlay}
+          />
+        </div>
+      )}
     </div>
   )
 }
