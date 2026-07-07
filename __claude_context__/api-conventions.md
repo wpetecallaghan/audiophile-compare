@@ -190,6 +190,19 @@ RLS either — a cascaded delete triggered by deleting the parent `tests` row
 is still subject to RLS for the acting role, so both tables needed their own
 `… : test creator delete` policy for the cascade to actually go through.
 
+**And it bit step 27 harder — a worse variant of the same class of bug:**
+`clips: test creator update` was in the initial schema migration *file*,
+but missing from the live database when actually queried via `pg_policies`
+(cause unknown, pre-dates step 27 — nothing before it ever ran `UPDATE` on
+`clips`, so the gap was silent for weeks). `PATCH /api/clips/[id]`
+(replacing a dead clip's URL) returned `200 { ok: true }` while RLS quietly
+updated zero rows — no error, no signal anything was wrong, just a lie.
+Fixed two ways: recreated the policy
+(`20260707093703_restore_clips_update_policy.sql`), and hardened the route
+itself to chain `.select().single()` after every mutating query and treat
+a missing row as failure — **never trust an absent `error` to mean a row
+actually changed; check what you asked to change is actually returned.**
+
 ### Rule 6 — delete rules (step 26)
 
 - `DELETE /api/tests/[id]` — creator only; 409 if the test has any vote.
@@ -200,6 +213,22 @@ is still subject to RLS for the acting role, so both tables needed their own
 All three are hard deletes — no `deleted_at` column, no restore/undo. See
 `audiophile-compare-schema.md`'s "Delete rules" section for the full
 cascade/RESTRICT design.
+
+### Rule 7 — clip health rules (step 27)
+
+- `POST /api/votes` re-checks every chosen clip's `url_status` and returns
+  409 if any is `dead` — defense in depth behind the UI, which already
+  hides the vote form when `hasDeadClip` is true. `degraded` never blocks
+  voting (may be transient).
+- `PATCH /api/clips/[id]` — creator only (via the clip's parent test); 409
+  if the test has any vote. Trusts the client-supplied verified fields
+  (`source_url`/`provider`/`media_type`/`url_status`) the same way
+  `POST /api/tests` already does — the client already called
+  `POST /api/clips/verify` moments earlier — rather than re-verifying
+  server-side.
+
+See `audiophile-compare-schema.md`'s "Clip health rules" section for the
+full design, including the missing-RLS-policy incident above.
 
 ---
 

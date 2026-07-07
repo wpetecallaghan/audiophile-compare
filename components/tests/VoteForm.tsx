@@ -8,6 +8,7 @@ import { FieldLabel } from '@/components/ui/FieldLabel'
 import { TextInput, TextArea } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
 import { Button } from '@/components/ui/Button'
+import { Callout } from '@/components/ui/Callout'
 
 export type Technique = {
   id: string
@@ -29,6 +30,7 @@ type Props = {
   clipBId: string
   techniques: Technique[]
   existingVotes: ExistingVote[]
+  hasDeadClip?: boolean
 }
 
 type TechVote = {
@@ -43,6 +45,7 @@ export default function VoteForm({
   clipBId,
   techniques,
   existingVotes,
+  hasDeadClip = false,
 }: Props) {
   const router = useRouter()
   const tr = useTranslations('tests.vote')
@@ -121,6 +124,14 @@ export default function VoteForm({
 
   const isUpdate = existingVotes.length > 0
   const hasAnyVote = techniques.some(t => votes[t.id].chosen !== null)
+
+  if (hasDeadClip) {
+    return (
+      <Callout tone="warning" className="text-sm text-amber-800 dark:text-amber-200">
+        {tr('blockedByDeadClip')}
+      </Callout>
+    )
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

@@ -29,7 +29,8 @@ export default async function HomePage({ searchParams }: Props) {
         creator:users!creator_id(display_name),
         track:tracks(artist, title),
         snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
-        snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name))
+        snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name)),
+        clips(url_status)
       `,
       { count: 'exact' },
     )
@@ -45,6 +46,7 @@ export default async function HomePage({ searchParams }: Props) {
     track: { artist: string; title: string } | { artist: string; title: string }[] | null
     snapshot_a: { label: string; system: { name: string } | { name: string }[] | null } | { label: string; system: { name: string } | { name: string }[] | null }[] | null
     snapshot_b: { label: string; system: { name: string } | { name: string }[] | null } | { label: string; system: { name: string } | { name: string }[] | null }[] | null
+    clips: { url_status: string }[]
   }>
 
   // Normalise Supabase joined relations — singular FK joins may come back as
@@ -82,6 +84,7 @@ export default async function HomePage({ searchParams }: Props) {
       track:      track   ?? null,
       snapshot_a: rawA ? { label: rawA.label, system: sysA ?? null } : null,
       snapshot_b: rawB ? { label: rawB.label, system: sysB ?? null } : null,
+      has_dead_clip: t.clips.some(c => c.url_status === 'dead'),
     }
   })
 

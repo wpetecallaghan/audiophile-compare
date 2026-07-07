@@ -362,12 +362,19 @@ and subtle/divider (`border-gray-100 dark:border-gray-800`).
 never raw `bg-*/text-*` classes:**
 ```tsx
 import { Badge } from '@/components/ui/Badge'
-<Badge status="win">Win</Badge>   {/* status: win | loss | draw | blind | revealed */}
+<Badge status="win">Win</Badge>   {/* status: win | loss | draw | blind | revealed | broken */}
 ```
 The color pairing for each status (e.g. `bg-green-100 text-green-700
 dark:bg-green-900/40 dark:text-green-300` for `win`) lives in exactly one
 place, `badgeVariants` inside `Badge.tsx`. Need a new status? Add a variant
-there — don't invent a `bg-*`/`text-*` pair at the call site.
+there — don't invent a `bg-*`/`text-*` pair at the call site. `broken`
+(step 27, orange — distinct from every other status so it never gets
+confused with `loss` or `blind`) takes priority over a test's normal
+win/loss/blind/revealed status wherever it's computed: the feed
+(`app/page.tsx`/`FeedCard.tsx`), track detail (`app/tracks/[id]/page.tsx`),
+and system detail (`app/systems/[id]/page.tsx`) all check "does any of
+this test's clips have `url_status = 'dead'`" before falling back to the
+normal status logic.
 
 **Buttons — use `<Button variant size />` (`components/ui/Button.tsx`),
 never raw `bg-black`/`border` classes:**
@@ -516,6 +523,33 @@ owns the actual `fetch` call and what happens after: return `{ error }` to
 show an inline `FormMessage` and stay on the confirm step, or navigate/
 `router.refresh()` and return nothing when the action succeeded (the
 component doesn't assume the caller's target still exists to render into).
+
+**A URL input with a Verify button and inline verified/dead message — use
+`<ClipInput />` (`components/clips/ClipInput.tsx`), not a hand-rolled copy:**
+```tsx
+import { ClipInput } from '@/components/clips/ClipInput'
+
+<ClipInput
+  label="A"
+  url={url}
+  verified={verified}
+  onUrlChange={v => { setUrl(v); setVerified(null) }}
+  onVerify={() => verify(url, setVerifying, setVerified)}
+  verifying={verifying}
+  urlPlaceholder={t('urlPlaceholder')}
+  verifyLabel={t('verifyButton')}
+  verifyingLabel={t('verifying')}
+/>
+```
+Extracted in step 27 from `StepClips.tsx` (test creation) once
+`ReplaceClipUrlButton.tsx` (replacing a dead clip's URL, step 27) needed
+the exact same URL-input-plus-verify interaction. The caller owns the
+`POST /api/clips/verify` call and the URL/verified state; `ClipInput` just
+renders the input, button, and result message. Its own inline copy
+("This URL could not be reached...", "Verified — ...") is a pre-existing
+gap from before `messages/en.json` was the rule for all user-facing
+text (step 15) — left as-is rather than fixed in passing, since that gap
+isn't this step's job to close.
 
 See `build-history.md` step 22 for the full audit behind these five
 components (exact occurrence counts, and the bugs found and fixed along

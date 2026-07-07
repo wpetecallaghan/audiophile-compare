@@ -12,9 +12,15 @@ export type FeedTest = {
   creator: { display_name: string | null } | null
   snapshot_a: { label: string; system: { name: string } | null } | null
   snapshot_b: { label: string; system: { name: string } | null } | null
+  has_dead_clip: boolean
 }
 
-function statusBadge(status: string, t: Awaited<ReturnType<typeof getTranslations<'feed'>>>) {
+function statusBadge(
+  status: string,
+  hasDeadClip: boolean,
+  t: Awaited<ReturnType<typeof getTranslations<'feed'>>>,
+) {
+  if (hasDeadClip) return { text: t('statusBroken'), status: 'broken' as const }
   return status === 'revealed'
     ? { text: t('statusRevealed'), status: 'revealed' as const }
     : { text: t('statusBlind'),    status: 'blind' as const }
@@ -22,7 +28,7 @@ function statusBadge(status: string, t: Awaited<ReturnType<typeof getTranslation
 
 export default async function FeedCard({ test }: { test: FeedTest }) {
   const t = await getTranslations('feed')
-  const badge = statusBadge(test.status, t)
+  const badge = statusBadge(test.status, test.has_dead_clip, t)
 
   const snapshotLine = [
     test.snapshot_a

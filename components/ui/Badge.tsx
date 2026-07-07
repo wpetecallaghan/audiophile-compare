@@ -14,13 +14,14 @@ const badgeVariants = cva('text-xs px-2 py-0.5 rounded-full', {
       draw: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
       blind: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
       revealed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+      broken: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
     },
   },
 })
 
 type BadgeProps = HTMLAttributes<HTMLSpanElement> &
   VariantProps<typeof badgeVariants> & {
-    status: 'win' | 'loss' | 'draw' | 'blind' | 'revealed'
+    status: 'win' | 'loss' | 'draw' | 'blind' | 'revealed' | 'broken'
   }
 
 export function Badge({ status, className, ...props }: BadgeProps) {

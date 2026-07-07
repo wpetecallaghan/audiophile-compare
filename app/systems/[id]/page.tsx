@@ -71,7 +71,7 @@ export default async function SystemDetailPage({ params }: Props) {
     snapshot_a_id: string
     snapshot_b_id: string
     track: { artist: string; title: string } | { artist: string; title: string }[]
-    clips: { id: string; label: string }[]
+    clips: { id: string; label: string; url_status: string }[]
   }
 
   let allTests: TestRow[] = []
@@ -83,7 +83,7 @@ export default async function SystemDetailPage({ params }: Props) {
         id, title, status, created_at,
         snapshot_a_id, snapshot_b_id,
         track:tracks(artist, title),
-        clips(id, label)
+        clips(id, label, url_status)
       `)
       .or(
         `snapshot_a_id.in.(${snapshotIds.join(',')}),snapshot_b_id.in.(${snapshotIds.join(',')})`,
@@ -138,6 +138,7 @@ export default async function SystemDetailPage({ params }: Props) {
         created_at: t.created_at,
         track,
         outcome: computeOutcome(t, snapshot.id, votesByTest),
+        hasDeadClip: t.clips.some(c => c.url_status === 'dead'),
       }
     })
 
@@ -233,7 +234,9 @@ export default async function SystemDetailPage({ params }: Props) {
                 ) : (
                   <ul className="space-y-2">
                     {snapshot.tests.map(test => {
-                      const badge = outcomeLabel(test.outcome)
+                      const badge = test.hasDeadClip
+                        ? { text: 'Broken', status: 'broken' as const }
+                        : outcomeLabel(test.outcome)
                       return (
                         <li key={test.id}>
                           <Link

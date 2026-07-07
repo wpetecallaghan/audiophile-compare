@@ -66,7 +66,9 @@ Tracks list, track detail, systems list, system detail with win/loss per snapsho
 - **System create/edit:** `CreateSystemForm` and `EditSystemForm`; pages `/systems/new` and `/systems/[id]/edit`.
 
 ### ✅ 10 — URL health check cron
-`GET /api/cron/check-urls` — HEAD-checks all `provider='direct'` clips in open tests.
+`GET /api/cron/check-urls` — HEAD-checks all `provider='direct'` clips, regardless
+of test status (doc corrected in step 27 — this originally said "in open tests," but
+the query has never had a test-status filter).
 Uses admin (service role) client. Daily at 02:00 UTC via `vercel.json`. Protected by `CRON_SECRET` env var.
 
 ### ✅ 11 — Public feed + pagination
@@ -814,30 +816,30 @@ them client-side. Migrations verified applied on staging via a direct
 `pg_constraint`/`pg_policies` query (`confdeltype = 'c'` on both FKs, all
 four new delete policies present) before any app-layer testing began.
 
-### ⬜ 27 — Handle verified-broken clip URLs (planned, not yet built)
-**The gap this closes:** the URL health-check cron (step 10) already writes
+### ✅ 27 — Handle verified-broken clip URLs
+**The gap this closed:** the URL health-check cron (step 10) already wrote
 `url_status` (`ok`/`degraded`/`dead`) to `clips` daily, but nothing
-downstream ever reads it — a dead end, not a feature. `lib/clips/
-to-clip-data.ts` fetches `url_status` off the raw row and drops it before
-building the `ClipData` the player receives; `NativePlayer.tsx` has no
-concept of it. Today, a dead clip just fails silently in the `<audio>`/
-`<video>` element with zero explanation, and the creator has no way to find
-out short of noticing it themselves. Plan only — no code written yet.
+downstream ever read it — a dead end, not a feature. `lib/clips/
+to-clip-data.ts` fetched `url_status` off the raw row and dropped it before
+building the `ClipData` the player receives; `NativePlayer.tsx` had no
+concept of it. Before this step, a dead clip just failed silently in the
+`<audio>`/`<video>` element with zero explanation, and the creator had no
+way to find out short of noticing it themselves.
 
-**Known limitation to document, not solve here:** detection is inherently
+**Known limitation, documented not solved here:** detection is inherently
 partial. The cron only HEAD-checks `provider='direct'` clips — YouTube/
 Vimeo embeds return 200 regardless of whether the specific video still
 exists (see the comment in `app/api/cron/check-urls/route.ts`), so a
-removed YouTube video is invisible to this system. Whatever UI ships here
-must not imply "not flagged broken" means "definitely works." Building
-embed-specific liveness checking (e.g. oEmbed lookups) is out of scope for
-this step.
+removed YouTube video is invisible to this system. The UI here must not
+imply "not flagged broken" means "definitely works" — it doesn't claim
+that anywhere. Embed-specific liveness checking (e.g. oEmbed lookups) is
+out of scope for this step.
 
-**Also found while investigating, worth a one-line fix at build time:** step
-10's description above says the cron checks clips "in open tests" — the
-actual query has no test-status filter at all; it checks every
-`provider='direct'` clip regardless of test status. Doc inaccuracy, not a
-behavior change.
+**Also found while investigating, fixed as a one-liner:** step 10's
+description above said the cron checks clips "in open tests" — the actual
+query has no test-status filter at all; it checks every `provider='direct'`
+clip regardless of test status. Doc inaccuracy, not a behavior change —
+corrected in that step's own entry above.
 
 **Decisions:**
 
@@ -857,11 +859,12 @@ behavior change.
      page needed.
    - Public feed/list badges: a new `Badge` `status` variant, `broken`,
      added to `components/ui/Badge.tsx`'s existing union (`win | loss |
-     draw | blind | revealed | broken`). `FeedCard.tsx`, `app/tracks/[id]/
-     page.tsx`'s test list, and `app/systems/[id]/page.tsx`'s per-snapshot
-     test list all need their queries extended to embed `clips(url_status)`
-     (none of the three fetch clips today) so they can compute "has a dead
-     clip" per row.
+     draw | blind | revealed | broken`). `FeedCard.tsx` (home feed,
+     `app/page.tsx`) and `app/tracks/[id]/page.tsx`'s test list don't fetch
+     `clips` at all yet and need it added; `app/systems/[id]/page.tsx`'s
+     per-snapshot test list already embeds `clips(id, label)` (pre-dates
+     this step) so it only needs `url_status` added to that existing
+     embed. All three need it to compute "has a dead clip" per row.
 
 2. **Vote gating — blocks only on `dead`, not `degraded`:** the test detail
    page computes `hasDeadClip` from the already-fetched clip rows and
@@ -873,6 +876,16 @@ behavior change.
    vote-blocked test deletion. `degraded` alone never blocks voting — it
    may be transient (a 5xx or a timeout), and blocking on it would punish
    listeners for a possibly-temporary failure.
+
+   **Correction (step 26 shipped after this plan was written, and added a
+   second anonymous-only block this rule also needs to cover):**
+   `app/tests/[id]/page.tsx` now also renders a "Sign in to vote" `Callout`
+   for logged-out visitors (`!user && !isRevealed`) — telling them to sign
+   in implies voting is possible once they do, which isn't true on a
+   `dead` test. That block should also be suppressed when `hasDeadClip` is
+   true; the player-area warning from point 1 already explains why, so no
+   second message is needed for anonymous visitors — just hide the prompt
+   rather than replace it.
 
 3. **Remediation — creator can replace a dead clip's URL, but only if the
    test has zero votes, mirroring step 26's "once voted, frozen forever"
@@ -890,10 +903,89 @@ behavior change.
    has votes, no replace action is shown at all — just the permanent
    warning from point 1.
 
-**Not yet decided, to resolve at build time:** whether the cron should
-skip re-checking clips on tests that are already `dead` *and* have votes
-(nothing can act on that result once frozen) — a minor efficiency
-improvement, not a correctness requirement.
+   **Correction:** step 26 (built after this plan was written) already put
+   a "Creator controls" row on the test detail page holding `RevealButton`
+   and `DeleteTestButton` side by side. "Replace URL" joins that same row
+   as a third creator-only action, gated the same way `DeleteTestButton`
+   already is (`voteCount === 0`) — no new layout slot needed.
+
+**Resolved at build time:** the cron does **not** skip re-checking clips on
+tests that are already `dead` and have votes. It would need a join from
+`clips` through `tests` to `votes` just to skip work that's already cheap
+(a HEAD request per `direct` clip, once a day) — added complexity for a
+marginal efficiency gain, not a correctness requirement the plan actually
+needed. Left as a future optimization if the clips table ever grows large
+enough for it to matter, not built now.
+
+**Deviations from the plan (found during implementation, not anticipated
+by it):**
+
+**`clips` was missing its UPDATE RLS policy on the live database —
+present in the initial schema migration file, absent from `pg_policies`
+when actually queried.** Cause unknown, predates this step: nothing before
+step 27 ever ran `UPDATE` on `clips` (verify doesn't touch the DB, test
+creation only `INSERT`s), so the gap was silent until `PATCH
+/api/clips/[id]` became the first caller to need it. Without the policy,
+Postgres silently updates zero rows on an RLS-blocked `UPDATE` — no error,
+so the route returned `200 { ok: true }` while nothing actually changed.
+Caught by an end-to-end e2e failure (the page still showed the dead-clip
+warning after "successfully" replacing the URL), traced by comparing a
+direct authenticated `curl` PATCH against the DB row afterward. Fixed two
+ways: recreated the policy
+(`20260707093703_restore_clips_update_policy.sql`, applied to staging
+only), and hardened the route itself — it now chains `.select().single()`
+after the update and treats a missing row as failure, so this class of bug
+can't silently recur. See `api-conventions.md` Rule 5's second real-world
+instance of this exact failure mode.
+
+**Files updated:**
+- `components/ui/Badge.tsx` — `broken` status variant.
+- `components/clips/ClipInput.tsx` (new) — extracted from `StepClips.tsx`.
+- `components/tests/steps/StepClips.tsx` — now imports the extracted
+  `ClipInput`.
+- `components/tests/VoteForm.tsx` — `hasDeadClip` prop, blocked-message
+  early return.
+- `components/tests/ReplaceClipUrlButton.tsx` (new).
+- `app/tests/[id]/page.tsx` — `hasDeadClip` computation, per-label
+  dead/degraded warnings, anonymous vote-prompt suppression, `VoteForm`
+  wiring, `ReplaceClipUrlButton`(s) in the creator-controls row.
+- `app/api/clips/[id]/route.ts` (new) — `PATCH`, replace a clip's URL.
+- `app/api/votes/route.ts` — dead-clip 409 check.
+- `app/page.tsx` + `components/feed/FeedCard.tsx`,
+  `app/tracks/[id]/page.tsx`, `app/systems/[id]/page.tsx` — `url_status`
+  added to each's clips query; `broken` badge takes priority over the
+  normal status wherever each computes one.
+- `messages/en.json` — `tests.clipHealth.*`, `tests.vote.blockedByDeadClip`,
+  `tests.replaceClip.*`, `feed.statusBroken`, `tracks.statusBroken`.
+- `supabase/migrations/20260707093703_restore_clips_update_policy.sql`
+  (applied to staging only, per the "staging first" deployment topology).
+
+**Tests:**
+- **Unit:** extended `VoteForm.test.tsx` (20 → 22) for `hasDeadClip`
+  (renders normally by default; shows the blocked message and hides the
+  form/radios when true). No new tests for `ReplaceClipUrlButton.tsx` or
+  `ClipInput.tsx` — consistent with the existing precedent that this class
+  of component (`RevealButton`/`DeleteTestButton`/`DeleteSystemButton`,
+  and every `components/ui/*` primitive) is e2e-covered, not unit-tested.
+- **E2E:** new `e2e/tests/clip-health.spec.ts` (4 tests) — dead-clip
+  warning shown and player still renders; vote form replaced with the
+  blocked message; creator replaces the dead clip's URL and the warning
+  clears; "Broken" badge shown on both the track and system detail pages.
+  Extended `e2e/helpers/admin.ts`'s `seedClip`/`seedCompleteTest` with an
+  optional `url_status`/`clipAStatus`/`clipBStatus` override (default
+  `'ok'`, backward compatible with every existing caller).
+
+**Verified:** `npm run test` — 25 files / 265 tests, all passing.
+`npx tsc --noEmit` — no new errors (same pre-existing, unrelated
+`__tests__/supabase-*.test.ts` failures as every prior step). `npm run
+test:e2e` — full suite 40/40 passing (36 pre-existing + 4 new), run
+against a local dev server (`E2E_BASE_URL` overridden to
+`http://localhost:3000`, same reason as steps 23/26 — staging doesn't have
+this branch's code). Confirmed via a direct authenticated `curl` PATCH
+plus a follow-up `pg_constraint`/`pg_policies`/row query — not just the
+passing e2e test — that the clip actually changes in the database, not
+just in the UI. Also spot-checked the feed's "Broken" badge directly via
+`curl` against the rendered HTML (public page, no auth needed).
 
 ---
 

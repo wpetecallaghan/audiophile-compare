@@ -20,7 +20,8 @@ export default async function TrackDetailPage({ params }: Props) {
       id, artist, title, album, passage_note,
       tests(
         id, title, status, created_at,
-        creator:users!creator_id(display_name)
+        creator:users!creator_id(display_name),
+        clips(url_status)
       )
     `)
     .eq('id', id)
@@ -38,6 +39,7 @@ export default async function TrackDetailPage({ params }: Props) {
     creator:
       | { display_name: string | null }
       | { display_name: string | null }[]
+    clips: { url_status: string }[]
   }
 
   const tests = (track.tests as TestRow[]).sort(
@@ -88,6 +90,12 @@ export default async function TrackDetailPage({ params }: Props) {
               const creator = Array.isArray(test.creator)
                 ? test.creator[0]
                 : test.creator
+              const hasDeadClip = test.clips.some(c => c.url_status === 'dead')
+              const badge = hasDeadClip
+                ? { status: 'broken' as const, text: t('statusBroken') }
+                : test.status === 'revealed'
+                ? { status: 'revealed' as const, text: t('statusRevealed') }
+                : { status: 'blind' as const, text: t('statusBlind') }
               return (
                 <li key={test.id}>
                   <Link
@@ -102,11 +110,8 @@ export default async function TrackDetailPage({ params }: Props) {
                         {new Date(test.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <Badge
-                      status={test.status === 'revealed' ? 'revealed' : 'blind'}
-                      className="ml-4 shrink-0"
-                    >
-                      {test.status === 'revealed' ? t('statusRevealed') : t('statusBlind')}
+                    <Badge status={badge.status} className="ml-4 shrink-0">
+                      {badge.text}
                     </Badge>
                   </Link>
                 </li>

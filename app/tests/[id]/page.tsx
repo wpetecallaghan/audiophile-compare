@@ -5,6 +5,7 @@ import { Callout } from '@/components/ui/Callout'
 import ABPlayer from '@/components/media/ABPlayer'
 import RevealButton from '@/components/tests/RevealButton'
 import DeleteTestButton from '@/components/tests/DeleteTestButton'
+import ReplaceClipUrlButton from '@/components/tests/ReplaceClipUrlButton'
 import MappingBadge from '@/components/tests/MappingBadge'
 import VoteForm from '@/components/tests/VoteForm'
 import TallyDisplay from '@/components/tests/TallyDisplay'
@@ -105,6 +106,9 @@ export default async function TestDetailPage({ params }: Props) {
   const clipA = toClipData(rawA)
   const clipB = toClipData(rawB)
 
+  // Clip health — dead blocks voting; degraded is a lighter-touch note only
+  const hasDeadClip = rawA.url_status === 'dead' || rawB.url_status === 'dead'
+
   // Vote tally — fetch all votes for this test when the viewer is entitled
   let tally: TallyResult | null = null
   if (canSeeTally) {
@@ -162,11 +166,41 @@ export default async function TestDetailPage({ params }: Props) {
         <ABPlayer clipA={clipA} clipB={clipB} />
       </div>
 
+      {/* Clip health warnings — safe to say which label is affected without
+          leaking clip_mapping before/after identity, since url_status lives
+          on the raw clip row, independent of the mapping */}
+      {rawA.url_status === 'dead' && (
+        <Callout tone="warning" className="text-sm text-amber-800 dark:text-amber-200">
+          {t('clipHealth.deadWarning', { label: 'A' })}
+        </Callout>
+      )}
+      {rawA.url_status === 'degraded' && (
+        <Callout tone="info" className="text-sm text-blue-800 dark:text-blue-200">
+          {t('clipHealth.degradedWarning', { label: 'A' })}
+        </Callout>
+      )}
+      {rawB.url_status === 'dead' && (
+        <Callout tone="warning" className="text-sm text-amber-800 dark:text-amber-200">
+          {t('clipHealth.deadWarning', { label: 'B' })}
+        </Callout>
+      )}
+      {rawB.url_status === 'degraded' && (
+        <Callout tone="info" className="text-sm text-blue-800 dark:text-blue-200">
+          {t('clipHealth.degradedWarning', { label: 'B' })}
+        </Callout>
+      )}
+
       {/* Creator controls */}
       {isCreator && (!isRevealed || voteCount === 0) && (
         <div className="flex flex-wrap gap-3">
           {!isRevealed && <RevealButton testId={test.id} />}
           {voteCount === 0 && <DeleteTestButton testId={test.id} />}
+          {voteCount === 0 && rawA.url_status === 'dead' && (
+            <ReplaceClipUrlButton clipId={rawA.id} label="A" />
+          )}
+          {voteCount === 0 && rawB.url_status === 'dead' && (
+            <ReplaceClipUrlButton clipId={rawB.id} label="B" />
+          )}
         </div>
       )}
 
@@ -183,9 +217,10 @@ export default async function TestDetailPage({ params }: Props) {
           clipBId={rawB.id}
           techniques={techniques}
           existingVotes={existingVotes}
+          hasDeadClip={hasDeadClip}
         />
       )}
-      {!user && !isRevealed && (
+      {!user && !isRevealed && !hasDeadClip && (
         <Callout tone="neutral" className="p-4 sm:p-6 text-center text-sm text-gray-500 dark:text-gray-400">
           <Link href="/login">{t('signIn')}</Link>
           {' '}{t('signInToVote')}

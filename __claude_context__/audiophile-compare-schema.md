@@ -215,6 +215,27 @@ a **snapshot** only if no test references it; an owner can delete a
   `votes.test_id` also keeps its default foreign key, so even a buggy
   app-layer check can't delete a test a vote references.
 
+### Clip health rules (step 27)
+
+`clips.url_status` (`ok`/`degraded`/`dead`, written daily by the step 10
+cron) is surfaced instead of silently ignored: a `dead` clip blocks voting
+(`POST /api/votes` re-checks server-side; the UI hides the vote form) and
+gets a "Broken" badge everywhere a test's status is shown as a list item.
+The creator can replace a dead clip's URL via `PATCH /api/clips/[id]`, but
+only while the test has zero votes — the same "frozen forever after a
+vote" rule as deleting a test (step 26).
+
+**`clips` was missing its UPDATE policy on the live database** — present
+in the initial schema migration file, absent from `pg_policies` when
+actually queried, for reasons that predate this step and were never
+diagnosed (nothing before step 27 ever ran `UPDATE` on `clips`, so the gap
+was silent). Recreated via
+`20260707093703_restore_clips_update_policy.sql`. `PATCH /api/clips/[id]`
+also now defends against this class of bug directly: it chains
+`.select().single()` after the update and treats a missing row as failure,
+rather than trusting an absent `error` to mean a row actually changed (see
+`api-conventions.md` Rule 5).
+
 ### test_vote_count function (public vote count)
 
 A `security definer` Postgres function that returns the number of distinct

@@ -42,6 +42,7 @@ const TECHNIQUES: Technique[] = [
 function renderForm(
   existingVotes: ExistingVote[] = [],
   techniques: Technique[] = TECHNIQUES,
+  hasDeadClip = false,
 ) {
   return render(
     <VoteForm
@@ -50,6 +51,7 @@ function renderForm(
       clipBId={CLIP_B_ID}
       techniques={techniques}
       existingVotes={existingVotes}
+      hasDeadClip={hasDeadClip}
     />,
   )
 }
@@ -351,6 +353,23 @@ describe('VoteForm', () => {
       expect(
         screen.getByRole('button', { name: /update votes/i }),
       ).toBeInTheDocument()
+    })
+  })
+
+  describe('hasDeadClip', () => {
+    it('renders normally when hasDeadClip is false (default)', () => {
+      renderForm()
+
+      expect(screen.getByRole('button', { name: /save votes/i })).toBeInTheDocument()
+      expect(screen.queryByText(/voting is paused/i)).not.toBeInTheDocument()
+    })
+
+    it('shows an explanatory message instead of the form when hasDeadClip is true', () => {
+      renderForm([], TECHNIQUES, true)
+
+      expect(screen.getByText(/voting is paused/i)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /save votes/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('radio')).not.toBeInTheDocument()
     })
   })
 })

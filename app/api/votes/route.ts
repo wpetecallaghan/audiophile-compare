@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   const chosenClipIds = [...new Set(votes.map(v => v.chosen_clip_id))]
   const { data: clips } = await supabase
     .from('clips')
-    .select('id')
+    .select('id, url_status')
     .eq('test_id', test_id)
     .in('id', chosenClipIds)
 
@@ -63,6 +63,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'One or more clip IDs are invalid for this test' },
       { status: 400 },
+    )
+  }
+
+  // Defense in depth — the UI already hides the vote form when a clip is
+  // dead, but a direct API call could bypass that
+  if (clips.some(c => c.url_status === 'dead')) {
+    return NextResponse.json(
+      { error: 'One or more chosen clips are currently unreachable' },
+      { status: 409 },
     )
   }
 

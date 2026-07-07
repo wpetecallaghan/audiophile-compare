@@ -111,6 +111,7 @@ export async function seedClip(
   testId: string,
   label: 'A' | 'B',
   sourceUrl: string,
+  urlStatus: 'ok' | 'degraded' | 'dead' = 'ok',
 ): Promise<SeededClip> {
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -121,6 +122,7 @@ export async function seedClip(
       source_url: sourceUrl,
       provider: 'youtube',
       media_type: 'video',
+      url_status: urlStatus,
     })
     .select('id, test_id, label')
     .single()
@@ -147,14 +149,17 @@ export type SeedTestFixture = {
 const YOUTUBE_A = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 const YOUTUBE_B = 'https://www.youtube.com/watch?v=9bZkp7q19f0'
 
-export async function seedCompleteTest(suffix: string): Promise<SeedTestFixture> {
+export async function seedCompleteTest(
+  suffix: string,
+  opts: { clipAStatus?: 'ok' | 'degraded' | 'dead'; clipBStatus?: 'ok' | 'degraded' | 'dead' } = {},
+): Promise<SeedTestFixture> {
   const track = await seedTrack('Test Artist', `Track ${suffix}`)
   const systemA = await seedSystem(`System A ${suffix}`)
   const systemB = await seedSystem(`System B ${suffix}`)
   const snapshotA = await seedSnapshot(systemA.id, `Snapshot A ${suffix}`)
   const snapshotB = await seedSnapshot(systemB.id, `Snapshot B ${suffix}`)
   const test = await seedTest(track.id, snapshotA.id, snapshotB.id, `Test ${suffix}`)
-  const clipA = await seedClip(test.id, 'A', YOUTUBE_A)
-  const clipB = await seedClip(test.id, 'B', YOUTUBE_B)
+  const clipA = await seedClip(test.id, 'A', YOUTUBE_A, opts.clipAStatus ?? 'ok')
+  const clipB = await seedClip(test.id, 'B', YOUTUBE_B, opts.clipBStatus ?? 'ok')
   return { track, systemA, systemB, snapshotA, snapshotB, test, clipA, clipB }
 }

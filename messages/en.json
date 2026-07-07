@@ -167,7 +167,18 @@
       "saveButton": "Save votes",
       "updateButton": "Update votes",
       "submitting": "Submitting…",
-      "atLeastOneError": "Please vote on at least one technique before submitting."
+      "atLeastOneError": "Please vote on at least one technique before submitting.",
+      "blockedByDeadClip": "Voting is paused until the creator replaces the unreachable clip."
+    },
+    "clipHealth": {
+      "deadWarning": "Clip {label} is currently unreachable.",
+      "degradedWarning": "Clip {label} may be temporarily unreachable — this can be intermittent."
+    },
+    "replaceClip": {
+      "button": "Replace Clip {label} URL",
+      "saveButton": "Save",
+      "saving": "Saving…",
+      "cancelButton": "Cancel"
     },
     "reveal": {
       "button": "Reveal before/after",
@@ -233,6 +244,7 @@
     "pageOf": "Page {page} of {total}",
     "statusBlind": "Blind",
     "statusRevealed": "Revealed",
+    "statusBroken": "Broken",
     "anonymous": "Anonymous"
   },
   "tracks": {
@@ -245,6 +257,7 @@
     "trackBadge": "Track",
     "statusRevealed": "Revealed",
     "statusBlind": "Blind",
+    "statusBroken": "Broken",
     "anonymous": "Anonymous"
   },
   "crosscheck": {
