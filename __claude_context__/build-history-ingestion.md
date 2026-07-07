@@ -603,11 +603,12 @@ this plan.
    no `status` field inside the JSON at all.**
    ```
    scripts/output/candidates/
-     pending/        candidates missing something required (decision 6)
-     needs_review/   complete, but extraction flagged an issue (decision 7)
-     ready/          complete, no flagged issues — assigned automatically
-     approved/       a human moved it here — the only folder step 34 reads
-     ingested/       step 34 moved it here after a successful POST
+     pending/               candidates missing something required (decision 6)
+     needs_review/          complete, but extraction flagged an issue (decision 7)
+     ready/                 complete, no flagged issues — assigned automatically
+     approved/              a human moved it here — step 34's staging input
+     ingested/staging/      step 34 moved it here after committing to staging
+     ingested/production/   step 34 moved it here after committing to production
    ```
    A candidate's status is simply which folder its file is sitting in —
    "approving" a `ready` (or fixed `needs_review`) candidate means moving
@@ -615,17 +616,20 @@ this plan.
    field drifting from where the file actually lives. `pending` is
    materialized as soon as the initiating clip-pair post is found, even
    before any votes or reveal exist, so the repository shows what's still
-   "in flight." `ingested` is kept for local bookkeeping only —
-   `tests.source_ref`'s uniqueness in `ingest_test` is the real
-   idempotency backstop regardless.
+   "in flight." The two `ingested/` stages form a strict chain — see step
+   34 decision 1 for why `ingested/staging/` is also production's *input*
+   folder, not just a record.
 
 4. **Extraction is incremental and safe to re-run.** Re-running against an
    updated scrape (e.g. after a re-scrape picks up new posts) creates or
    updates a candidate's file in `pending/`, `needs_review/`, or `ready/`
    as more of the thread resolves, but **never touches a candidate whose
-   file already exists in `approved/` or `ingested/`** — checked by
-   looking for that `source_ref`'s filename in those two folders first. A
-   human decision, once made, isn't silently clobbered by a later run.
+   file already exists in `approved/`, `ingested/staging/`, or
+   `ingested/production/`** — checked by looking for that `source_ref`'s
+   filename in those three folders first. A human decision, once made,
+   isn't silently clobbered by a later run — and a candidate already in
+   flight through the ingest chain can't be reset back to `pending` by a
+   fresh scrape either.
 
 5. **Three distinct concepts, not one — clarified against how the forum
    actually works:** the *forum label* (`A`/`B`, `X`/`Y`, `A1`/`B1`, etc.
@@ -782,35 +786,53 @@ judgment calls, nothing to review.
 
 **Decisions:**
 
-1. **A separate, simple script** — `scripts/commit-lejonklou.ts` — reads
-   every candidate file in `scripts/output/candidates/approved/`, POSTs
-   each as an `IngestPayload` body to `POST /api/internal/ingest` (target
-   base URL and `INGEST_SECRET` read from the environment, same wiring
-   step 31 already set up), and on a successful response moves the file
-   into `scripts/output/candidates/ingested/`.
-2. **A non-2xx response leaves the file in `approved/`**, with the error
-   recorded (e.g. written alongside it, or appended to the candidate's
-   `issues`), so it's retried on the next run rather than silently lost.
+1. **A single script, parameterized by target environment, reading a
+   different source folder per environment — enforcing "staging first" at
+   the tooling level, not just as a documented convention.** `scripts/
+   commit-lejonklou.ts <base-url> --env staging|production`:
+   - `--env staging` reads every file in `approved/`, POSTs each to
+     `<base-url>/api/internal/ingest`, and moves successes to
+     `ingested/staging/`.
+   - `--env production` reads every file in `ingested/staging/` —
+     **not** `approved/`. This is the fix for an earlier version of this
+     plan, which had both environments reading from `approved/`: since a
+     successful commit moves a file out of its source folder, staging
+     would have drained `approved/` before production ever ran. Chaining
+     production's input to staging's output instead means a candidate
+     physically cannot reach production without having already been
+     committed to staging first — and it also means production always
+     ships *exactly* the set staging verified, even if more scraping/
+     extraction happens in between (new candidates land in `pending/`/
+     `needs_review/`/`ready/`, never in `ingested/staging/`, so they
+     can't reach production via this script no matter what).
+   - On success, `--env production` moves the file to
+     `ingested/production/` — the terminal state.
+2. **A non-2xx response leaves the file in its current source folder**
+   (`approved/` for a staging attempt, `ingested/staging/` for a
+   production attempt), with the error recorded (e.g. appended to the
+   candidate's `issues`), so it's retried on the next run rather than
+   silently lost.
 3. **Idempotent by construction, independent of this script's own
-   bookkeeping.** Even if `commit-lejonklou.ts` is run twice against the
-   same candidate, `ingest_test`'s `source_ref` uniqueness means a repeat
-   POST just returns `already_imported: true` rather than duplicating —
-   moving the file to `ingested/` is a convenience, not the safety
+   bookkeeping.** Even if `commit-lejonklou.ts` is run twice for the same
+   candidate and environment, `ingest_test`'s `source_ref` uniqueness
+   means a repeat POST just returns `already_imported: true` rather than
+   duplicating — moving the file is a convenience, not the safety
    mechanism.
 4. **No new library code beyond the CLI script itself** — it's a thin
-   loop (list `approved/` → POST each → move to `ingested/` on success),
-   fully testable with a mocked `fetch` and a temp fixture directory.
-5. **Target base URL is a required CLI argument, not a default** —
-   `tsx scripts/commit-lejonklou.ts <base-url>`. Step 35 runs this script
-   twice, once against staging and once against production; defaulting to
-   either would risk an accidental run against the wrong one. `INGEST_SECRET`
-   stays an env var, not a CLI arg — a secret shouldn't appear in shell
-   history or `ps` output.
+   loop (list the environment's source folder → POST each → move to that
+   environment's destination folder on success), fully testable with a
+   mocked `fetch` and a temp fixture directory.
+5. **Target base URL and `--env` are both required CLI arguments, no
+   defaults.** `tsx scripts/commit-lejonklou.ts <base-url> --env staging`.
+   Defaulting either would risk an accidental run against the wrong
+   environment or the wrong source folder. `INGEST_SECRET` stays an env
+   var, not a CLI arg — a secret shouldn't appear in shell history or `ps`
+   output.
 6. **No new dependencies — reuses exactly what steps 32/33 already
    established.** `tsx` as the runtime (already added in step 32); the
    built-in global `fetch` for the POST (no HTTP client library); Node's
-   built-in `fs/promises` for listing `approved/` and `rename()`-ing a
-   file into `ingested/` on success (a same-filesystem rename is atomic —
+   built-in `fs/promises` for listing a folder and `rename()`-ing a file
+   into its destination on success (a same-filesystem rename is atomic —
    no separate copy-then-delete needed); `process.loadEnvFile()` to read
    `.env.local` for `INGEST_SECRET`, the same pattern already used by
    `playwright.config.ts` and `vitest.integration.config.ts`.
@@ -821,13 +843,17 @@ judgment calls, nothing to review.
 - `core.md` / `testing.md` — per the usual pattern, once built.
 
 **Tests:**
-- **Unit:** given a fixture directory tree with files in a mix of
-  `approved`/other folders, confirms only files under `approved/` are
-  POSTed; confirms a 2xx response moves a file into `ingested/`; confirms
-  a non-2xx response leaves the file in `approved/` with the error
-  recorded rather than silently dropping it. `fetch` is mocked — no real
-  network call, no live Supabase/Vercel dependency in this test — and the
-  fixture directory is a temp folder, not the real `scripts/output/` path.
+- **Unit:** given a fixture directory tree with files spread across
+  `approved/`, `ingested/staging/`, and other folders: `--env staging`
+  only POSTs files from `approved/` and moves successes to
+  `ingested/staging/`, ignoring anything already in `ingested/staging/`;
+  `--env production` only POSTs files from `ingested/staging/` (confirms
+  it never touches `approved/`, even when `approved/` still has entries)
+  and moves successes to `ingested/production/`; a non-2xx response
+  leaves the file in its source folder with the error recorded rather
+  than silently dropping it. `fetch` is mocked — no real network call, no
+  live Supabase/Vercel dependency in this test — and the fixture
+  directory is a temp folder, not the real `scripts/output/` path.
 - **E2E / integration:** none beyond what step 31 already has for the
   ingest route itself.
 
@@ -844,19 +870,29 @@ thread content actually present in the app.
 1. **Staging first, always production second** — matching this project's
    established migration convention (`CLAUDE.md`: "Migrations apply
    independently to each project — apply to staging first, then
-   production") extended to data operations, not just schema.
-2. **Not a single rigid pass — scrape/extract can loop.** Scrape the
-   thread; run extraction; review the resulting `needs_review` candidates
-   (resolve or accept each) and spot-check `ready` ones; approve what's
-   ready to go. Re-scraping and re-running extraction is safe and
-   incremental (step 33 decision 4), so this can repeat as needed before
-   anything is committed — there's no reason to treat it as one-shot.
-3. Run `commit-lejonklou.ts` for real against `audiophile-staging`.
-   Manually verify a sample of imported tests render correctly in the
-   actual app (test detail page, system snapshot history, track pages) —
-   not just "the API call succeeded."
-4. Once satisfied, repeat scrape → extract → review/approve → commit
-   against `audiophile-prod`.
+   production") extended to data operations, not just schema. As of step
+   34's `--env` design, this isn't just a documented convention to
+   remember to follow — production's commit input (`ingested/staging/`)
+   physically doesn't exist until a staging commit has produced it.
+2. **Not a single rigid pass — scrape/extract can loop, before the
+   staging commit.** Scrape the thread; run extraction; review the
+   resulting `needs_review` candidates (resolve or accept each) and
+   spot-check `ready` ones; approve what's ready to go. Re-scraping and
+   re-running extraction is safe and incremental (step 33 decision 4), so
+   this can repeat as needed before anything is committed.
+3. Run `commit-lejonklou.ts --env staging` for real against
+   `audiophile-staging`. Manually verify a sample of imported tests render
+   correctly in the actual app (test detail page, system snapshot history,
+   track pages) — not just "the API call succeeded."
+4. Once satisfied, run `commit-lejonklou.ts --env production` — **not** a
+   fresh scrape/extract/approve cycle. This commits exactly the
+   candidate set that just passed staging verification (step 34 decision
+   1's folder chain makes this the only thing this command can do — it
+   reads `ingested/staging/`, which is precisely that set). If more forum
+   content has appeared since the staging run and you want it included
+   too, that's a new, separate full pipeline run — scrape → extract →
+   review/approve → commit to staging → verify → commit to production —
+   not something folded into finishing this one.
 
 **Not part of this step:** the user-merge/claim flow (letting a real
 Lejonklou member claim their imported content once they join) is
@@ -881,3 +917,25 @@ shape as the manual account cleanup already performed once in this project
 outside of any build step (removing a stale test-registration account from
 `audiophile-prod` — see chat history, not a build-history entry since it
 wasn't a code change).
+
+---
+
+## Explicitly deferred: import-provenance UI
+
+Not planned in detail here yet. `import_authors`'s public-read RLS policy
+(step 30) was deliberately designed so the UI could show provenance (e.g.
+"imported from the Lejonklou forum" on a system/test page), but no step in
+30–35 actually builds that surface — once step 35 runs, imported content
+will look identical to normal user content everywhere in the app, with no
+visual indicator. The user wants this designed and built as its **own**
+step, completed **before** steps 32–35 are built (not just before step 35
+runs) — to be returned to once the refinement of steps 32–35 is finished.
+
+Also raised alongside this: whether a Supabase point-in-time-recovery/
+backup restore point taken immediately before the production commit (step
+35) is a better safety net than a targeted `source_ref`-based undo query,
+or a useful complement to one — full-database restore is coarse (it would
+also roll back any unrelated legitimate activity — new signups, votes,
+etc. — that happened in the same window), whereas a targeted delete only
+touches the imported rows. Flagged for its own planning pass, likely as a
+post-ingest (step 35+) concern rather than blocking 32–35.
