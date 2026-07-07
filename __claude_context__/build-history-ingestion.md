@@ -2,7 +2,7 @@
 name: audiophile-compare-build-history-ingestion
 description: >
   Detailed step-by-step build plan for the Lejonklou forum ingestion
-  pipeline (build-history.md steps 30+). Companion to build-history.md
+  pipeline (build-history.md steps 30-34). Companion to build-history.md
   (which holds only short pointer entries for these steps, to keep the
   main index scannable) and deferred-features.md (original architecture
   notes and rationale — the "why", not the "how"). Load this when working
@@ -11,7 +11,7 @@ description: >
 
 # Forum Ingestion Pipeline — Detailed Build Plan
 
-Full detail for `build-history.md` steps 30–33. See `deferred-features.md`'s
+Full detail for `build-history.md` steps 30–34. See `deferred-features.md`'s
 "Forum ingestion pipeline" section for the original architecture notes this
 plan builds on and, in one place, deliberately diverges from — the original
 doc assumed a single `ingestion_bot` user owns everything imported; this plan
@@ -313,11 +313,11 @@ is currently implemented."
    is always safe.
 
 7. **Clip verification is *not* this route's job.** The route trusts the
-   caller (the scraper/extraction script, step 32) to have already
-   confirmed both clip URLs are reachable — same "client already verified,
-   server persists" pattern `POST /api/tests` already uses for
-   browser-submitted clips. Re-verifying server-side here would just
-   duplicate step 32's clip-health filter for no benefit.
+   caller (step 33's extraction pipeline) to have already confirmed both
+   clip URLs are reachable — same "client already verified, server
+   persists" pattern `POST /api/tests` already uses for browser-submitted
+   clips. Re-verifying server-side here would just duplicate step 33's
+   clip-health filter for no benefit.
 
 **Files to update:**
 - `app/api/internal/ingest/route.ts` (new).
@@ -421,72 +421,190 @@ is currently implemented."
 
 ---
 
-## ⬜ 32 — Scraper + extraction script
+## ⬜ 32 — Scraper
 
-**The gap this closes:** phases 1–3 of the pipeline (fetch, extract,
-clip-health filter) don't exist — this is genuinely new capability, not
-a variation on an existing pattern, and is the highest-risk step in this
-plan.
+**The gap this closes:** phase 1 of the pipeline (fetch) doesn't exist.
+Originally bundled with extraction as one step; split in two because they
+have very different risk profiles — this step is deterministic and fully
+testable, extraction (step 33) is genuinely uncertain and was already
+flagged as needing its own design pass. Splitting also gives extraction a
+stable, re-runnable input: iterating on extraction logic no longer means
+re-scraping the forum each time.
 
 **Decisions:**
 
-1. **A standalone script, not a deployed route.** `scripts/ingest-lejonklou.ts`
-   (or similar), run manually/locally against a thread URL. The original
-   doc's aspiration of "periodic scheduled refreshes" is explicitly **not**
-   in scope for this pass — running it by hand against a specific thread
-   is enough for the stated goal (import what's retrievable from one
-   playground thread), and scheduling can be layered on later without
-   changing anything else in this plan.
+1. **A standalone script, not a deployed route.** `scripts/scrape-lejonklou.ts`,
+   run manually/locally against a thread URL. The original doc's
+   aspiration of "periodic scheduled refreshes" is explicitly **not** in
+   scope for this pass — running it by hand against a specific thread is
+   enough for the stated goal, and scheduling can be layered on later
+   without changing anything else in this plan.
 
-2. **Fetch phase is deterministic HTML parsing**, not an LLM task — walk
-   the thread's pagination, extract each post's author, timestamp, and raw
-   body. No new architectural decision here; standard scraping.
+2. **Deterministic HTML parsing only — no LLM, no network calls beyond
+   fetching thread pages.** Walk the thread's pagination and, for each
+   post, extract: `post_url` (permalink), `author` (raw forum
+   username/display name as shown), `posted_at` (ISO 8601, parsed from the
+   forum's displayed timestamp), `body_html` (raw, unmodified — kept as
+   HTML rather than stripped to plain text, since step 33's extraction
+   pass likely needs structure: an embedded YouTube/audio iframe or link,
+   or a quote block distinguishing quoted prior commentary from new text,
+   would be lost if flattened here), and `links` (every outbound URL found
+   in the body via `a[href]` — a flat list, no judgement about which ones
+   are "the" comparison clips; that's a semantic call, correctly left to
+   step 33). Output shape:
+   ```typescript
+   type ScrapedPost = {
+     post_url: string
+     author: string
+     posted_at: string
+     body_html: string
+     links: string[]
+   }
 
-3. **Extraction must run per-author-across-their-whole-post-history, not
-   per-post independently.** This is the hardest open problem in the whole
-   plan: a single forum author's system evolves across many posts (v1 →
-   v2 → v3), and the point of the snapshot-history feature is capturing
-   that continuity — not minting a new one-off `System` per post. A
-   fully independent per-post extraction call has no way to know "this is
-   snapshot v2 of the system I saw four posts ago." Recommend grouping all
-   of one author's posts together and giving the extraction pass running
-   state across them (e.g. "here are this author's prior posts and the
-   systems/snapshots already derived from them — does this new post
-   describe one of those, a new version, or a new system entirely?").
-   **This sub-problem likely deserves its own short design/prototyping
-   pass before full implementation** — flagging rather than fully
-   resolving it here.
+   type ScrapedThread = {
+     thread_url: string
+     scraped_at: string
+     posts: ScrapedPost[]   // thread order, oldest first
+   }
+   ```
+   Written as a JSON file (path given via CLI arg, e.g.
+   `scripts/scrape-lejonklou.ts <thread-url> <output-path>`) — this is the
+   interface boundary with step 33, and the reason step 33 can be iterated
+   on without re-hitting the forum. Scraped output shouldn't be committed —
+   add its default output location to `.gitignore`.
 
-4. **"Unbroken" is enforced here, not in the ingest route** — for every
-   candidate pair of clip URLs a post appears to describe, run the
-   *existing* `detectProvider`/`checkDirectUrl` logic (`lib/clips/
-   detect-provider.ts`, `lib/clips/check-url.ts` — the same code
-   `POST /api/clips/verify` already uses) and drop the candidate if either
-   URL is dead. Zero new clip-validation logic.
+3. **This step never calls `/api/internal/ingest` and needs no
+   credentials.** It only reads a public forum thread. `INGEST_SECRET` and
+   payload construction belong entirely to step 33 — resolves what was
+   previously an unstated gap (the combined step never said how the
+   scraper would authenticate to the route; splitting makes the answer
+   "it doesn't, because it isn't the part that calls it").
 
-5. **Dry-run mode is required, not optional.** Given the extraction step's
-   inherent uncertainty (forum prose is messy; most posts won't cleanly
-   fit the blind-A/B-test pattern at all), the script must support printing
-   every candidate `IngestPayload` it would send for human review *before*
-   actually POSTing anything — this is how the staging run (step 33) does
-   its review pass.
+4. **Reuse `jsdom` for HTML parsing rather than adding a new dependency
+   (e.g. `cheerio`).** `jsdom` is already a devDependency (used for
+   component tests) and works fine for loading a fetched HTML string into
+   a queryable DOM (`new JSDOM(html).window.document.querySelectorAll(...)`)
+   outside of a test context. Fetching itself uses the built-in global
+   `fetch` — no new dependency there either.
+
+5. **Runtime: add `tsx` as a new devDependency.** Nothing in this repo can
+   currently execute a standalone `.ts` file that resolves the `@/lib/...`
+   path alias — there's no `ts-node`/`tsx` today, and this script needs
+   that alias (it imports shared types alongside the plain parsing logic).
+   `tsx` is zero-config and handles both TS and path-mapping. Add an npm
+   script: `"scrape:lejonklou": "tsx scripts/scrape-lejonklou.ts"`.
+
+6. **Parsing logic lives in `lib/`, not the script — same pattern as
+   `create-placeholder-author.ts` (step 30) and `ingest-test-payload.ts`
+   (step 31).** The script itself (`scripts/scrape-lejonklou.ts`) is a
+   thin CLI wrapper: fetch each page, call the pure parsing functions, walk
+   pagination, write the JSON file. The actual parsing —
+   `parsePostsFromPage(html, pageUrl): ScrapedPost[]` and
+   `findNextPageUrl(html, currentUrl): string | null` — lives in
+   `lib/ingestion/scrape/parse-thread-page.ts`, so it's unit-testable
+   against fixture HTML without a live network call or a `.ts` runner.
 
 **Files to update:**
-- `scripts/ingest-lejonklou.ts` (new) and any supporting modules under
-  `scripts/lib/` (fetch/parse, extraction prompt, clip-health filter).
-- No app code changes beyond what step 31 already added.
+- `lib/ingestion/scrape/parse-thread-page.ts` (new) — `ScrapedPost`/
+  `ScrapedThread` types, `parsePostsFromPage`, `findNextPageUrl`.
+- `scripts/scrape-lejonklou.ts` (new) — CLI entrypoint.
+- `package.json` — new `tsx` devDependency; new `scrape:lejonklou` script.
+- `.gitignore` — ignore the scraped-output location.
+- `core.md` — build status line (32 done, 33–34 still planned) once built.
+- `testing.md` — inventory row(s) for the new parsing unit tests.
 
 **Tests:**
-- **Unit:** the deterministic parts only — HTML-parsing/pagination logic,
-  and the clip-health filter (already covered by existing
-  `detect-provider`/`check-url` unit tests; just confirm this script calls
-  them correctly). The LLM extraction step itself isn't unit-testable in
-  the traditional sense — validated instead by the dry-run review in
-  step 33.
+- **Unit:** `lib/ingestion/scrape/__tests__/parse-thread-page.test.ts` —
+  post extraction from a fixture HTML fragment (author/timestamp/body/
+  links all correctly extracted); pagination detection (next-page link
+  present → returns its URL; absent, i.e. last page → returns null);
+  handles a malformed or partially-anonymized post (e.g. a deleted user)
+  without throwing.
+- **E2E / integration:** none — no app code, no deployed route, no DB.
 
 ---
 
-## ⬜ 33 — Run the import: staging, then production
+## ⬜ 33 — Extraction
+
+**The gap this closes:** phases 2–3 of the pipeline (semantic extraction,
+clip-health filtering) don't exist. This is genuinely new capability, not
+a variation on an existing pattern, and remains the highest-risk step in
+this plan — split out from the (now-built) scraper specifically so it can
+get its own focused design pass rather than being planned as an
+afterthought alongside deterministic HTML parsing.
+
+**Carried over from the original combined step, still open:**
+
+1. **Per-author continuity across posts is the hardest open problem in
+   the whole plan.** A single forum author's system evolves across many
+   posts (v1 → v2 → v3), and the point of the snapshot-history feature is
+   capturing that continuity — not minting a new one-off system per post.
+   A fully independent per-post extraction call has no way to know "this
+   is snapshot v2 of the system I saw four posts ago." Likely approach:
+   group all of one author's `ScrapedPost`s (step 32's output) together
+   and give the extraction pass running state across them ("here are this
+   author's prior posts and the systems/snapshots already derived from
+   them — does this new post describe one of those, a new version, or a
+   new system entirely?"). Extraction's job here is to produce *consistent
+   naming* (`system_name`/`version_label` strings) — the actual dedup/
+   matching-by-name already happens inside `ingest_test` (step 31); this
+   step doesn't need its own separate system-matching logic, just stable
+   names that the RPC's existing matching will recognize correctly.
+   **Still likely deserves its own short design/prototyping pass before
+   full implementation.**
+
+2. **"Unbroken" is enforced here, not in the ingest route** — for every
+   candidate pair of clip URLs a post appears to describe (drawn from
+   step 32's `links`, plus whatever this step infers about which links are
+   the actual A/B clips), run the *existing* `detectProvider`/
+   `checkDirectUrl` logic (`lib/clips/detect-provider.ts`, `lib/clips/
+   check-url.ts` — the same code `POST /api/clips/verify` already uses)
+   and drop the candidate if either URL is dead. Zero new clip-validation
+   logic.
+
+3. **Dry-run mode is required, not optional, and must validate — not just
+   preview.** Given this step's inherent uncertainty (forum prose is
+   messy; most posts won't cleanly fit the blind-A/B-test pattern at all),
+   dry-run mode must check each candidate `IngestPayload` against the same
+   constraints `ingest_test` would enforce — `chosen_label` is `'A'`/`'B'`,
+   `technique_name` matches a real `listening_techniques` row (see the new
+   gap below), clip URLs pass the health filter — and surface failures for
+   human review, not just pretty-print raw guesses that would blow up on
+   a real run.
+
+**New gaps found reviewing the combined plan, not yet resolved — needs its
+own decision pass before this step is ready to build:**
+
+4. **Extraction technology is unspecified.** `deferred-features.md`'s
+   original framing ("an AI process reads forum threads") was never made
+   concrete. Needs: which model/API, called via what (a new dependency
+   such as `@anthropic-ai/sdk`? something else?), and what credential env
+   var it needs — which, if it's expected to run anywhere other than a
+   local machine, also needs a `docs/vercel-setup.md`-style entry.
+
+5. **Votes extraction isn't addressed at all.** Step 31's design gives
+   each vote its own `voter.forum_username`, resolved separately from the
+   post's author — because in a real thread, votes come from *reply*
+   posts by different members, not the original post. This step's plan
+   says nothing about how it decides "this reply is a vote on test X" vs.
+   ordinary chatter, nor how free-text commentary maps onto the fixed
+   six-row `listening_techniques` vocabulary (an unmatched guess makes
+   `ingest_test` throw and roll back that entire test's import).
+
+**Files to update:** not finalized — depends on resolving gaps 4–5 above.
+Expected at minimum: `scripts/extract-lejonklou.ts` (or similar, consuming
+step 32's JSON output) and supporting `lib/ingestion/extract/` modules;
+`api-conventions.md` / `docs/vercel-setup.md` if a new credential env var
+is introduced; `core.md` / `testing.md` per the usual pattern.
+
+**Tests:** not finalized — the deterministic parts (technique-name
+matching, clip-health filtering, payload validation) are unit-testable;
+the model-driven extraction itself isn't unit-testable in the traditional
+sense, validated instead by the dry-run review in step 34.
+
+---
+
+## ⬜ 34 — Run the import: staging, then production
 
 **The gap this closes:** everything above is infrastructure; this step is
 the actual, one-time deliverable the user asked for — Lejonklou playground
@@ -511,7 +629,7 @@ thread content actually present in the app.
 Lejonklou member claim their imported content once they join) is
 explicitly deferred — see below.
 
-**Tests:** none new — this step *exercises* steps 30–32, it doesn't add
+**Tests:** none new — this step *exercises* steps 30–33, it doesn't add
 code. Verification is the manual review described above.
 
 ---

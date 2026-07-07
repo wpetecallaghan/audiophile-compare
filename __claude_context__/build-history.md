@@ -1241,32 +1241,51 @@ real people their own imported content by repointing
 only, not yet production. Full plan and verification detail:
 `build-history-ingestion.md`.
 
-### ⬜ 31 — Forum ingestion: internal ingest API route (planned, not yet built)
+### ✅ 31 — Forum ingestion: internal ingest API route
 
-Builds the `POST /api/internal/ingest` route `deferred-features.md`
-already specifies the payload shape for, extended with per-author system/
-track matching and switched to the admin/service-role client (removes the
-session-management problem the original session-based bot-auth design
+Built the `POST /api/internal/ingest` route and its atomic
+`ingest_test(payload jsonb)` Postgres function (track/system/snapshot/
+test/clips/clip_mapping/votes in one transaction), extended with per-author
+system matching and each vote resolving its own voter placeholder (not the
+post author) — a gap found during planning review, since two different
+commenters citing the same technique would otherwise collide on `votes`'
+unique constraint. Uses the admin/service-role client throughout (removes
+the session-management problem the original session-based bot-auth design
 would have hit once there are many placeholder authors instead of one).
-Full plan: `build-history-ingestion.md`.
+`ingest_test` is `security definer`, so its migration explicitly revokes
+EXECUTE from `anon`/`authenticated` and grants it to `service_role` only —
+otherwise anyone with the anon key could call it directly over PostgREST,
+bypassing both RLS and the route's `INGEST_SECRET` check. First integration
+test in this project (`npm run test:integration`, hits real staging).
+Migration applied to staging only, not yet production; `INGEST_SECRET` is
+set in Vercel for Development/Preview/Production. Full plan and
+verification detail: `build-history-ingestion.md`.
 
-### ⬜ 32 — Forum ingestion: scraper + extraction script (planned, not yet built)
+### ⬜ 32 — Forum ingestion: scraper (planned, not yet built)
 
-Standalone script — fetch the thread, extract candidate tests via an LLM
-pass (run per-author-across-their-post-history so system/snapshot
-continuity can be tracked, not per-post independently), filter by clip
-health reusing existing verify logic, dry-run mode required before any
-real POSTs. The cross-post continuity problem is flagged as the highest-
-risk, most-open part of this whole plan. Full plan: `build-history-ingestion.md`.
+Standalone script — fetch the Lejonklou thread, walk its pagination, parse
+each post's author/timestamp/raw body/links deterministically (no LLM
+here). Writes a raw-posts JSON artifact consumed by step 33; doesn't call
+the ingest route or need any credentials. Full plan: `build-history-ingestion.md`.
 
-### ⬜ 33 — Forum ingestion: run the import, staging then production (planned, not yet built)
+### ⬜ 33 — Forum ingestion: extraction (planned, not yet built)
+
+Takes step 32's raw posts and does the hard semantic work: per-author
+system/snapshot continuity tracking (the cross-post continuity problem,
+flagged as the highest-risk, most-open part of this whole plan), clip-
+health filtering (reusing existing verify logic), mapping free-text
+commentary onto the fixed `listening_techniques` vocabulary, and — outside
+dry-run mode — POSTing validated payloads to `/api/internal/ingest`. Full
+plan: `build-history-ingestion.md`.
+
+### ⬜ 34 — Forum ingestion: run the import, staging then production (planned, not yet built)
 
 The actual one-time deliverable — dry-run review, then a real run against
 `audiophile-staging`, manual verification in the app, then
-`audiophile-prod`. No new code; exercises steps 30–32. Full plan:
+`audiophile-prod`. No new code; exercises steps 30–33. Full plan:
 `build-history-ingestion.md`.
 
-**Explicitly deferred, not part of steps 30–33:** the user-merge/claim flow
+**Explicitly deferred, not part of steps 30–34:** the user-merge/claim flow
 (letting a real Lejonklou member claim their imported content once they
 join) — anticipated to be mechanically simple given every placeholder is a
 full real user row, but intentionally not designed in detail until
@@ -1275,4 +1294,4 @@ section.
 
 ---
 
-Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30–33 above have their full detailed plan in `build-history-ingestion.md`, not inline here — see that file's frontmatter for why.
+Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30–34 above have their full detailed plan in `build-history-ingestion.md`, not inline here — see that file's frontmatter for why.

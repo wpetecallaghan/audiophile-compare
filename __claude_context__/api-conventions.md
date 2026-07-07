@@ -245,7 +245,7 @@ Implemented (`build-history.md` step 31; full design in `build-history-ingestion
 - **Idempotency:** via `tests.source_ref` (UNIQUE, nullable) — checked first inside the `ingest_test` Postgres function; a repeat call with the same `source_ref` returns the existing test id with `alreadyImported: true` rather than erroring. Example value: `'lejonklou-forum:thread-42:post-187'`.
 - **Atomicity:** the track/system/snapshot/test/clips/clip_mapping/votes writes run inside a single `public.ingest_test(payload jsonb)` Postgres function called via `.rpc()`, so a single test's worth of data either fully succeeds or fully rolls back. Placeholder author creation happens beforehand in application code (an admin-SDK call, which can't run inside a SQL function) and is separately idempotent.
 - **Security:** `ingest_test` is `security definer` and bypasses RLS, so EXECUTE is explicitly revoked from `anon`/`authenticated`/`public` and granted only to `service_role` in its migration — otherwise anyone with the anon key could call it directly via `POST /rest/v1/rpc/ingest_test`, bypassing both RLS and the route's `INGEST_SECRET` check.
-- **Clip verification is not this route's job** — it trusts the caller (the step 32 scraper) to have already confirmed both clip URLs are reachable. It does run `detectProvider()` (no network request) to populate `provider`/`media_type` on each clip.
+- **Clip verification is not this route's job** — it trusts the caller (step 33's extraction pipeline) to have already confirmed both clip URLs are reachable. It does run `detectProvider()` (no network request) to populate `provider`/`media_type` on each clip.
 
 ### Mobile app (future)
 
