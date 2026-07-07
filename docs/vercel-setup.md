@@ -20,10 +20,11 @@ You need connection details from two Supabase projects. See
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
-You also need a `CRON_SECRET` for each environment — generate one now:
+You also need a `CRON_SECRET` and an `INGEST_SECRET` for each environment —
+generate them now:
 
 ```bash
-openssl rand -base64 32   # run twice: once for production, once for preview
+openssl rand -base64 32   # run once per secret, per environment
 ```
 
 ---
@@ -65,6 +66,7 @@ Set them independently — do not tick all three unless you want the same value 
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Production service role key |
 | `CRON_SECRET` | Strong random string (from `openssl rand -base64 32`) |
+| `INGEST_SECRET` | Strong random string (from `openssl rand -base64 32`) — protects `POST /api/internal/ingest` |
 
 ### Preview scope
 
@@ -74,6 +76,7 @@ Set them independently — do not tick all three unless you want the same value 
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Staging anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Staging service role key |
 | `CRON_SECRET` | Separate random string (or reuse the production value) |
+| `INGEST_SECRET` | Separate random string (or reuse the production value) |
 
 ### Development scope
 
@@ -83,6 +86,7 @@ Set them independently — do not tick all three unless you want the same value 
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Local anon key (printed by `supabase start`) or staging anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Local service role key or staging service role key |
 | `CRON_SECRET` | Any string (e.g. `dev-secret`) — only used for local cron testing |
+| `INGEST_SECRET` | Any string (e.g. `dev-secret`) — only used for local ingest testing |
 
 > **Which to use for local dev?**  
 > Local Supabase gives full offline isolation (no shared staging data) but requires

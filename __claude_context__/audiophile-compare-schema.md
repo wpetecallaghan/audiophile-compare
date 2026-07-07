@@ -191,12 +191,14 @@ All tables have RLS enabled. Policy intent per table:
 | comments | Public | Authenticated (insert); owner (delete) |
 | import_authors | Public | Nobody (admin/service-role client only — ingest route and future merge step) |
 
-**Note on ingestion_bot:** The forum ingestion pipeline runs as a dedicated
-`ingestion_bot` user created manually in `auth.users`. It is subject to the
-same RLS policies as any other user — no policy exceptions are needed. Tests
-it creates are owned by `ingestion_bot` and can be revealed by that user only.
-The `source_ref` column on `tests` (UNIQUE, nullable) records forum provenance
-for idempotency — see `api-conventions.md §5` (Programmatic access).
+**Note on forum ingestion:** the pipeline does not run as a single shared
+bot user — each forum post author, and separately each voter/commenter,
+resolves or creates its own placeholder identity (see "Placeholder authors"
+below). Writes happen through the `ingest_test` Postgres function via the
+admin/service-role client, which bypasses RLS entirely — there is no
+per-request session to check RLS against. The `source_ref` column on
+`tests` (UNIQUE, nullable) records forum provenance for idempotency — see
+`api-conventions.md §5` (Programmatic access) and `ingest_test` below.
 
 ### clip_mapping policy (most important)
 ```sql
@@ -270,6 +272,28 @@ imported content, the expected merge repoints `import_authors.user_id`
 (preserving the "this account is forum-user X" fact) rather than deleting
 the row — not yet implemented, see `build-history-ingestion.md`'s
 "Explicitly deferred" section.
+
+### ingest_test function (step 31)
+
+A `security definer` Postgres function (`public.ingest_test(payload jsonb)
+returns jsonb`) that atomically resolves/creates a track, two systems, two
+snapshots, and a test with its clips/clip_mapping/votes — one call per
+forum post. Called via `.rpc('ingest_test', { payload })` from
+`app/api/internal/ingest/route.ts`. Idempotent on `payload.source_ref`
+(returns the existing test id with `already_imported: true` on a repeat
+call). Placeholder author resolution happens in application code *before*
+this function runs (`auth.admin.createUser()` can't run inside SQL) and is
+separately idempotent, so a partial failure here is self-healing on retry.
+
+**Security-critical:** because it's `security definer` and bypasses RLS,
+its migration explicitly revokes EXECUTE from `public`/`anon`/
+`authenticated` and grants it only to `service_role` — Supabase grants
+EXECUTE on new functions to `anon`/`authenticated` by default, which would
+otherwise let anyone with the anon key call
+`POST /rest/v1/rpc/ingest_test` directly, bypassing both RLS and the
+ingest route's `INGEST_SECRET` check. Verified directly against staging
+with the anon key: calling the RPC returns `401`,
+`"permission denied for function ingest_test"`.
 
 ### test_vote_count function (public vote count)
 

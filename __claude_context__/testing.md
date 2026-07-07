@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (26 files · 275 tests · all passing)
+## 4. Unit test inventory (27 files · 291 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -94,6 +94,7 @@ indirectly through the step tests.
 | `lib/votes/__tests__/compute-outcome.test.ts` | 8 | Win/loss/draw/no-votes/open per snapshot |
 | `lib/admin/__tests__/is-admin-email.test.ts` | 7 | ADMIN_EMAILS allowlist: unset, null/undefined email, match, no match, case-insensitivity, whitespace, empty entries |
 | `lib/ingestion/__tests__/create-placeholder-author.test.ts` | 8 | Slugification (lowercase/strip/collapse/trim/truncate); resolves an existing (source, external_username) mapping without recreating; creates a new placeholder author; two usernames that slugify identically still get distinct placeholders; throws on auth user creation failure |
+| `lib/ingestion/__tests__/ingest-test-payload.test.ts` | 16 | `validateIngestPayload`: accepts a fully populated payload (with and without votes); rejects each missing required field on the top level, on `snapshot_a`/`snapshot_b`, and on a vote entry (`voter`, `chosen_label`, `technique_name`); `resolveTestTitle`: uses an explicit title, falls back to "artist – title" when omitted or whitespace-only |
 
 ---
 
@@ -145,14 +146,19 @@ vote-count display.
 
 ---
 
-## 7. Future — integration tests
+## 7. Integration tests
 
-Not yet implemented. When added, integration tests would cover:
-- Database operations via a dedicated test Supabase project (not staging)
-- Protected route access patterns at the API boundary
+The first integration test was added in step 31 — see §11 for how it's run
+and what it covers (`app/api/internal/ingest/__tests__/route.integration.test.ts`).
+Unit tests mock Supabase internals; E2E tests run against the live staging
+DB through a browser. Integration tests sit between them — testing an API
+route against a real (staging) database, in-process, with no browser.
+
+Other candidates for this tier, not yet added:
+- Protected route access patterns at the API boundary, for other routes
 - Form submission workflows end-to-end through API routes
 
-Unit tests mock Supabase internals; E2E tests run against the live staging DB. Integration tests would sit between them — testing API routes against a real (but disposable) database without a browser. No timeline set.
+No timeline set for extending beyond the ingest route.
 
 ---
 
@@ -193,3 +199,54 @@ npm run test:e2e:ui                                   # Playwright interactive U
 npm run test:e2e:debug                                # debug inspector
 npx playwright test e2e/tests/systems.spec.ts         # single spec
 ```
+
+---
+
+## 11. Integration tests
+
+Separate tier from both the unit suite (§1–4, mocked Supabase) and E2E
+(§5–10, Playwright browser). An integration test imports a route handler
+directly and calls it with a constructed `NextRequest`, hitting a real
+(staging) Supabase project — no browser, no dev server needed.
+
+**Config:** `vitest.integration.config.ts` — a separate Vitest config from
+`vitest.config.ts`, `node` environment, matching only `**/*.integration.test.ts`.
+That pattern is also added to the main `vitest.config.ts`'s `exclude` list,
+so `npm test` never touches staging.
+
+**Run:**
+```bash
+npm run test:integration
+```
+
+**Requires** (same vars `e2e/global-setup.ts` already needs, read from
+`.env.local` via `process.loadEnvFile`, mirroring `playwright.config.ts`):
+```bash
+NEXT_PUBLIC_SUPABASE_URL=<staging project URL>
+SUPABASE_SERVICE_ROLE_KEY=<staging service role key>
+```
+`INGEST_SECRET` does **not** need to match anything already configured —
+the test sets `process.env.INGEST_SECRET` itself before calling the
+handler in-process.
+
+**Data hygiene:** every track/system/test title created is prefixed
+`[E2E]` and deleted in `afterAll`, in the FK-safe order §5 documents
+(votes → clip_mapping → clips → tests → system_snapshots → systems →
+tracks). Cleanup checks each delete's `error` and throws rather than
+swallowing it — an earlier version of this test silently ignored a
+foreign-key error there and leaked a track/system pair into staging
+undetected. The placeholder authors/voters it resolves are **not**
+deleted — four fixed usernames (`e2e-ingest-author-1/2`,
+`e2e-ingest-voter-1/2`) are a permanent fixture, the same pattern as
+`E2E_TEST_USER_EMAIL` (§5 rule 1): re-running the file resolves them via
+their existing `import_authors` mapping instead of creating duplicates.
+
+**Coverage** (`app/api/internal/ingest/__tests__/route.integration.test.ts`,
+5 tests): creates a test and resolves the post author plus two distinct
+voter placeholders, recording both votes; a duplicate vote from the same
+voter on the same technique is silently skipped rather than erroring the
+whole import; a repeat call with the same `source_ref` is a no-op
+(`alreadyImported: true`, same test id); a payload naming an existing
+system under the same author reuses it rather than duplicating; two
+different authors naming the same system each get their own system row;
+a request with the wrong `x-ingest-secret` is rejected with 403.
