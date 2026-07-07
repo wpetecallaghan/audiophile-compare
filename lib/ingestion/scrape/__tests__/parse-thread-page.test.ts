@@ -12,6 +12,7 @@ function postFixture({
   author = 'beck',
   datetime = '2016-03-24T12:26:30+00:00',
   authorLink = true,
+  usernameClass = 'username',
   timeEl = true,
   content = 'Some post content.',
 }: {
@@ -19,11 +20,12 @@ function postFixture({
   author?: string
   datetime?: string
   authorLink?: boolean
+  usernameClass?: string
   timeEl?: boolean
   content?: string
 } = {}): string {
   const authorMarkup = authorLink
-    ? `<strong><a href="./memberlist.php?mode=viewprofile&amp;u=731&amp;sid=abc123" class="username">${author}</a></strong>`
+    ? `<strong><a href="./memberlist.php?mode=viewprofile&amp;u=731&amp;sid=abc123" class="${usernameClass}">${author}</a></strong>`
     : ''
   const timeMarkup = timeEl ? `<time datetime="${datetime}">2016-03-24 13:26</time>` : ''
 
@@ -108,6 +110,17 @@ describe('parsePostsFromPage', () => {
     expect(() => parsePostsFromPage(postFixture({ authorLink: false }), PAGE_URL)).not.toThrow()
     const [post] = parsePostsFromPage(postFixture({ authorLink: false }), PAGE_URL)
     expect(post.author).toBe('')
+  })
+
+  it('extracts the author for a special-role user rendered as username-coloured, not just username', () => {
+    // Regression test: found against a real live page — every post by this
+    // forum's own admin/owner (an Administrator, rendered with a colored
+    // username) silently lost its author with a class-based selector.
+    const [post] = parsePostsFromPage(
+      postFixture({ author: 'lejonklou', usernameClass: 'username-coloured' }),
+      PAGE_URL,
+    )
+    expect(post.author).toBe('lejonklou')
   })
 
   it('handles a post with no timestamp element without throwing', () => {

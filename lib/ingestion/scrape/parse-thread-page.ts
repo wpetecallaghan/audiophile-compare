@@ -116,7 +116,12 @@ export function parsePostsFromPage(html: string, pageUrl: string): ScrapedPost[]
   const document = dom.window.document
 
   return Array.from(document.querySelectorAll('div.post[id]')).map((postEl) => {
-    const authorLink = postEl.querySelector('p.author a.username')
+    // Not just `a.username` — special roles (admins, custom profile colors)
+    // render as `a.username-coloured` instead. Confirmed against a real
+    // page: every post from this forum's own admin/owner silently lost its
+    // author with a class-based selector. `strong > a` is the structural
+    // wrapper both variants share.
+    const authorLink = postEl.querySelector('p.author strong a')
     const time = postEl.querySelector('p.author time[datetime]')
     const permalink = postEl.querySelector('p.author a[href], h3.first a[href]')
     const contentEl = postEl.querySelector('div.content')
