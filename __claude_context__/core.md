@@ -198,6 +198,7 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 | Writing queries, migrations, or RLS policies | `audiophile-compare-schema.md` |
 | Any task touching the data model | `audiophile-compare-schema.md` |
 | Writing or reviewing code (app or test) that repeats a string literal | `repeated-string-constants.md` |
+| Forum ingestion pipeline work (build-history.md steps 30+) | `build-history-ingestion.md` (detailed plan) + `deferred-features.md` (original architecture rationale) |
 
 ---
 

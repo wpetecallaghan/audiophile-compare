@@ -1224,4 +1224,49 @@ every prior step touching e2e).
 
 ---
 
-Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`.
+### ⬜ 30 — Forum ingestion: placeholder author infrastructure (planned, not yet built)
+
+New `public.users.is_placeholder` column plus a resolve-or-create helper
+that gives each distinct Lejonklou forum author their own real, full
+`auth.users`/`public.users` identity (email `<slug>@import.
+audiophile-compare.uk`) — a deliberate pivot from `deferred-features.md`'s
+original single-`ingestion_bot`-owns-everything plan, so a later merge step
+can hand real people their own imported content. Full plan, including why
+a nullable-ownership schema was rejected and why no new RLS policy is
+needed: `build-history-ingestion.md`.
+
+### ⬜ 31 — Forum ingestion: internal ingest API route (planned, not yet built)
+
+Builds the `POST /api/internal/ingest` route `deferred-features.md`
+already specifies the payload shape for, extended with per-author system/
+track matching and switched to the admin/service-role client (removes the
+session-management problem the original session-based bot-auth design
+would have hit once there are many placeholder authors instead of one).
+Full plan: `build-history-ingestion.md`.
+
+### ⬜ 32 — Forum ingestion: scraper + extraction script (planned, not yet built)
+
+Standalone script — fetch the thread, extract candidate tests via an LLM
+pass (run per-author-across-their-post-history so system/snapshot
+continuity can be tracked, not per-post independently), filter by clip
+health reusing existing verify logic, dry-run mode required before any
+real POSTs. The cross-post continuity problem is flagged as the highest-
+risk, most-open part of this whole plan. Full plan: `build-history-ingestion.md`.
+
+### ⬜ 33 — Forum ingestion: run the import, staging then production (planned, not yet built)
+
+The actual one-time deliverable — dry-run review, then a real run against
+`audiophile-staging`, manual verification in the app, then
+`audiophile-prod`. No new code; exercises steps 30–32. Full plan:
+`build-history-ingestion.md`.
+
+**Explicitly deferred, not part of steps 30–33:** the user-merge/claim flow
+(letting a real Lejonklou member claim their imported content once they
+join) — anticipated to be mechanically simple given every placeholder is a
+full real user row, but intentionally not designed in detail until
+requested as its own step. See `build-history-ingestion.md`'s closing
+section.
+
+---
+
+Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30–33 above have their full detailed plan in `build-history-ingestion.md`, not inline here — see that file's frontmatter for why.

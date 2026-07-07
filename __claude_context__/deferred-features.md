@@ -18,9 +18,21 @@ Neither use case is currently implemented. `source_ref` is already included in t
 
 ### Use case 1 — Forum ingestion pipeline
 
+**No longer purely deferred — actively planned as build-history.md steps
+30–33, with the full step-by-step plan in `build-history-ingestion.md`.**
+That plan diverges from the "single `ingestion_bot` owns everything" model
+described just below: it attributes each import to a per-forum-author
+placeholder identity instead, so a later merge step can hand real people
+their own content once they join. The rest of this section remains as
+background/rationale for the parts that didn't change (idempotency via
+`source_ref`, the ingest endpoint's general shape, the "no separate Go
+service" decision) — see `build-history-ingestion.md` for what's current.
+
 An AI process reads Lejonklou forum threads, extracts recordings and listening comparisons, and writes them into the database as tests, tracks, clips, and votes. Periodic scheduled refreshes catch new posts.
 
 **Authentication:** A single dedicated `ingestion_bot` user in `auth.users`, created manually. The ingestion service authenticates as this user via Supabase Auth (magic link issued once; token stored in the service's environment). No API key table needed. Subject to standard RLS — no policy exceptions required.
+
+*(Superseded by `build-history-ingestion.md` step 31: per-author placeholder identities via the admin/service-role client, not a single session-based bot user — see that file for why.)*
 
 **Idempotency:** Forum posts must not produce duplicate tests on repeated runs. The `source_ref` column on `tests` (UNIQUE, nullable) records forum provenance (e.g. `'lejonklou-forum:thread-42:post-187'`). Before inserting a test, check `source_ref` — skip if already present.
 
