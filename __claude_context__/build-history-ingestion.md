@@ -21,9 +21,9 @@ real people their own content.
 
 ---
 
-## ⬜ 30 — Placeholder author infrastructure
+## ✅ 30 — Placeholder author infrastructure
 
-**The gap this closes:** nothing today can represent "a Lejonklou forum user
+**The gap this closed:** nothing today can represent "a Lejonklou forum user
 who hasn't joined the app yet" as a content owner. `systems.owner_id`,
 `tests.creator_id`, and `tracks.created_by` are all `NOT NULL` references to
 `public.users(id)`, which only exists via the `handle_new_user` trigger firing
@@ -165,6 +165,29 @@ on a real `auth.users` insert.
   anon/publishable key, expect `200` not `401`/empty) — the same technique
   used to verify RLS policies earlier in this project — before treating
   the migration as done.
+
+**Files updated:**
+- `supabase/migrations/20260707123521_placeholder_authors.sql` — applied
+  to staging only, per the "staging first" deployment topology; not yet
+  applied to production.
+- `lib/ingestion/create-placeholder-author.ts` (new).
+- `audiophile-compare-schema.md` — `users.is_placeholder`, the new
+  `import_authors` table, its RLS summary row, and a new "Placeholder
+  authors" section.
+- `docs/supabase-database-reset.md` — Step 4's table list/count and its
+  verification SQL both now include `import_authors`.
+- `core.md` — build-status line updated to reflect step 30 done, 31–33
+  still planned (not "all N complete", since 31–33 are known-planned but
+  not built).
+
+**Verified:** `npm run test` — 26 files / 275 tests, all passing (8 new in
+`create-placeholder-author.test.ts`). `npx tsc --noEmit` — no new errors
+(same pre-existing, unrelated `__tests__/supabase-*.test.ts` failures as
+every prior step). RLS confirmed directly against staging with the anon
+key: `GET .../rest/v1/import_authors` → `200 []`; `POST` (insert) with the
+same anon key → `401`, `"new row violates row-level security policy"` —
+reads work, writes are correctly rejected for anyone but the admin client.
+No e2e suite run — this step adds no page to drive, as planned.
 
 ---
 

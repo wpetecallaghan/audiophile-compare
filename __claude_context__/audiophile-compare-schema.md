@@ -18,10 +18,25 @@ comparison app. Read this file when writing queries, migrations, or RLS policies
 ```sql
 -- User profiles (mirrors auth.users; created by trigger on first login)
 users (
-  id           uuid PRIMARY KEY,       -- matches auth.users.id exactly
-  email        text NOT NULL,
-  display_name text,
-  created_at   timestamptz DEFAULT now()
+  id             uuid PRIMARY KEY,       -- matches auth.users.id exactly
+  email          text NOT NULL,
+  display_name   text,
+  created_at     timestamptz DEFAULT now(),
+  is_placeholder boolean NOT NULL DEFAULT false  -- step 30: true for imported/unclaimed identities (e.g. forum authors)
+)
+
+-- Maps an external identity (e.g. a Lejonklou forum username) to the
+-- placeholder `users` row created for them at import time. Keyed on the
+-- raw, unmodified external_username — not a derived/slugified email —
+-- since slugification is lossy and collision-order-dependent. Repointed
+-- (not deleted) when a real user eventually claims their content.
+import_authors (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  source            text NOT NULL,               -- e.g. 'lejonklou-forum'
+  external_username text NOT NULL,               -- raw forum username
+  user_id           uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at        timestamptz DEFAULT now(),
+  UNIQUE (source, external_username)
 )
 
 -- A physical audio system owned by a user
@@ -174,6 +189,7 @@ All tables have RLS enabled. Policy intent per table:
 | listening_techniques | Public | Nobody (migration only) |
 | votes | Own votes OR revealed test | Authenticated (own rows) |
 | comments | Public | Authenticated (insert); owner (delete) |
+| import_authors | Public | Nobody (admin/service-role client only — ingest route and future merge step) |
 
 **Note on ingestion_bot:** The forum ingestion pipeline runs as a dedicated
 `ingestion_bot` user created manually in `auth.users`. It is subject to the
@@ -235,6 +251,25 @@ also now defends against this class of bug directly: it chains
 `.select().single()` after the update and treats a missing row as failure,
 rather than trusting an absent `error` to mean a row actually changed (see
 `api-conventions.md` Rule 5).
+
+### Placeholder authors (step 30)
+
+Forum-ingested content (see `build-history-ingestion.md`) is attributed to
+a real, full `users` row per external author — not a single shared bot
+user, and not a nullable-owner schema — so ownership works identically to
+any real account everywhere in the app. `is_placeholder = true` marks these
+rows; `import_authors` maps the raw external identity
+(`source` + `external_username`) to the placeholder's `user_id`, keyed on
+the unmodified username rather than a derived email (slugification is
+lossy and its collision-suffixing is order-dependent, so a raw username
+can't be reliably resolved back from an email alone). `lib/ingestion/
+create-placeholder-author.ts` is the only writer of either — via the
+admin/service-role client, which is also why neither needs a write RLS
+policy (see the table above). When a real person eventually claims their
+imported content, the expected merge repoints `import_authors.user_id`
+(preserving the "this account is forum-user X" fact) rather than deleting
+the row — not yet implemented, see `build-history-ingestion.md`'s
+"Explicitly deferred" section.
 
 ### test_vote_count function (public vote count)
 

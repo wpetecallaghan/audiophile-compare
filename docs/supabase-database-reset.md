@@ -66,7 +66,8 @@ from information_schema.tables
 where table_name in (
   'users', 'systems', 'system_snapshots', 'tracks',
   'tests', 'clips', 'clip_mapping',
-  'listening_techniques', 'votes', 'comments'
+  'listening_techniques', 'votes', 'comments',
+  'import_authors'
 )
 order by table_schema, table_name;
 ```
@@ -102,8 +103,8 @@ The CLI will now treat the migration as unapplied and run it again.
 
 ### Step 4 — Verify the tables exist
 
-Return to **Supabase → Table Editor** and confirm all ten tables appear under
-the `public` schema:
+Return to **Supabase → Table Editor** and confirm all eleven tables appear
+under the `public` schema:
 
 | Table | Description |
 |---|---|
@@ -117,6 +118,7 @@ the `public` schema:
 | `listening_techniques` | Reference data for vote techniques |
 | `votes` | User votes on a test |
 | `comments` | User comments on a test |
+| `import_authors` | Maps an imported external identity (e.g. a forum username) to its placeholder `users` row |
 
 ### Step 5 — Verify the auth trigger
 
