@@ -1,10 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { createPlaceholderAuthor, slugify } from '../create-placeholder-author'
+import {
+  createPlaceholderAuthor,
+  slugify,
+  USERS_TABLE,
+  IMPORT_AUTHORS_TABLE,
+} from '../create-placeholder-author'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: vi.fn(),
 }))
+
+const FORUM_SOURCE = 'lejonklou-forum'
+const EXTERNAL_USERNAME = 'BassHead99'
+const COLLIDING_EMAIL = 'bass-head@import.audiophile-compare.uk'
 
 // A minimal fake Postgrest-style chain: .select/.eq/.update return itself
 // (so calls can be chained in any order the real code uses), and it's
@@ -63,8 +72,8 @@ describe('createPlaceholderAuthor', () => {
     } as unknown as ReturnType<typeof createAdminClient>)
 
     const userId = await createPlaceholderAuthor({
-      source: 'lejonklou-forum',
-      externalUsername: 'BassHead99',
+      source: FORUM_SOURCE,
+      externalUsername: EXTERNAL_USERNAME,
     })
 
     expect(userId).toBe('existing-user-id')
@@ -74,10 +83,13 @@ describe('createPlaceholderAuthor', () => {
   it('creates a new placeholder author when no mapping exists', async () => {
     const createUser = vi.fn().mockResolvedValue({ data: { user: { id: 'new-user-id' } }, error: null })
     const fromMock = vi.fn((table: string) => {
-      if (table === 'import_authors') return makeChain({ data: null, error: null })
-      // 'users': both the email-collision check (select) and the
-      // is_placeholder update (update().eq()) resolve fine with no match
-      return makeChain({ data: null, error: null })
+      if (table === IMPORT_AUTHORS_TABLE) return makeChain({ data: null, error: null })
+      if (table === USERS_TABLE) {
+        // Both the email-collision check (select) and the is_placeholder
+        // update (update().eq()) resolve fine with no match
+        return makeChain({ data: null, error: null })
+      }
+      throw new Error(`unexpected table: ${table}`)
     })
 
     vi.mocked(createAdminClient).mockReturnValue({
@@ -86,8 +98,8 @@ describe('createPlaceholderAuthor', () => {
     } as unknown as ReturnType<typeof createAdminClient>)
 
     const userId = await createPlaceholderAuthor({
-      source: 'lejonklou-forum',
-      externalUsername: 'BassHead99',
+      source: FORUM_SOURCE,
+      externalUsername: EXTERNAL_USERNAME,
       displayName: 'Bass Head',
     })
 
@@ -109,11 +121,12 @@ describe('createPlaceholderAuthor', () => {
     const takenEmails = new Set<string>()
 
     const fromMock = vi.fn((table: string) => {
-      if (table === 'import_authors') {
+      if (table === IMPORT_AUTHORS_TABLE) {
         // Neither author has an existing mapping yet
         return makeChain({ data: null, error: null })
       }
-      // 'users' — email collision check: report "taken" if already recorded
+      // USERS_TABLE — email collision check: report "taken" if already recorded
+      if (table !== USERS_TABLE) throw new Error(`unexpected table: ${table}`)
       const chain = makeChain({ data: null, error: null })
       const originalEq = chain.eq
       chain.eq = vi.fn((...args: unknown[]) => {
@@ -132,13 +145,13 @@ describe('createPlaceholderAuthor', () => {
     } as unknown as ReturnType<typeof createAdminClient>)
 
     const firstUserId = await createPlaceholderAuthor({
-      source: 'lejonklou-forum',
+      source: FORUM_SOURCE,
       externalUsername: 'Bass-Head',
     })
-    takenEmails.add('bass-head@import.audiophile-compare.uk')
+    takenEmails.add(COLLIDING_EMAIL)
 
     const secondUserId = await createPlaceholderAuthor({
-      source: 'lejonklou-forum',
+      source: FORUM_SOURCE,
       externalUsername: 'bass-head', // slugifies identically to 'Bass-Head'
     })
 
@@ -146,7 +159,7 @@ describe('createPlaceholderAuthor', () => {
     expect(secondUserId).toBe('user-b')
     expect(firstUserId).not.toBe(secondUserId)
     expect(createUser).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      email: 'bass-head@import.audiophile-compare.uk',
+      email: COLLIDING_EMAIL,
     }))
     expect(createUser).toHaveBeenNthCalledWith(2, expect.objectContaining({
       email: 'bass-head-2@import.audiophile-compare.uk',
@@ -163,7 +176,7 @@ describe('createPlaceholderAuthor', () => {
     } as unknown as ReturnType<typeof createAdminClient>)
 
     await expect(
-      createPlaceholderAuthor({ source: 'lejonklou-forum', externalUsername: 'BassHead99' }),
+      createPlaceholderAuthor({ source: FORUM_SOURCE, externalUsername: EXTERNAL_USERNAME }),
     ).rejects.toThrow('boom')
   })
 })

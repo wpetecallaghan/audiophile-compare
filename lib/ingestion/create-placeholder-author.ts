@@ -5,6 +5,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 // (email_confirm: true) and never need to send or receive real mail.
 const PLACEHOLDER_EMAIL_DOMAIN = 'import.audiophile-compare.uk'
 
+// Exported so the test file can reference the same table names rather
+// than re-hardcoding them — see repeated-string-constants.md.
+export const USERS_TABLE = 'users'
+export const IMPORT_AUTHORS_TABLE = 'import_authors'
+
 export type CreatePlaceholderAuthorInput = {
   source: string            // e.g. 'lejonklou-forum'
   externalUsername: string  // raw, unmodified forum username
@@ -37,7 +42,7 @@ export async function createPlaceholderAuthor({
   const admin = createAdminClient()
 
   const { data: existing } = await admin
-    .from('import_authors')
+    .from(IMPORT_AUTHORS_TABLE)
     .select('user_id')
     .eq('source', source)
     .eq('external_username', externalUsername)
@@ -69,7 +74,7 @@ export async function createPlaceholderAuthor({
   // user_metadata.full_name — mark it as a placeholder without touching
   // that trigger.
   const { error: updateError } = await admin
-    .from('users')
+    .from(USERS_TABLE)
     .update({ is_placeholder: true })
     .eq('id', userId)
 
@@ -78,7 +83,7 @@ export async function createPlaceholderAuthor({
   }
 
   const { error: mappingError } = await admin
-    .from('import_authors')
+    .from(IMPORT_AUTHORS_TABLE)
     .insert({ source, external_username: externalUsername, user_id: userId })
 
   if (mappingError) {
@@ -101,7 +106,7 @@ async function resolveAvailableEmail(
   for (;;) {
     const email = `${candidateSlug}@${PLACEHOLDER_EMAIL_DOMAIN}`
     const { data } = await admin
-      .from('users')
+      .from(USERS_TABLE)
       .select('id')
       .eq('email', email)
       .maybeSingle()
