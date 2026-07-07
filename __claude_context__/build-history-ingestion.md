@@ -126,12 +126,26 @@ on a real `auth.users` insert.
   helper: given `{ source, external_username, display_name? }`, look up
   `import_authors` by `(source, external_username)`; if found, return its
   `user_id`. Otherwise slugify `external_username` → check email collision
-  → insert `auth.users` (admin client) → `update public.users set
-  is_placeholder = true` → insert the new `import_authors` row → return the
-  new `user_id`.
-- `docs/` — no new user-facing doc needed (this is internal infrastructure,
-  not a user-visible feature); note the new column/table and their purpose
-  in `audiophile-compare-schema.md` at build time.
+  → create the `auth.users` row **via `supabase.auth.admin.createUser({
+  email, email_confirm: true, user_metadata: { full_name: display_name ??
+  external_username } })`** — the Admin SDK method, not a raw SQL insert.
+  There's no existing precedent in this codebase for creating an
+  `auth.users` row from application code (the closest,
+  `e2e/helpers/admin.ts`, only ever *looks up* users via
+  `admin.auth.admin.listUsers()`; every real account today is created via
+  the actual signup/OAuth flow). The one-off manual `ingestion_bot` row and
+  this session's manual account cleanup both used a direct SQL
+  insert/delete, which is fine for a human running a one-time fix, but
+  this helper runs automatically and repeatedly — the Admin SDK method
+  correctly handles GoTrue's internal bookkeeping (`identities`, etc.)
+  that a raw insert bypasses. → `update public.users set is_placeholder =
+  true` → insert the new `import_authors` row → return the new `user_id`.
+- `audiophile-compare-schema.md` — document the new column/table.
+- **`docs/supabase-database-reset.md`** — its "Step 4 — Verify the tables
+  exist" section hardcodes a list of "all ten tables" and a verification
+  SQL query (`where table_name in ('users', 'systems', ...)`) that will be
+  stale/incomplete the moment `import_authors` exists. Add it to both the
+  prose list and the query.
 
 **Tests:**
 - **Unit:** `create-placeholder-author.ts` — slugification (lowercase,
@@ -142,6 +156,15 @@ on a real `auth.users` insert.
   distinct placeholders (proves the table-based lookup, not the email,
   is the source of truth).
 - **E2E:** none — this is backend infrastructure with no page to drive.
+- **RLS verification, explicitly required before calling this step done**
+  (not just the unit tests above) — this project has had a new RLS policy
+  silently fail to grant the intended access twice already (steps 26 and
+  27), both times undetected until something downstream broke. Once
+  `import_authors: public read` is applied, confirm it actually works with
+  a direct anon-key query (e.g. `curl .../rest/v1/import_authors` with the
+  anon/publishable key, expect `200` not `401`/empty) — the same technique
+  used to verify RLS policies earlier in this project — before treating
+  the migration as done.
 
 ---
 
