@@ -1,7 +1,8 @@
 # Google OAuth Setup
 
-Enables "Continue with Google" on the sign-in page. Must be completed for both
-the staging and production Supabase projects.
+Enables "Continue with Google" on both the sign-in page (`/login`, since
+step 14) and the register page (`/register`, since step 29). Must be
+completed for both the staging and production Supabase projects.
 
 ---
 
@@ -112,6 +113,16 @@ On first sign-in, Supabase creates a new `auth.users` row, which triggers the
 `public.users` row and sets `display_name` to the user's Google display name
 (`raw_user_meta_data->>'full_name'`), falling back to the email local-part if
 no name is available.
+
+**This is also how "register with Google" works (step 29) — same OAuth
+client, same redirect URI, no separate setup.** `signInWithOAuth` doesn't
+distinguish signing in from registering; whether the button is clicked on
+`/login` or `/register`, Google returns the same kind of code, and
+`handle_new_user` fires identically on a first-time `auth.users` insert
+either way. Nothing in this doc — the Google Cloud project, the OAuth
+consent screen, the OAuth client, or the redirect URLs configured below —
+needed to change for the register page to gain this button; it reuses the
+exact same client and callback route as login.
 
 ---
 

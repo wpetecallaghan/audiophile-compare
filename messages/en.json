@@ -32,6 +32,7 @@
     "invalidCredentials": "Invalid email or password",
     "emailNotConfirmed": "Email not confirmed \u2014 check your inbox",
     "registerHeading": "Create an account",
+    "orRegisterWithEmail": "or register with email",
     "nameLabel": "Full name",
     "namePlaceholder": "Your name",
     "passwordLabel": "Password",

@@ -57,6 +57,15 @@ test.describe('Public feed (unauthenticated)', () => {
     await expect(page.getByRole(ROLE.button, { name: m.auth.googleButton })).toBeVisible()
   })
 
+  test('register page shows the Google sign-up option alongside the form', async ({ page }) => {
+    await page.goto('/register')
+    await expect(page.getByRole(ROLE.heading, { name: m.auth.registerHeading })).toBeVisible()
+
+    // No tabs on register — Google and the email form are both visible at once
+    await expect(page.getByRole(ROLE.button, { name: m.auth.googleButton })).toBeVisible()
+    await expect(page.getByLabel(m.auth.nameLabel)).toBeVisible()
+  })
+
   test('visiting /about shows the about page without requiring login', async ({ page }) => {
     await page.goto('/about')
     await expect(page).toHaveURL('/about')

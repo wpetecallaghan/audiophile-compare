@@ -1122,9 +1122,9 @@ Confirmed `voting.spec.ts`'s reveal test still passes unchanged after
 
 ---
 
-### ⬜ 29 — Register with Google (planned, not yet built)
+### ✅ 29 — Register with Google
 
-**The gap this closes:** `/login` has offered "Continue with Google" since
+**The gap this closed:** `/login` has offered "Continue with Google" since
 step 14 (tabbed alongside password/magic-link since step 16), but
 `/register` (`RegisterForm.tsx`) only ever offered email/password —
 there's no way to reach `signInWithOAuth` from the register page today.
@@ -1190,44 +1190,37 @@ already has zero knowledge of login vs register) on the register page too.
    confirming via a sent link. Both are correct for their method; nothing
    to reconcile.
 
-**Files to update:**
-- `app/register/page.tsx` — render `<OAuthButtons />` above
-  `<RegisterForm />`, with a plain divider between them (inline Tailwind,
-  no new component — matching how `RegisterForm`/`LoginTabs` already build
-  one-off layout chrome without over-componentizing something used once).
-- `messages/en.json` — one new `auth` key for the divider text (e.g.
-  `orRegisterWithEmail: "or register with email"`); no other new copy
-  (button text is reused per decision 2).
-- `docs/google-oauth.md` — reword the framing that currently reads
-  login-only (e.g. its opening line, "Enables 'Continue with Google' on
-  the sign-in page") to note the same setup covers `/register` too, and
-  state explicitly that no Google Cloud Console or Supabase dashboard
-  changes are needed for this step — so a future reader doesn't assume
-  there's a second OAuth client or redirect URI to configure.
+**Files updated:**
+- `app/register/page.tsx` — renders `<OAuthButtons />` above
+  `<RegisterForm />`, with a plain divider between them (two flex-1
+  `border-t` rules flanking the label — deliberately not the absolute-
+  positioned "line behind centered text on a matching background" pattern,
+  which would need to match the page's actual background color exactly;
+  getting that pairing wrong is the same bug class `components.md` step 20
+  already flagged once for `Button`'s dark-mode background).
+- `messages/en.json` — new `auth.orRegisterWithEmail: "or register with
+  email"` key; no other new copy (button text reused per decision 2).
+- `docs/google-oauth.md` — reworded the opening line and added a paragraph
+  after the `handle_new_user` explanation stating plainly that register
+  reuses the exact same OAuth client and callback route, so a future
+  reader doesn't assume a second Google Cloud/Supabase setup is needed.
 
 **Tests:**
-- **Unit:** none needed. `OAuthButtons.tsx` is reused completely unchanged
-  (same props, same behavior) — its existing 5 tests
-  (`__tests__/OAuthButtons.test.tsx`) already cover it and need no
-  changes. `RegisterForm.tsx` itself isn't touched, so
-  `components/__tests__/RegisterForm.test.tsx` needs no changes either.
-  No unit test for `app/register/page.tsx` — consistent with the existing
-  precedent that pages themselves aren't unit-tested (server components,
-  e2e-covered only; `app/login/page.tsx` and `LoginTabs.tsx` have no
-  dedicated unit test file either).
-- **E2E:** add one case alongside the existing
-  `'login page shows magic link form and Google sign-in button'` test in
-  `e2e/tests/public-feed.spec.ts` (unauthenticated project — `/register`
-  is a public page): navigate to `/register` and assert the Google button
-  (`m.auth.googleButton`) is visible alongside the existing form fields,
-  using the literal `'/register'` path the same way the existing test
-  uses `'/login'` (no `routes.ts` helper exists for either page). **Scope
-  limit, matching the existing Google e2e coverage exactly:** this only
-  asserts the button renders and is clickable — actually completing a
-  Google OAuth round trip isn't feasible in Playwright without a live
-  Google test account, which is why the existing login-page Google test
-  has the same limitation (`global-setup.ts` always establishes the
-  authenticated session via magic link, never real Google login).
+- **Unit:** none needed, as planned — `OAuthButtons.tsx` and
+  `RegisterForm.tsx` are both reused/left completely unchanged; their
+  existing unit tests needed no changes and still pass.
+- **E2E:** new case in `e2e/tests/public-feed.spec.ts` — `/register` shows
+  both the Google button and the email form's fields at once (no tabs).
+  Same scope limit as the existing login-page Google test: only confirms
+  the button renders, doesn't attempt a real OAuth round trip.
+
+**Verified:** `npm run test` — 25 files / 267 tests, unchanged and all
+passing (this step touched no unit-tested code). `npx tsc --noEmit` — no
+new errors (same pre-existing, unrelated `__tests__/supabase-*.test.ts`
+failures as every prior step). `npm run test:e2e` — full suite 43/43
+passing (42 pre-existing + 1 new), run against a local dev server
+(`E2E_BASE_URL` overridden to `http://localhost:3000`, same reason as
+every prior step touching e2e).
 
 ---
 
