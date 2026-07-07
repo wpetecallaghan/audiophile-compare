@@ -744,7 +744,12 @@ this plan.
    disclosed at all. Votes resolve against the *forum* label as soon as a
    vote post is seen (mapped to whichever of our internal `A`/`B` the
    corresponding clip URL was assigned); before/after resolves only from a
-   reveal post.
+   reveal post. **Real sampling found "forum label" isn't always a letter
+   scheme** — one full test cycle in the head sample used bare numbers
+   ("1153" vs "1155", presumably recording/file numbers) as its only
+   reference scheme, with no letters mentioned anywhere. Extraction's
+   label-matching needs to treat a bare number exactly like an `A`/`B`/`X`/
+   `Y` label, not as a special case.
 
 6. **A test that never gets revealed stays `pending` forever and is never
    promoted.** `before_is_a` is mandatory for `ingest_test` and has no
@@ -766,6 +771,25 @@ this plan.
    it by editing the candidate file directly — typing in the real name if
    they recognize it, or leaving the placeholder and approving anyway if
    they're satisfied with that outcome.
+
+   **The placeholder path is the expected common outcome here, not a rare
+   fallback — real data quantifies this.** oEmbed enrichment succeeded on
+   only ~1–4% of links across two real samples (1/25, then 3/217). Budget
+   `needs_review` review volume in step 36 accordingly: most candidates
+   will need a human glance at track identity, not a handful of edge
+   cases.
+
+   **A text label distinguishing clip A from clip B is not reliably the
+   real track name — a genuine risk of confidently-wrong data, not just
+   missing data.** Real example: Charlie1 named three clips "Laa Laa,"
+   "Tinky Winky," and "Po" — Teletubbies characters, obviously just
+   nicknames to tell the clips apart, not song titles. Compare Spannko's
+   "John Prine 1 Buddha," which does look like a genuine artist reference.
+   Extraction must distinguish "this is what the creator calls the
+   recording" from "this is genuinely identifying a song" — when unsure,
+   default to the placeholder path rather than guessing. Producing a
+   wrong-but-confident track name is worse than an honest
+   `unidentified_track` flag.
 
 8. **System naming is simplified: one placeholder system per creator,
    not inferred per post.** Creator posts "rarely provide much information
@@ -806,8 +830,13 @@ this plan.
     (especially more recent) replies — but a fallback heuristic is still
     needed for the rest — e.g. matching a reply's mentioned clip
     labels/links against the set of currently-`pending`/open candidates
-    from the same or a plausibly-related creator. This is exactly the kind
-    of ambiguity decision 7's `needs_review` mechanism exists for: an
+    from the same or a plausibly-related creator. **Concrete real example
+    the fallback needs to handle:** a reply saying "I prefer the first one
+    (1153)" with no link and no quote at all — "1153" is a bare-number
+    forum label (decision 5) that only resolves to a specific candidate by
+    matching against labels already seen in that creator's pending posts,
+    not via any link or quote signal. This is exactly the kind of
+    ambiguity decision 7's `needs_review` mechanism exists for: an
     extraction that isn't confident which test a vote belongs to should
     flag it rather than guess silently.
 
@@ -816,6 +845,14 @@ this plan.
     method — a valid cross-test assumption for this dataset. Removes the
     free-text-to-vocabulary mapping risk entirely for the common case; no
     attempt is made to detect a listener using a different technique.
+    **Stronger evidence than "the forum generally follows this
+    convention":** the live page itself carries a hidden (`display: none`)
+    topic-level field reading "We use the Tune Method to evaluate
+    performance" — the thread declaring its own rule directly, not just an
+    inference from how individual replies happen to be phrased (most vote
+    posts read as casual personal preference — "more musical," "more
+    engaging" — with no explicit method name at all, which would be weak
+    evidence on its own).
 
 12. **"Unbroken" is enforced here, not in the ingest route** — for
     whichever links a candidate resolves as its actual clip pair, run the
@@ -823,7 +860,14 @@ this plan.
     detect-provider.ts`, `lib/clips/check-url.ts` — the same code
     `POST /api/clips/verify` already uses) and drop the candidate (or mark
     it `needs_review`) if either URL is dead. Zero new clip-validation
-    logic.
+    logic. **Caveat, not resolved here — see step 33's open question:**
+    this guarantee is weaker than it sounds for the ~150 real Drive/
+    Photos/iCloud links found across both samples, since those fall into
+    `detectProvider`'s `unknown` bucket, where a HEAD check only confirms
+    the *share page* loads, not that the underlying media still plays.
+    "Unbroken" is meaningfully enforced for youtube/vimeo/direct links,
+    not for this now-dominant hosting style, until that open question is
+    resolved.
 
 13. **Validation happens continuously, not as a separate "dry-run mode."**
     Because extraction only ever writes local candidate files and never
