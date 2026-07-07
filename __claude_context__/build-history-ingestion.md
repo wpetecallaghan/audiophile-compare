@@ -2,7 +2,7 @@
 name: audiophile-compare-build-history-ingestion
 description: >
   Detailed step-by-step build plan for the Lejonklou forum ingestion
-  pipeline (build-history.md steps 30, 31, 33-37). Companion to
+  pipeline (build-history.md steps 30, 31, 33-38). Companion to
   build-history.md (which holds only short pointer entries for these
   steps, to keep the main index scannable) and deferred-features.md
   (original architecture notes and rationale — the "why", not the "how").
@@ -13,7 +13,7 @@ description: >
 
 # Forum Ingestion Pipeline — Detailed Build Plan
 
-Full detail for `build-history.md` steps 30, 31, and 33–37 (step 32, import
+Full detail for `build-history.md` steps 30, 31, and 33–38 (step 32, import
 provenance UI, is detailed directly in `build-history.md` instead — see
 above). See `deferred-features.md`'s
 "Forum ingestion pipeline" section for the original architecture notes this
@@ -1007,17 +1007,119 @@ rows and nothing else, before it's ever needed for real.
 
 ---
 
-## Explicitly deferred: merge/claim flow
+## ⬜ 38 — Claim flow (merge a placeholder into a real account)
 
-Not planned in detail here — the user has indicated this will be requested
-as its own future build step. Noted for forward-compatibility only: because
-every placeholder is a full, real `auth.users`/`public.users` row (step 30,
-decision 1), the eventual merge is expected to be mechanically simple —
-reassign the FK columns that reference the placeholder's `user_id`
-(`systems.owner_id`, `tests.creator_id`, `tracks.created_by`, `votes.user_id`
-if any placeholder ever voted) to the real user's id, then delete the
-placeholder identity. This is the same two-step "reassign, then delete"
-shape as the manual account cleanup already performed once in this project
-outside of any build step (removing a stale test-registration account from
-`audiophile-prod` — see chat history, not a build-history entry since it
-wasn't a code change).
+**The gap this closes:** step 32's provenance UI makes placeholder-owned
+content discoverable and, via its addendum below, contactable — but
+nothing exists to actually perform a claim once a real forum member gets
+in touch. Step 30 anticipated the *mechanics* of a merge ("reassign FK
+columns... then delete the placeholder identity") but not how identity
+gets verified or who triggers it — this step resolves both.
+
+**Decisions:**
+
+1. **Verification: the claimant PMs the site owner's own Lejonklou forum
+   account — no generated code needed.** The forum's own PM system already
+   attributes a message to its sender's account; that attribution *is* the
+   proof of control, the same logic as any "message me from the account
+   you're claiming" check. The claimant states their real
+   audiophile-compare email in the PM; the site owner (who already has a
+   forum account — that's how the imported content was originally posted)
+   manually confirms the sender matches the forum username being claimed.
+   No code-generation step, no new UI, no automation — proportionate to
+   the actual estimated volume (the owner's own ~10–20 tests, plus 3–10
+   other users). Worth adding a generated one-time code only if volume
+   ever grows enough to make manual confirmation a real burden — not
+   needed now.
+
+2. **The owner's own claim needs no verification step at all.** No
+   ambiguity and no adversarial risk when the person performing the claim
+   and the person who controls both accounts are the same.
+
+3. **Admin-triggered, not self-service, with no new claim-request state
+   machine.** Reuses the existing `isAdminEmail`/`ADMIN_EMAILS` pattern
+   already gating `app/version/page.tsx` — a new admin-only page where the
+   signed-in admin enters the placeholder's forum username (or its
+   `import_authors` row) and the real user to merge into, after manually
+   confirming the PM. No `pending`/`approved` claim-request table in the
+   DB — the volume doesn't justify it, and the "state" is just the PM
+   conversation itself. A claimant who hasn't registered yet just registers
+   normally first; the merge target is an ordinary, already-existing
+   `public.users` row, nothing claim-specific about it.
+
+4. **The merge is a `security definer` Postgres function,
+   `claim_placeholder(placeholder_user_id uuid, real_user_id uuid)`,
+   called via the admin/service-role client — mirroring `ingest_test`'s
+   design (step 31), not hand-rolled ordered updates from a route.** One
+   transaction: reassign `systems.owner_id`, `tests.creator_id`,
+   `tracks.created_by`, `votes.user_id` from the placeholder to the real
+   user; **repoint, not delete,** the `import_authors` row (per step 30's
+   original design — "this account is forum's `BassHead99`" stays a
+   permanent, now-accurate fact); then delete the placeholder's
+   `auth.users` row via `admin.auth.admin.deleteUser()` (mirroring the
+   Admin SDK precedent `create-placeholder-author.ts` established for
+   creation). **To verify at build time, not assume:** whether
+   `public.users` needs an explicit companion delete or already cascades
+   from the `auth.users` delete — step 30 only added insert/update
+   triggers (`handle_new_user`, `handle_user_email_updated`), no delete
+   trigger, so this needs checking.
+
+5. **Vote-collision handling: the real user's own vote wins.** `votes` has
+   `UNIQUE (test_id, user_id, technique_id)` — if the real user already
+   voted on a test with their own account before claiming a placeholder
+   that also voted on that same test/technique, reassigning the
+   placeholder's vote would collide. The function skips (drops) the
+   placeholder's vote in that case rather than erroring the whole merge or
+   overwriting the real user's own vote — `ON CONFLICT ... DO NOTHING`
+   semantics, the same style already used in `ingest_test` (step 31,
+   decision 9's correction).
+
+6. **Security-critical — same EXECUTE lockdown as `ingest_test`, arguably
+   more so.** `claim_placeholder` bypasses RLS by necessity (reassigning
+   content between two arbitrary users is not something any normal
+   session should ever be able to do). Its migration must explicitly
+   revoke EXECUTE from `anon`/`authenticated`/`public` and grant only
+   `service_role`, verified directly against staging with the anon key,
+   the same discipline step 31 already applied. A leaked EXECUTE grant
+   here would let anyone reassign anyone else's content, not just insert
+   new rows — higher blast radius than `ingest_test`.
+
+7. **The admin route is gated by session + `isAdminEmail`, then uses the
+   admin client — not `INGEST_SECRET`.** Unlike the ingest route (a
+   server-to-server call with no user session), this is a human,
+   browser-driven action from the site owner's own logged-in session.
+   `app/api/admin/claim/route.ts` checks `isAdminEmail(user.email)` first
+   (mirroring `/version`'s gate), then calls `createAdminClient()` to
+   invoke `claim_placeholder` — "authenticated app-layer check, then
+   service-role client underneath" is the same shape the cron route
+   already uses, just with a session check instead of a cron secret.
+
+8. **Step 32's provenance UI gets a small addendum, not a redesign: a
+   contact link next to the existing badge/link.** Something like "Think
+   this is yours? [contact email]" alongside the "View original post"
+   link, so a real forum member who recognizes their own content actually
+   has a way to start a claim — otherwise step 32 shows provenance with no
+   next step for the person it's about. Additive to already-written (not
+   yet built) step 32; doesn't reopen its core design.
+
+**Files to update:**
+- New migration — `claim_placeholder(placeholder_user_id uuid, real_user_id
+  uuid) returns void`, plus `revoke`/`grant` matching `ingest_test`'s
+  pattern.
+- `app/api/admin/claim/route.ts` (new).
+- `app/admin/claim/page.tsx` (new) — a minimal form (placeholder
+  identifier, real user identifier), gated by `isAdminEmail`.
+- `build-history.md` step 32 — addendum noting the contact link (see
+  decision 8).
+- `api-conventions.md`, `audiophile-compare-schema.md`, `components.md`,
+  `testing.md`, `core.md` — per the usual pattern, once built.
+
+**Tests:**
+- **Unit/integration** (mirroring step 31's `route.integration.test.ts`
+  pattern): `claim_placeholder` correctly reassigns all four FK columns;
+  repoints (not deletes) `import_authors`; deletes the placeholder's
+  auth/public rows; correctly skips a colliding vote rather than erroring
+  the whole merge. EXECUTE lockdown confirmed directly against staging
+  with the anon key, same as step 31.
+- **E2E:** none — an admin-only backend operation behind a minimal form,
+  not a public flow needing browser-driven coverage at this stage.

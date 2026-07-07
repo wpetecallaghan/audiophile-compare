@@ -1266,9 +1266,9 @@ verification detail: `build-history-ingestion.md`.
 **The gap this closes:** step 30 made `import_authors` publicly readable
 specifically so the UI could show forum provenance — "may also help a real
 forum member recognize their own imported content" — but no page actually
-surfaces it. Must ship **before** the ingestion pipeline (steps 33–37)
+surfaces it. Must ship **before** the ingestion pipeline (steps 33–38)
 actually runs, so imported content is never live without it. Unlike steps
-30–31/33–37, this is UI work, not ingestion-pipeline infrastructure, so it
+30–31/33–38, this is UI work, not ingestion-pipeline infrastructure, so it
 gets its full detail directly here rather than in
 `build-history-ingestion.md`.
 
@@ -1333,6 +1333,14 @@ gets its full detail directly here rather than in
    plan update to `build-history-ingestion.md`, not new code, since those
    steps aren't built yet.
 
+8. **Addendum (from step 38's design): a contact link next to the badge,
+   so provenance actually leads somewhere.** Something like "Think this is
+   yours? [contact email]" alongside the "View original post" link —
+   otherwise this step shows *who* imported content belongs to with no way
+   for that person to act on it. A static mailto/contact string, not a new
+   form or claim-request flow — step 38 (`build-history-ingestion.md`)
+   handles verification and the actual merge from there.
+
 **Files to update:**
 - New migration (name TBD at build time) — `alter table public.tests add
   column source_url text;` plus `create or replace function
@@ -1353,7 +1361,8 @@ gets its full detail directly here rather than in
   badge+link conditionally on `is_placeholder`.
 - `app/systems/[id]/page.tsx` — add the owner query and conditional
   badge+link (net new).
-- `messages/en.json` — new `common` namespace keys.
+- `messages/en.json` — new `common` namespace keys, including the contact
+  link text (decision 8).
 - A new E2E fixture-seeding helper (alongside `e2e/helpers/admin.ts`) that
   actually exercises `create-placeholder-author.ts` to seed a
   placeholder-owned fixture test — every existing E2E helper seeds content
@@ -1435,13 +1444,22 @@ accounts are left in place, not deleted — idempotent re-import reuses
 them. Dry-run first, matching the rest of this plan's philosophy. Full
 plan: `build-history-ingestion.md`.
 
-**Explicitly deferred, not part of steps 30–37:** the user-merge/claim flow
-(letting a real Lejonklou member claim their imported content once they
-join) — anticipated to be mechanically simple given every placeholder is a
-full real user row, but intentionally not designed in detail until
-requested as its own step. See `build-history-ingestion.md`'s closing
-section.
+### ⬜ 38 — Claim flow (planned, not yet built)
+
+Lets a real Lejonklou forum member claim their imported content. Identity
+verification is a forum PM to the site owner's own forum account — no
+generated code, no new UI, since the sender's forum identity is itself the
+proof; proportionate to an estimated dozen or so total claims. Admin-
+triggered (reuses the existing `isAdminEmail` gate already used by
+`/version`), not self-service, and no new claim-request state machine. The
+merge itself is a `security definer` Postgres function mirroring
+`ingest_test`'s design — same EXECUTE lockdown, same atomicity — that
+reassigns ownership, repoints (not deletes) `import_authors`, deletes the
+placeholder, and drops a colliding vote in favor of the real user's own
+existing one. Small addendum to step 32: a contact link next to the
+provenance badge, so there's actually a way to start a claim. Full plan:
+`build-history-ingestion.md`.
 
 ---
 
-Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30, 31, and 33–37 above have their full detailed plan in `build-history-ingestion.md`; step 32 (UI work, not pipeline infrastructure) is fully detailed here instead — see that file's frontmatter for why.
+Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30, 31, and 33–38 above have their full detailed plan in `build-history-ingestion.md`; step 32 (UI work, not pipeline infrastructure) is fully detailed here instead — see that file's frontmatter for why.

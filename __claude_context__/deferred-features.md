@@ -19,7 +19,7 @@ Neither use case is currently implemented. `source_ref` is already included in t
 ### Use case 1 — Forum ingestion pipeline
 
 **No longer purely deferred — actively planned as build-history.md steps
-30, 31, and 33–37 (plus step 32, import provenance UI, detailed directly
+30, 31, and 33–38 (plus step 32, import provenance UI, detailed directly
 in `build-history.md`), with the full pipeline step-by-step plan in
 `build-history-ingestion.md`.**
 That plan diverges from the "single `ingestion_bot` owns everything" model
