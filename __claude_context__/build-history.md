@@ -1261,19 +1261,138 @@ Migration applied to staging only, not yet production; `INGEST_SECRET` is
 set in Vercel for Development/Preview/Production. Full plan and
 verification detail: `build-history-ingestion.md`.
 
-### ⬜ 32 — Forum ingestion: scraper (planned, not yet built)
+### ⬜ 32 — Import provenance UI (planned, not yet built)
+
+**The gap this closes:** step 30 made `import_authors` publicly readable
+specifically so the UI could show forum provenance — "may also help a real
+forum member recognize their own imported content" — but no page actually
+surfaces it. Must ship **before** the ingestion pipeline (steps 33–36)
+actually runs, so imported content is never live without it. Unlike steps
+30–31/33–36, this is UI work, not ingestion-pipeline infrastructure, so it
+gets its full detail directly here rather than in
+`build-history-ingestion.md`.
+
+**Decisions:**
+
+1. **Reuse existing bylines; add one new one.** Three pages already render
+   `by {creator?.display_name ?? t('anonymous')}` —
+   `components/feed/FeedCard.tsx`, `app/tests/[id]/page.tsx`, and the
+   per-test rows in `app/tracks/[id]/page.tsx`. Extend each of their
+   existing `creator:users!creator_id(display_name)` queries to also
+   select `is_placeholder`. `app/systems/[id]/page.tsx` currently shows no
+   owner/creator information at all, to anyone — add one there for the
+   first time, but scoped to only appear when the owner is a placeholder,
+   so ordinary systems stay visually unchanged. This is provenance for
+   imported content, not a general "add public attribution everywhere"
+   change.
+
+2. **A new `Badge` status variant, not a new component.** `components/
+   ui/Badge.tsx` already has `win`/`loss`/`draw`/`blind`/`revealed`/
+   `broken` — add `imported` alongside them rather than inventing a
+   bespoke component for one badge.
+
+3. **Store and link to the real forum post — this reopens already-shipped
+   step 31.** New nullable column `tests.source_url text` (null for every
+   web-UI-created test; populated only for imported ones). `IngestPayload`
+   (`lib/ingestion/ingest-test-payload.ts`) gains an optional
+   `source_url?: string`; `app/api/internal/ingest/route.ts` passes it
+   through to the `ingest_test` RPC call; `ingest_test` itself needs a
+   **new** migration (not an edit to the already-applied
+   `20260707150400_ingest_test_function.sql`) that adds the column and
+   `create or replace function public.ingest_test(...)` with the extended
+   body — same signature, so `create or replace` is safe, no drop
+   required. Same "new migration layers on an already-applied one"
+   pattern already used for `20260707074426_cascade_delete_clips_and_
+   mapping.sql` and others. Worth being explicit about: this step's value
+   (a working troubleshooting link once the pipeline is live) is judged
+   worth reopening shipped code for, rather than deferring the link to a
+   later, separate change.
+
+4. **The link only ever appears alongside the badge**, not as a
+   standalone general-purpose link on every test — it's contextual to "this
+   was imported." Uses the existing `Link` component (`variant="inline"`)
+   with `target="_blank" rel="noopener noreferrer"`; `Link` already wraps
+   `next/link`, which renders a plain anchor for an absolute URL, so no new
+   link-handling code is needed.
+
+5. **Copy lives in the `common` i18n namespace** (currently just
+   `cancel`/`networkError`) — shared across the systems/tests/tracks/feed
+   namespaces, so it doesn't belong to just one of them. New keys: the
+   badge label and the link text (e.g. "View original post").
+
+6. **Forward-compatible with the not-yet-planned claim step, for free.**
+   `is_placeholder` flips to `false` once a future claim reassigns
+   ownership and deletes the placeholder row — the badge and link
+   disappear automatically; no extra logic needed here or in that later
+   step.
+
+7. **The scraper/extraction steps (33/34) need to actually populate
+   `source_url`.** Step 33 (scraper) already plans to capture each post's
+   real `post_url`; step 34 (extraction) needs to carry the *specific
+   pair's* post URL into the candidate's `source_url` field. This is a
+   plan update to `build-history-ingestion.md`, not new code, since those
+   steps aren't built yet.
+
+**Files to update:**
+- New migration (name TBD at build time) — `alter table public.tests add
+  column source_url text;` plus `create or replace function
+  public.ingest_test(...)` extended to store `payload->>'source_url'`.
+  Staging first, per the established convention.
+- `lib/ingestion/ingest-test-payload.ts` — `IngestPayload.source_url?:
+  string`.
+- `app/api/internal/ingest/route.ts` — pass `source_url` through to the
+  RPC payload.
+- `lib/ingestion/__tests__/ingest-test-payload.test.ts` — cover the new
+  optional field.
+- `app/api/internal/ingest/__tests__/route.integration.test.ts` — extend
+  an existing case (or add one) asserting `source_url` round-trips onto
+  the created `tests` row.
+- `components/ui/Badge.tsx` — new `imported` status variant.
+- `components/feed/FeedCard.tsx`, `app/tests/[id]/page.tsx`,
+  `app/tracks/[id]/page.tsx` — extend the creator query, render the
+  badge+link conditionally on `is_placeholder`.
+- `app/systems/[id]/page.tsx` — add the owner query and conditional
+  badge+link (net new).
+- `messages/en.json` — new `common` namespace keys.
+- A new E2E fixture-seeding helper (alongside `e2e/helpers/admin.ts`) that
+  actually exercises `create-placeholder-author.ts` to seed a
+  placeholder-owned fixture test — every existing E2E helper seeds content
+  owned by the real `E2E_TEST_USER_EMAIL`, not a placeholder.
+- `__claude_context__/components.md` — the new Badge variant and the
+  conditional-provenance pattern.
+- `__claude_context__/audiophile-compare-schema.md` — `tests.source_url`
+  column.
+- `__claude_context__/api-conventions.md` §5 — note `IngestPayload.
+  source_url`.
+- `__claude_context__/testing.md` — new unit/E2E rows, updated counts.
+- `__claude_context__/build-history-ingestion.md` — addendum note on step
+  31 (reopened by this step); update steps 33/34's plans to actually
+  populate `source_url`.
+- `__claude_context__/core.md` — build status line, once built.
+
+**Tests:**
+- **Unit:** `ingest-test-payload.test.ts` covers the optional
+  `source_url` field.
+- **Integration:** extend `route.integration.test.ts` to assert a payload
+  including `source_url` round-trips onto the created `tests` row.
+- **E2E:** the new fixture helper creates a placeholder-owned test; a spec
+  (new or extended) visits its detail page, the feed, its track page, and
+  its system page, asserting the "Imported" badge and working link appear
+  in all four places, and are absent on an ordinarily-owned fixture.
+
+### ⬜ 33 — Forum ingestion: scraper (planned, not yet built)
 
 Standalone script — fetch the Lejonklou thread, walk its pagination, parse
 each post's author/timestamp/body (converted to markdown, not raw HTML)/
 quoted-post reference/links deterministically (no LLM here), enriched with
 oEmbed title/author lookups for YouTube/Vimeo links to aid track
 identification downstream. Writes a raw-posts JSON artifact consumed by
-step 33; doesn't call the ingest route or need any credentials. Full plan:
+step 34; doesn't call the ingest route or need any credentials. Full plan:
 `build-history-ingestion.md`.
 
-### ⬜ 33 — Forum ingestion: extraction (planned, not yet built)
+### ⬜ 34 — Forum ingestion: extraction (planned, not yet built)
 
-Takes step 32's raw posts and does the hard semantic work — per-author
+Takes step 33's raw posts and does the hard semantic work — per-author
 system/snapshot continuity (simplified to one placeholder system per
 creator; reply-to-test attribution via quote references remains the
 highest-risk, most-open part of this whole plan), clip-health filtering
@@ -1283,30 +1402,36 @@ can't be identified from text or clip metadata. Uses the Vercel AI SDK
 (`generateObject` + Zod, via the AI Gateway) rather than calling ingest
 directly — output is a local, human-editable candidate repository (one
 JSON file per candidate, organized into `pending`/`needs_review`/`ready`/
-`approved`/`ingested` subfolders — the folder a file sits in *is* its
-status), never a live API call. Full plan: `build-history-ingestion.md`.
+`approved`/`ingested/staging`/`ingested/production` subfolders — the
+folder a file sits in *is* its status), never a live API call. Full plan:
+`build-history-ingestion.md`.
 
-### ⬜ 34 — Forum ingestion: commit (planned, not yet built)
+### ⬜ 35 — Forum ingestion: commit (planned, not yet built)
 
-Separate, simple script — reads only `approved` candidates from step 33's
-repository and POSTs each to `/api/internal/ingest`, marking it `ingested`
-on success. The only step that touches a deployed environment; no LLM, no
-judgment calls. Full plan: `build-history-ingestion.md`.
+Separate, simple script, parameterized by target environment — reads
+`approved/` for staging or `ingested/staging/` for production (never the
+other way around, enforcing "staging first" at the tooling level) and
+POSTs each candidate to `/api/internal/ingest`, moving successes into that
+environment's `ingested/` folder. The only step that touches a deployed
+environment; no LLM, no judgment calls. Full plan: `build-history-ingestion.md`.
 
-### ⬜ 35 — Forum ingestion: run the import, staging then production (planned, not yet built)
+### ⬜ 36 — Forum ingestion: run the import, staging then production (planned, not yet built)
 
 The actual one-time deliverable — scrape, extract into candidates, review
 and approve them, commit for real against `audiophile-staging`, manually
-verify in the app, then repeat against `audiophile-prod`. No new code;
-exercises steps 30–34. Full plan: `build-history-ingestion.md`.
+verify in the app, then commit the same, staging-verified set against
+`audiophile-prod`. No new code; exercises steps 30–35. Full plan:
+`build-history-ingestion.md`.
 
-**Explicitly deferred, not part of steps 30–35:** the user-merge/claim flow
+**Explicitly deferred, not part of steps 30–36:** the user-merge/claim flow
 (letting a real Lejonklou member claim their imported content once they
 join) — anticipated to be mechanically simple given every placeholder is a
 full real user row, but intentionally not designed in detail until
-requested as its own step. See `build-history-ingestion.md`'s closing
-section.
+requested as its own step. Also deferred: import rollback (Supabase
+backup/PITR vs. a targeted `source_ref`-based undo query) — flagged as a
+post-ingest planning topic, not resolved. See `build-history-ingestion.md`'s
+closing sections for both.
 
 ---
 
-Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30–35 above have their full detailed plan in `build-history-ingestion.md`, not inline here — see that file's frontmatter for why.
+Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30, 31, and 33–36 above have their full detailed plan in `build-history-ingestion.md`; step 32 (UI work, not pipeline infrastructure) is fully detailed here instead — see that file's frontmatter for why.

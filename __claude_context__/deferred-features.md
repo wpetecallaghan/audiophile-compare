@@ -19,7 +19,9 @@ Neither use case is currently implemented. `source_ref` is already included in t
 ### Use case 1 — Forum ingestion pipeline
 
 **No longer purely deferred — actively planned as build-history.md steps
-30–35, with the full step-by-step plan in `build-history-ingestion.md`.**
+30, 31, and 33–36 (plus step 32, import provenance UI, detailed directly
+in `build-history.md`), with the full pipeline step-by-step plan in
+`build-history-ingestion.md`.**
 That plan diverges from the "single `ingestion_bot` owns everything" model
 described just below: it attributes each import to a per-forum-author
 placeholder identity instead, so a later merge step can hand real people

@@ -2,16 +2,20 @@
 name: audiophile-compare-build-history-ingestion
 description: >
   Detailed step-by-step build plan for the Lejonklou forum ingestion
-  pipeline (build-history.md steps 30-35). Companion to build-history.md
-  (which holds only short pointer entries for these steps, to keep the
-  main index scannable) and deferred-features.md (original architecture
-  notes and rationale — the "why", not the "how"). Load this when working
-  on any forum-ingestion build step.
+  pipeline (build-history.md steps 30, 31, 33-36). Companion to
+  build-history.md (which holds only short pointer entries for these
+  steps, to keep the main index scannable) and deferred-features.md
+  (original architecture notes and rationale — the "why", not the "how").
+  Step 32 (import provenance UI) is UI work, not pipeline infrastructure —
+  it's fully detailed directly in build-history.md instead. Load this when
+  working on any forum-ingestion build step.
 ---
 
 # Forum Ingestion Pipeline — Detailed Build Plan
 
-Full detail for `build-history.md` steps 30–35. See `deferred-features.md`'s
+Full detail for `build-history.md` steps 30, 31, and 33–36 (step 32, import
+provenance UI, is detailed directly in `build-history.md` instead — see
+above). See `deferred-features.md`'s
 "Forum ingestion pipeline" section for the original architecture notes this
 plan builds on and, in one place, deliberately diverges from — the original
 doc assumed a single `ingestion_bot` user owns everything imported; this plan
@@ -313,12 +317,12 @@ is currently implemented."
    is always safe.
 
 7. **Clip verification is *not* this route's job.** The route trusts that
-   clip health was already confirmed upstream — by step 33's extraction,
-   before a candidate was ever marked `ready`/`approved` — not by step 34's
+   clip health was already confirmed upstream — by step 34's extraction,
+   before a candidate was ever marked `ready`/`approved` — not by step 35's
    commit script, which is the one actually calling this route but does no
    validation of its own. Same "client already verified, server persists"
    pattern `POST /api/tests` already uses for browser-submitted clips.
-   Re-verifying server-side here would just duplicate step 33's clip-health
+   Re-verifying server-side here would just duplicate step 34's clip-health
    filter for no benefit.
 
 **Files to update:**
@@ -421,14 +425,23 @@ is currently implemented."
   users persisted as intended (confirmed via direct `import_authors`
   query).
 
+**Addendum (planned, not yet built) — reopened by `build-history.md` step
+32:** step 32 (import provenance UI) adds a nullable `tests.source_url`
+column and extends `IngestPayload`/`ingest_test`/the route to accept and
+store it, via a *new* migration layered on top of
+`20260707150400_ingest_test_function.sql` (not an edit to that
+already-applied file). See `build-history.md` step 32 for the full design;
+noted here so this section doesn't read as a closed, untouched chapter
+once that step is built.
+
 ---
 
-## ⬜ 32 — Scraper
+## ⬜ 33 — Scraper
 
 **The gap this closes:** phase 1 of the pipeline (fetch) doesn't exist.
 Originally bundled with extraction as one step; split in two because they
 have very different risk profiles — this step is deterministic and fully
-testable, extraction (step 33) is genuinely uncertain and was already
+testable, extraction (step 34) is genuinely uncertain and was already
 flagged as needing its own design pass. Splitting also gives extraction a
 stable, re-runnable input: iterating on extraction logic no longer means
 re-scraping the forum each time.
@@ -445,15 +458,17 @@ re-scraping the forum each time.
 2. **Deterministic HTML parsing only — no LLM, no network calls beyond
    fetching thread pages and per-link oEmbed lookups (decision 8).** Walk
    the thread's pagination and, for each post, extract: `post_url`
-   (permalink), `author` (raw forum username/display name as shown),
+   (permalink — this is also what step 34 carries into each candidate's
+   `source_url`, populating the "view original post" link `build-history.md`
+   step 32 adds to the UI), `author` (raw forum username/display name as shown),
    `posted_at` (ISO 8601, parsed from the forum's displayed timestamp),
    `body_markdown` (converted deterministically from the raw HTML — quote
    blocks become `> text`, links become `[text](url)` — rather than kept
-   as raw HTML: extraction (step 33) is an LLM call, and clean, structured
+   as raw HTML: extraction (step 34) is an LLM call, and clean, structured
    text is cheaper and more reliable input than HTML tag soup), and
    `links` (every outbound URL found in the body — a flat list, no
    judgement about which ones are "the" comparison clips; that's a
-   semantic call, correctly left to step 33).
+   semantic call, correctly left to step 34).
 
 3. **Reply attribution needs a structured signal, not just prose.**
    Real thread behaviour (confirmed against how this specific forum is
@@ -462,9 +477,9 @@ re-scraping the forum each time.
    votes also interleave across multiple open tests, so position in the
    thread alone isn't reliable. Capture `quoted_post_url: string | null`
    — the `post_url` this post quotes/replies to, when the forum's quote
-   markup resolves to one — as the primary signal step 33 uses for
+   markup resolves to one — as the primary signal step 34 uses for
    attributing a reply to the right test. This won't always be present;
-   step 33 still needs a fallback for replies without one (see step 33's
+   step 34 still needs a fallback for replies without one (see step 34's
    decision 10).
 
 4. **Track identification enrichment: fetch oEmbed metadata for
@@ -504,7 +519,7 @@ re-scraping the forum each time.
    ```
    Written as a JSON file (path given via CLI arg, e.g.
    `scripts/scrape-lejonklou.ts <thread-url> <output-path>`) — this is the
-   interface boundary with step 33, and the reason step 33 can be iterated
+   interface boundary with step 34, and the reason step 34 can be iterated
    on without re-hitting the forum. Scraped output shouldn't be committed —
    add its default output location to `.gitignore`.
 
@@ -573,7 +588,7 @@ re-scraping the forum each time.
 
 ---
 
-## ⬜ 33 — Extraction
+## ⬜ 34 — Extraction
 
 **The gap this closes:** phases 2–3 of the pipeline (semantic extraction,
 clip-health filtering) don't exist. This is genuinely new capability, not
@@ -584,10 +599,10 @@ this plan.
 
 1. **Output is a candidate repository, not direct calls to
    `/api/internal/ingest`.** Extraction never talks to the deployed app at
-   all — it reads step 32's `ScrapedThread` JSON and writes one JSON file
+   all — it reads step 33's `ScrapedThread` JSON and writes one JSON file
    per candidate test (a draft `IngestPayload` plus `issues`) under
    `scripts/output/candidates/`. Committing (calling the ingest route) is
-   entirely step 34's job — see that step. This is the mechanism that lets
+   entirely step 35's job — see that step. This is the mechanism that lets
    a human fix a problem (like an unidentified track) *before* anything is
    ever sent, so the app itself never needs a "correct a field after
    ingest" feature.
@@ -597,7 +612,10 @@ this plan.
    before/after of the same change, but with different tracks" — so one
    post can yield multiple independent candidates, each its own test. Key
    candidates as `<thread>:post-<n>:pair-<i>` (`pair-1` even when there's
-   only one, for consistency).
+   only one, for consistency). Every candidate also carries a `source_url`
+   — step 32's (in `build-history.md`) column and payload field — set to
+   the initiating post's `post_url` (step 33's scraper output); all pairs
+   from the same post share that post's URL.
 
 3. **Status is folder location, not a field — one subfolder per stage,
    no `status` field inside the JSON at all.**
@@ -606,9 +624,9 @@ this plan.
      pending/               candidates missing something required (decision 6)
      needs_review/          complete, but extraction flagged an issue (decision 7)
      ready/                 complete, no flagged issues — assigned automatically
-     approved/              a human moved it here — step 34's staging input
-     ingested/staging/      step 34 moved it here after committing to staging
-     ingested/production/   step 34 moved it here after committing to production
+     approved/              a human moved it here — step 35's staging input
+     ingested/staging/      step 35 moved it here after committing to staging
+     ingested/production/   step 35 moved it here after committing to production
    ```
    A candidate's status is simply which folder its file is sitting in —
    "approving" a `ready` (or fixed `needs_review`) candidate means moving
@@ -650,10 +668,10 @@ this plan.
    for this), an unrevealed test is explicitly out of scope for this
    import. Votes and snapshot data for it are simply never committed.
 
-7. **Track identification: try text, then step 32's oEmbed enrichment;
+7. **Track identification: try text, then step 33's oEmbed enrichment;
    if both fail, don't skip — create a flagged placeholder.** Order of
    attempts: (a) explicit track naming in the reveal or original post,
-   when present; (b) `oembed_title`/`oembed_author` from step 32, when
+   when present; (b) `oembed_title`/`oembed_author` from step 33, when
    present and plausible. If neither resolves, still create the candidate
    with a **per-post-unique** placeholder (e.g. `artist: "Unidentified"`,
    `title: "Unidentified passage — <source_ref>"` — never one shared
@@ -692,7 +710,7 @@ this plan.
 
 10. **Reply-to-test attribution is the hardest remaining open problem —
     still not fully resolved, needs its own design/prototyping pass.**
-    Primary signal is step 32's `quoted_post_url`. Not always present or
+    Primary signal is step 33's `quoted_post_url`. Not always present or
     unambiguous (interleaved tests mean position alone isn't reliable, and
     "sometimes" quoting isn't "always"), so a fallback heuristic is still
     needed — e.g. matching a reply's mentioned clip labels/links against
@@ -753,7 +771,7 @@ this plan.
   call plus the deterministic wrapping around it (clip-health filtering,
   technique hardcoding, track-identification fallback, per-author running
   state).
-- `scripts/extract-lejonklou.ts` (new) — CLI entrypoint: reads step 32's
+- `scripts/extract-lejonklou.ts` (new) — CLI entrypoint: reads step 33's
   JSON, groups by author, walks posts building/updating candidates.
 - `package.json` — new `ai`/`zod` dependencies; new `extract:lejonklou`
   script.
@@ -776,12 +794,12 @@ this plan.
 
 ---
 
-## ⬜ 34 — Commit
+## ⬜ 35 — Commit
 
 **The gap this closes:** approved candidates need to actually reach the
 app. This is the only step in the whole pipeline that makes a real HTTP
 call to a deployed environment — deliberately separated from extraction
-(step 33) since it has none of extraction's uncertainty: no LLM, no
+(step 34) since it has none of extraction's uncertainty: no LLM, no
 judgment calls, nothing to review.
 
 **Decisions:**
@@ -828,8 +846,8 @@ judgment calls, nothing to review.
    environment or the wrong source folder. `INGEST_SECRET` stays an env
    var, not a CLI arg — a secret shouldn't appear in shell history or `ps`
    output.
-6. **No new dependencies — reuses exactly what steps 32/33 already
-   established.** `tsx` as the runtime (already added in step 32); the
+6. **No new dependencies — reuses exactly what steps 33/33 already
+   established.** `tsx` as the runtime (already added in step 33); the
    built-in global `fetch` for the POST (no HTTP client library); Node's
    built-in `fs/promises` for listing a folder and `rename()`-ing a file
    into its destination on success (a same-filesystem rename is atomic —
@@ -859,7 +877,7 @@ judgment calls, nothing to review.
 
 ---
 
-## ⬜ 35 — Run the import: staging, then production
+## ⬜ 36 — Run the import: staging, then production
 
 **The gap this closes:** everything above is infrastructure; this step is
 the actual, one-time deliverable the user asked for — Lejonklou playground
@@ -878,7 +896,7 @@ thread content actually present in the app.
    staging commit.** Scrape the thread; run extraction; review the
    resulting `needs_review` candidates (resolve or accept each) and
    spot-check `ready` ones; approve what's ready to go. Re-scraping and
-   re-running extraction is safe and incremental (step 33 decision 4), so
+   re-running extraction is safe and incremental (step 34 decision 4), so
    this can repeat as needed before anything is committed.
 3. Run `commit-lejonklou.ts --env staging` for real against
    `audiophile-staging`. Manually verify a sample of imported tests render
@@ -886,7 +904,7 @@ thread content actually present in the app.
    track pages) — not just "the API call succeeded."
 4. Once satisfied, run `commit-lejonklou.ts --env production` — **not** a
    fresh scrape/extract/approve cycle. This commits exactly the
-   candidate set that just passed staging verification (step 34 decision
+   candidate set that just passed staging verification (step 35 decision
    1's folder chain makes this the only thing this command can do — it
    reads `ingested/staging/`, which is precisely that set). If more forum
    content has appeared since the staging run and you want it included
@@ -898,7 +916,7 @@ thread content actually present in the app.
 Lejonklou member claim their imported content once they join) is
 explicitly deferred — see below.
 
-**Tests:** none new — this step *exercises* steps 30–34, it doesn't add
+**Tests:** none new — this step *exercises* steps 30–35, it doesn't add
 code. Verification is the manual review described above.
 
 ---
@@ -920,22 +938,22 @@ wasn't a code change).
 
 ---
 
-## Explicitly deferred: import-provenance UI
+## Explicitly deferred: import rollback
 
-Not planned in detail here yet. `import_authors`'s public-read RLS policy
-(step 30) was deliberately designed so the UI could show provenance (e.g.
-"imported from the Lejonklou forum" on a system/test page), but no step in
-30–35 actually builds that surface — once step 35 runs, imported content
-will look identical to normal user content everywhere in the app, with no
-visual indicator. The user wants this designed and built as its **own**
-step, completed **before** steps 32–35 are built (not just before step 35
-runs) — to be returned to once the refinement of steps 32–35 is finished.
-
-Also raised alongside this: whether a Supabase point-in-time-recovery/
+`import_authors`'s public-read RLS policy (step 30) was deliberately
+designed so the UI could show provenance — now planned in full as
+`build-history.md` step 32 (import provenance UI), not deferred any
+longer. What's still open: whether a Supabase point-in-time-recovery/
 backup restore point taken immediately before the production commit (step
-35) is a better safety net than a targeted `source_ref`-based undo query,
+36) is a better safety net than a targeted `source_ref`-based undo query,
 or a useful complement to one — full-database restore is coarse (it would
 also roll back any unrelated legitimate activity — new signups, votes,
 etc. — that happened in the same window), whereas a targeted delete only
-touches the imported rows. Flagged for its own planning pass, likely as a
-post-ingest (step 35+) concern rather than blocking 32–35.
+touches the imported rows. Also worth considering alongside step 32 and
+the future merge/claim flow above: once real users start claiming
+imported content, a blanket rollback becomes increasingly unsafe to offer
+(it would delete a real person's legitimately-claimed content along with
+everything else), so rollback is likely only meaningful in the window
+between the production commit and the first real claim. Flagged for its
+own planning pass, likely as a post-ingest (step 36+) concern rather than
+blocking 33–36.
