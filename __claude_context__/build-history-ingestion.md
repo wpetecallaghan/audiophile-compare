@@ -580,15 +580,38 @@ phpBB structure):
   machine-readable ISO timestamp — used directly, no date parsing needed.
 - Pagination's "next" link carries a semantic `rel="next"` attribute —
   used instead of matching visible text (themeable/localizable).
-- **phpBB's default "Reply with quote" renders `<blockquote><div><cite>
-  user wrote:</cite>text</div></blockquote>` with no link back to the
-  quoted post at all.** This means `quoted_post_url` resolves to `null` in
-  the common case on this forum, not just as a rare fallback path as
-  originally framed — confirmed by fetching a live page with real quoted
-  replies. The scraper still resolves it when a quote happens to contain a
-  manual link to a specific post (`viewtopic.php?...#p12345`); step 34's
-  documented fallback for a missing `quoted_post_url` is therefore the
-  common path here, not an edge case.
+- **`quoted_post_url` reliability turned out to be *era-dependent*, not a
+  fixed forum-wide limitation — corrected after sampling further into the
+  thread.** The first investigation (a 100-post sample from the thread's
+  2016 start) found phpBB's default "Reply with quote" rendering as
+  `<blockquote><div><cite>user wrote:</cite>text</div></blockquote>`, with
+  no link back to the quoted post at all, and concluded `quoted_post_url`
+  would resolve to `null` in the common case. A second, 978-post sample
+  from the *end* of the thread (the most recent ~40 pages) told a
+  different story: **342 of 978 posts (35%) resolve a real
+  `quoted_post_url`.** The forum's phpBB software was evidently upgraded
+  at some point between 2016 and today to a version with a "quote
+  permalink" feature — recent quotes render as `<blockquote cite="...
+  #p72033">` with an additional clickable `↑` anchor
+  (`data-post-id="72033"`) back to the source post, confirmed to always
+  co-occur 1:1 with the `cite` attribute on a real sampled page. The
+  existing extraction code needed **no changes** to handle this — it
+  already looked for any `blockquote a[href]` matching a post-id pattern,
+  which happens to catch the new anchor too. Net effect: `quoted_post_url`
+  is a *strong* signal for a real fraction of replies from the thread's
+  more recent (and more voluminous) history, not the rare fallback
+  originally described — step 34's reply-attribution design should treat
+  it accordingly, while still needing the fallback heuristic for the
+  majority of posts (either from before the upgrade, or with no quote at
+  all).
+- **Real bug found and fixed via the same deeper sampling: special-role
+  usernames (admins, custom profile colors) render as `a.username-coloured`
+  instead of `a.username`.** A class-based author selector silently
+  dropped every post from this forum's own admin/owner — a very frequent
+  poster in their own thread — across the entire original 100-post sample.
+  Fixed by matching the structural `p.author strong a` wrapper both
+  variants share, rather than a specific username class; added a
+  regression test; re-verified 0 empty authors across a 978-post sample.
 - Ephemeral `sid` (session id) query params are stripped from every stored
   permalink (`post_url`, resolved `quoted_post_url`) so they stay stable
   across scrapes — a `sid` is per-session, not part of a real permalink.
@@ -597,7 +620,31 @@ phpBB structure):
   stopped short of the full 316-page crawl — no reason to hit someone
   else's forum harder than needed just to verify the code works), correctly
   walking pagination and extracting real posts, including a real quoted
-  reply, matching the fixture-based unit test expectations exactly.
+  reply, matching the fixture-based unit test expectations exactly. Two
+  further real samples (100 posts from the start, 978 posts from the last
+  ~40 pages) drove the two corrections above and gave step 34 real,
+  representative examples of a vote-only post with no links, a genuine
+  reveal post (`A = Lingo 2 ... B = Lingo 3`, confirming letter labels are
+  real alongside the bare-number style seen in the earlier sample, and
+  that reveals name components/systems, not tracks — matching decision 8's
+  design), and a deferred-reveal announcement ("one more shootout, then
+  I'll reveal...").
+
+**Open question surfaced during this verification, not resolved — affects
+step 34, not this step:** real clip hosting has shifted over time from
+Dropbox/YouTube (2016-era sample) to Google Drive, Google Photos, and
+iCloud shared links (current-era sample: 74 Drive + 52 Photos + 17 iCloud
+links, vs. 3 YouTube links total across both samples). None of these are
+recognized by `detectProvider()` (`youtube`/`vimeo`/`direct`/`unknown`) —
+they'd all fall into `unknown`, where the existing clip-health check
+doesn't meaningfully validate them (a Drive/Photos share page returns
+`200 text/html` regardless of whether the underlying media actually
+plays) and the app's player shows a bare link rather than embedded
+playback. This is a real product question — bare-link treatment may be
+fine, or dedicated Drive/Photos/iCloud provider support may be worth its
+own consideration — not just an ingestion detail, since it would affect
+any future user pasting these links too. Deliberately left open; to be
+picked up later, not blocking step 34.
 
 **Tests:**
 - **Unit:** `lib/ingestion/scrape/__tests__/parse-thread-page.test.ts` (10
@@ -747,19 +794,22 @@ this plan.
    should try to paper over.
 
 10. **Reply-to-test attribution is the hardest remaining open problem —
-    still not fully resolved, needs its own design/prototyping pass, and
-    now confirmed harder than originally framed.** Primary signal is step
-    33's `quoted_post_url` — but step 33 confirmed that phpBB's default
-    "Reply with quote" carries no link back to the quoted post at all, so
-    `quoted_post_url` is `null` in the *common* case on this forum, not a
-    rare fallback path. A fallback heuristic isn't a nice-to-have, it's the
-    primary mechanism this needs — e.g. matching a reply's mentioned clip
+    still not fully resolved, needs its own design/prototyping pass —
+    though real sampling found it's less uniformly hard than first
+    thought.** Primary signal is step 33's `quoted_post_url`. Sampling the
+    thread's *start* initially found phpBB's default quote rendering never
+    links back to the quoted post; sampling its *end* corrected that —
+    the forum's software was evidently upgraded at some point to a
+    version that does include a resolvable link, and **35% of posts in a
+    978-post sample from the thread's recent history had one.** So
+    `quoted_post_url` is a strong signal for a real, sizeable fraction of
+    (especially more recent) replies — but a fallback heuristic is still
+    needed for the rest — e.g. matching a reply's mentioned clip
     labels/links against the set of currently-`pending`/open candidates
     from the same or a plausibly-related creator. This is exactly the kind
     of ambiguity decision 7's `needs_review` mechanism exists for: an
-    extraction that
-    isn't confident which test a vote belongs to should flag it rather
-    than guess silently.
+    extraction that isn't confident which test a vote belongs to should
+    flag it rather than guess silently.
 
 11. **Technique is hardcoded to `'Tune Method'` for every vote.** The
     forum's stated convention is that all listeners use this evaluation
