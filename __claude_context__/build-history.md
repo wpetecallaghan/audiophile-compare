@@ -1282,9 +1282,9 @@ forum's stated convention), and a flagged placeholder for tracks that
 can't be identified from text or clip metadata. Uses the Vercel AI SDK
 (`generateObject` + Zod, via the AI Gateway) rather than calling ingest
 directly — output is a local, human-editable candidate repository (one
-JSON file per candidate, with a `pending`/`needs_review`/`ready`/
-`approved`/`ingested` status), never a live API call. Full plan:
-`build-history-ingestion.md`.
+JSON file per candidate, organized into `pending`/`needs_review`/`ready`/
+`approved`/`ingested` subfolders — the folder a file sits in *is* its
+status), never a live API call. Full plan: `build-history-ingestion.md`.
 
 ### ⬜ 34 — Forum ingestion: commit (planned, not yet built)
 

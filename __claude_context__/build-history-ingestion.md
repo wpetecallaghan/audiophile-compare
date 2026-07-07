@@ -585,13 +585,12 @@ this plan.
 1. **Output is a candidate repository, not direct calls to
    `/api/internal/ingest`.** Extraction never talks to the deployed app at
    all — it reads step 32's `ScrapedThread` JSON and writes one JSON file
-   per candidate test to a local folder, e.g.
-   `scripts/output/candidates/<source_ref>.json`, each holding a draft
-   `IngestPayload` plus `status` and `issues`. Committing (calling the
-   ingest route) is entirely step 34's job — see that step. This is the
-   mechanism that lets a human fix a problem (like an unidentified track)
-   *before* anything is ever sent, so the app itself never needs a
-   "correct a field after ingest" feature.
+   per candidate test (a draft `IngestPayload` plus `issues`) under
+   `scripts/output/candidates/`. Committing (calling the ingest route) is
+   entirely step 34's job — see that step. This is the mechanism that lets
+   a human fix a problem (like an unidentified track) *before* anything is
+   ever sent, so the app itself never needs a "correct a field after
+   ingest" feature.
 
 2. **`source_ref` gets a pair index.** A single post can describe more
    than one clip pair — "if there is more than one pair, each pair is a
@@ -600,31 +599,33 @@ this plan.
    candidates as `<thread>:post-<n>:pair-<i>` (`pair-1` even when there's
    only one, for consistency).
 
-3. **Status lifecycle:**
-   - `pending` — something required is still missing from the thread,
-     most commonly no reveal post found yet (decision 5). Materialized as
-     soon as the initiating clip-pair post is found, even before any votes
-     or reveal exist, so the repository shows what's still "in flight."
-   - `needs_review` — everything required is present, but extraction
-     flagged an issue (decision 7's unidentified-track case is the
-     expected common one). Requires a human look before it can proceed.
-   - `ready` — complete, no flagged issues. Assigned automatically —
-     unambiguous candidates don't need individual human sign-off just to
-     reach this state.
-   - `approved` — a human has explicitly said this candidate should be
-     committed (resolved a `needs_review` issue and flipped the status, or
-     bulk-approved a batch of `ready` ones). The only status step 34 acts
-     on.
-   - `ingested` — step 34 successfully POSTed it. Kept for local
-     bookkeeping; `tests.source_ref`'s uniqueness in `ingest_test` is the
-     real idempotency backstop regardless.
+3. **Status is folder location, not a field — one subfolder per stage,
+   no `status` field inside the JSON at all.**
+   ```
+   scripts/output/candidates/
+     pending/        candidates missing something required (decision 6)
+     needs_review/   complete, but extraction flagged an issue (decision 7)
+     ready/          complete, no flagged issues — assigned automatically
+     approved/       a human moved it here — the only folder step 34 reads
+     ingested/       step 34 moved it here after a successful POST
+   ```
+   A candidate's status is simply which folder its file is sitting in —
+   "approving" a `ready` (or fixed `needs_review`) candidate means moving
+   its file into `approved/`; nothing to keep in sync, no risk of a status
+   field drifting from where the file actually lives. `pending` is
+   materialized as soon as the initiating clip-pair post is found, even
+   before any votes or reveal exist, so the repository shows what's still
+   "in flight." `ingested` is kept for local bookkeeping only —
+   `tests.source_ref`'s uniqueness in `ingest_test` is the real
+   idempotency backstop regardless.
 
 4. **Extraction is incremental and safe to re-run.** Re-running against an
-   updated scrape (e.g. after a re-scrape picks up new posts) updates or
-   creates `pending`/`needs_review`/`ready` candidates as more of the
-   thread resolves, but **never overwrites a candidate already at
-   `approved` or `ingested`** — a human decision, once made, isn't
-   silently clobbered by a later run.
+   updated scrape (e.g. after a re-scrape picks up new posts) creates or
+   updates a candidate's file in `pending/`, `needs_review/`, or `ready/`
+   as more of the thread resolves, but **never touches a candidate whose
+   file already exists in `approved/` or `ingested/`** — checked by
+   looking for that `source_ref`'s filename in those two folders first. A
+   human decision, once made, isn't silently clobbered by a later run.
 
 5. **Three distinct concepts, not one — clarified against how the forum
    actually works:** the *forum label* (`A`/`B`, `X`/`Y`, `A1`/`B1`, etc.
@@ -740,9 +741,10 @@ this plan.
     resolved at build time.
 
 **Files to update:**
-- `lib/ingestion/extract/candidate.ts` (new) — candidate JSON shape,
-  status type, read/write helpers that respect decision 4 (never
-  overwrite `approved`/`ingested`).
+- `lib/ingestion/extract/candidate.ts` (new) — candidate JSON shape; the
+  `pending`/`needs_review`/`ready`/`approved`/`ingested` folder layout;
+  read/move helpers that respect decision 4 (never touch a `source_ref`
+  that already has a file in `approved`/`ingested`).
 - `lib/ingestion/extract/extract-post.ts` (new) — the `generateObject`
   call plus the deterministic wrapping around it (clip-health filtering,
   technique hardcoding, track-identification fallback, per-author running
@@ -781,22 +783,37 @@ judgment calls, nothing to review.
 **Decisions:**
 
 1. **A separate, simple script** — `scripts/commit-lejonklou.ts` — reads
-   only candidate files with `status: "approved"` from step 33's output
-   folder, POSTs each as an `IngestPayload` body to
-   `POST /api/internal/ingest` (target base URL and `INGEST_SECRET` read
-   from the environment, same wiring step 31 already set up), and marks
-   the candidate `ingested` on a successful response.
-2. **A non-2xx response leaves the candidate at `approved`**, with the
-   error recorded (e.g. appended to `issues`), so it's retried on the next
-   run rather than silently lost.
+   every candidate file in `scripts/output/candidates/approved/`, POSTs
+   each as an `IngestPayload` body to `POST /api/internal/ingest` (target
+   base URL and `INGEST_SECRET` read from the environment, same wiring
+   step 31 already set up), and on a successful response moves the file
+   into `scripts/output/candidates/ingested/`.
+2. **A non-2xx response leaves the file in `approved/`**, with the error
+   recorded (e.g. written alongside it, or appended to the candidate's
+   `issues`), so it's retried on the next run rather than silently lost.
 3. **Idempotent by construction, independent of this script's own
    bookkeeping.** Even if `commit-lejonklou.ts` is run twice against the
    same candidate, `ingest_test`'s `source_ref` uniqueness means a repeat
    POST just returns `already_imported: true` rather than duplicating —
-   the local `ingested` status is a convenience, not the safety mechanism.
+   moving the file to `ingested/` is a convenience, not the safety
+   mechanism.
 4. **No new library code beyond the CLI script itself** — it's a thin
-   loop (read folder → filter by status → POST → update status), fully
-   testable with a mocked `fetch`.
+   loop (list `approved/` → POST each → move to `ingested/` on success),
+   fully testable with a mocked `fetch` and a temp fixture directory.
+5. **Target base URL is a required CLI argument, not a default** —
+   `tsx scripts/commit-lejonklou.ts <base-url>`. Step 35 runs this script
+   twice, once against staging and once against production; defaulting to
+   either would risk an accidental run against the wrong one. `INGEST_SECRET`
+   stays an env var, not a CLI arg — a secret shouldn't appear in shell
+   history or `ps` output.
+6. **No new dependencies — reuses exactly what steps 32/33 already
+   established.** `tsx` as the runtime (already added in step 32); the
+   built-in global `fetch` for the POST (no HTTP client library); Node's
+   built-in `fs/promises` for listing `approved/` and `rename()`-ing a
+   file into `ingested/` on success (a same-filesystem rename is atomic —
+   no separate copy-then-delete needed); `process.loadEnvFile()` to read
+   `.env.local` for `INGEST_SECRET`, the same pattern already used by
+   `playwright.config.ts` and `vitest.integration.config.ts`.
 
 **Files to update:**
 - `scripts/commit-lejonklou.ts` (new).
@@ -804,12 +821,13 @@ judgment calls, nothing to review.
 - `core.md` / `testing.md` — per the usual pattern, once built.
 
 **Tests:**
-- **Unit:** given a fixture folder of candidate files in a mix of
-  statuses, confirms only `approved` ones are POSTed; confirms a 2xx
-  response transitions a candidate to `ingested`; confirms a non-2xx
-  response leaves it at `approved` with the error recorded rather than
-  silently dropping it. `fetch` is mocked — no real network call, no live
-  Supabase/Vercel dependency in this test.
+- **Unit:** given a fixture directory tree with files in a mix of
+  `approved`/other folders, confirms only files under `approved/` are
+  POSTed; confirms a 2xx response moves a file into `ingested/`; confirms
+  a non-2xx response leaves the file in `approved/` with the error
+  recorded rather than silently dropping it. `fetch` is mocked — no real
+  network call, no live Supabase/Vercel dependency in this test — and the
+  fixture directory is a temp folder, not the real `scripts/output/` path.
 - **E2E / integration:** none beyond what step 31 already has for the
   ingest route itself.
 
