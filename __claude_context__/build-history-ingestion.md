@@ -435,7 +435,7 @@ noted here so this section doesn't read as a closed, untouched chapter.
 
 ---
 
-## ⬜ 33 — Scraper
+## ✅ 33 — Scraper
 
 **The gap this closes:** phase 1 of the pipeline (fetch) doesn't exist.
 Originally bundled with extraction as one step; split in two because they
@@ -557,33 +557,72 @@ re-scraping the forum each time.
    oEmbed fetch (decision 4) is a separate, mockable function so it can be
    unit-tested without a live network call either.
 
-**Files to update:**
+**Files updated:**
 - `lib/ingestion/scrape/parse-thread-page.ts` (new) — `ScrapedPost`/
   `ScrapedLink`/`ScrapedThread` types, `parsePostsFromPage`,
   `findNextPageUrl`.
 - `lib/ingestion/scrape/fetch-oembed.ts` (new) — oEmbed lookup for
   YouTube/Vimeo links.
 - `scripts/scrape-lejonklou.ts` (new) — CLI entrypoint.
-- `package.json` — new `tsx` devDependency; new `scrape:lejonklou` script.
-- `.gitignore` — ignore the scraped-output location.
-- `core.md` — build status line (32 done, 33–35 still planned) once built.
-- `testing.md` — inventory row(s) for the new parsing/oEmbed unit tests.
+- `package.json` — new `tsx` and `@types/jsdom` devDependencies; new
+  `scrape:lejonklou` script.
+- `.gitignore` — `scripts/output/` (covers this step's scraped output and
+  step 34's future candidate files in one entry).
+- `core.md` — build status line: step 33 done, 34–38 still planned; test
+  counts updated (29 files / 308 tests).
+- `testing.md` — inventory rows for the new parsing/oEmbed unit tests.
+
+**Decisions confirmed/refined against the real forum** (fetched a live
+thread page directly to ground this in actual markup, not assumed generic
+phpBB structure):
+- Posts are `div.post[id="p12345"]`; the byline (`p.author`) holds the
+  author's username link and a `<time datetime="...">` with a
+  machine-readable ISO timestamp — used directly, no date parsing needed.
+- Pagination's "next" link carries a semantic `rel="next"` attribute —
+  used instead of matching visible text (themeable/localizable).
+- **phpBB's default "Reply with quote" renders `<blockquote><div><cite>
+  user wrote:</cite>text</div></blockquote>` with no link back to the
+  quoted post at all.** This means `quoted_post_url` resolves to `null` in
+  the common case on this forum, not just as a rare fallback path as
+  originally framed — confirmed by fetching a live page with real quoted
+  replies. The scraper still resolves it when a quote happens to contain a
+  manual link to a specific post (`viewtopic.php?...#p12345`); step 34's
+  documented fallback for a missing `quoted_post_url` is therefore the
+  common path here, not an edge case.
+- Ephemeral `sid` (session id) query params are stripped from every stored
+  permalink (`post_url`, resolved `quoted_post_url`) so they stay stable
+  across scrapes — a `sid` is per-session, not part of a real permalink.
+- Confirmed live end-to-end (not just against fixtures): ran the actual
+  CLI script against the real thread for ~3 real pages (deliberately
+  stopped short of the full 316-page crawl — no reason to hit someone
+  else's forum harder than needed just to verify the code works), correctly
+  walking pagination and extracting real posts, including a real quoted
+  reply, matching the fixture-based unit test expectations exactly.
 
 **Tests:**
-- **Unit:** `lib/ingestion/scrape/__tests__/parse-thread-page.test.ts` —
-  post extraction from a fixture HTML fragment (author/timestamp/body/
-  links all correctly extracted; HTML→markdown conversion for a quote
-  block and a link); quote-URL resolution when the forum's markup
-  identifies the quoted post, and `null` when it doesn't; pagination
-  detection (next-page link present → returns its URL; absent, i.e. last
-  page → returns null); handles a malformed or partially-anonymized post
-  (e.g. a deleted user) without throwing.
-  `lib/ingestion/scrape/__tests__/fetch-oembed.test.ts` — successful
-  lookup populates `oembed_title`/`oembed_author`; a non-YouTube/Vimeo
-  link is skipped entirely (no network call); a failed/404 oEmbed lookup
-  is swallowed, leaving the link's oEmbed fields undefined rather than
-  throwing.
-- **E2E / integration:** none — no app code, no deployed route, no DB.
+- **Unit:** `lib/ingestion/scrape/__tests__/parse-thread-page.test.ts` (10
+  tests) — author/timestamp/permalink/body/links extraction against
+  fixtures modeled on the real markup above; `sid` stripped from
+  permalinks; quote → markdown conversion; `quoted_post_url` resolves to
+  `null` for a default phpBB quote and to a real URL for a manually-linked
+  one; links inside a quote excluded from the post's own `links`; a post
+  missing its username link or timestamp doesn't throw; multiple posts
+  per page extracted in document order; `findNextPageUrl` via `rel="next"`,
+  `null` on the last page.
+  `lib/ingestion/scrape/__tests__/fetch-oembed.test.ts` (6 tests) —
+  successful YouTube/Vimeo lookups populate `oembed_title`/`oembed_author`;
+  a non-YouTube/Vimeo link is skipped with no network call; a failed/404
+  response or a network error is swallowed rather than thrown;
+  `enrichLinksWithOEmbed` enriches each link independently, in order.
+- **E2E / integration:** none planned, and none added — no app code, no
+  deployed route, no DB. (Verified live against the real forum instead —
+  see above.)
+
+**Verified:** `npm run test` — 29 files / 308 tests, all passing (16 new).
+`npx tsc --noEmit` — no new errors (same pre-existing, unrelated
+`__tests__/supabase-*.test.ts` failures as every prior step). Parsing
+logic additionally verified directly against a real, live-fetched forum
+page (not just fixtures) — see "Decisions confirmed/refined" above.
 
 ---
 
@@ -708,14 +747,17 @@ this plan.
    should try to paper over.
 
 10. **Reply-to-test attribution is the hardest remaining open problem —
-    still not fully resolved, needs its own design/prototyping pass.**
-    Primary signal is step 33's `quoted_post_url`. Not always present or
-    unambiguous (interleaved tests mean position alone isn't reliable, and
-    "sometimes" quoting isn't "always"), so a fallback heuristic is still
-    needed — e.g. matching a reply's mentioned clip labels/links against
-    the set of currently-`pending`/open candidates from the same or a
-    plausibly-related creator. This is exactly the kind of ambiguity
-    decision 7's `needs_review` mechanism exists for: an extraction that
+    still not fully resolved, needs its own design/prototyping pass, and
+    now confirmed harder than originally framed.** Primary signal is step
+    33's `quoted_post_url` — but step 33 confirmed that phpBB's default
+    "Reply with quote" carries no link back to the quoted post at all, so
+    `quoted_post_url` is `null` in the *common* case on this forum, not a
+    rare fallback path. A fallback heuristic isn't a nice-to-have, it's the
+    primary mechanism this needs — e.g. matching a reply's mentioned clip
+    labels/links against the set of currently-`pending`/open candidates
+    from the same or a plausibly-related creator. This is exactly the kind
+    of ambiguity decision 7's `needs_review` mechanism exists for: an
+    extraction that
     isn't confident which test a vote belongs to should flag it rather
     than guess silently.
 

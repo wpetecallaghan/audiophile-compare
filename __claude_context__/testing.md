@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (27 files · 292 tests · all passing)
+## 4. Unit test inventory (29 files · 308 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -95,6 +95,8 @@ indirectly through the step tests.
 | `lib/admin/__tests__/is-admin-email.test.ts` | 7 | ADMIN_EMAILS allowlist: unset, null/undefined email, match, no match, case-insensitivity, whitespace, empty entries |
 | `lib/ingestion/__tests__/create-placeholder-author.test.ts` | 8 | Slugification (lowercase/strip/collapse/trim/truncate); resolves an existing (source, external_username) mapping without recreating; creates a new placeholder author; two usernames that slugify identically still get distinct placeholders; throws on auth user creation failure |
 | `lib/ingestion/__tests__/ingest-test-payload.test.ts` | 17 | `validateIngestPayload`: accepts a fully populated payload (with and without votes, and with an optional `source_url`); rejects each missing required field on the top level, on `snapshot_a`/`snapshot_b`, and on a vote entry (`voter`, `chosen_label`, `technique_name`); `resolveTestTitle`: uses an explicit title, falls back to "artist – title" when omitted or whitespace-only |
+| `lib/ingestion/scrape/__tests__/parse-thread-page.test.ts` | 10 | Author/timestamp/permalink/body/links extraction from a phpBB post; ephemeral `sid` stripped from permalinks; quote block → markdown, `quoted_post_url` resolves to `null` for phpBB's default quote (no post link) and to a real URL when a quote manually links one; links inside a quote excluded from the post's own `links`; a post with no username link or no timestamp doesn't throw; multiple posts on one page extracted in order; `findNextPageUrl` via `rel="next"`, `null` on the last page |
+| `lib/ingestion/scrape/__tests__/fetch-oembed.test.ts` | 6 | Successful YouTube/Vimeo oEmbed lookups populate `oembed_title`/`oembed_author`; a non-YouTube/Vimeo link is skipped with no network call; a failed/404 response or a network error is swallowed, not thrown; `enrichLinksWithOEmbed` enriches each link independently, preserving order |
 
 ---
 
