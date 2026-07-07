@@ -97,13 +97,13 @@ clips (
   test_id     uuid NOT NULL REFERENCES tests(id) ON DELETE CASCADE,
   label       text NOT NULL,         -- 'A' or 'B' only
   source_url  text NOT NULL,
-  provider    text NOT NULL,         -- 'youtube' | 'vimeo' | 'direct' | 'unknown'
+  provider    text NOT NULL,         -- 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
   media_type  text NOT NULL,         -- 'audio' | 'video' | 'unknown'
   url_status  text NOT NULL DEFAULT 'ok',  -- 'ok' | 'degraded' | 'dead'
   duration_ms int,
   created_at  timestamptz DEFAULT now(),
   CONSTRAINT clips_label_check    CHECK (label IN ('A', 'B')),
-  CONSTRAINT clips_provider_check CHECK (provider IN ('youtube', 'vimeo', 'direct', 'unknown')),
+  CONSTRAINT clips_provider_check CHECK (provider IN ('youtube', 'vimeo', 'google-drive', 'direct', 'unknown')),
   CONSTRAINT clips_media_check    CHECK (media_type IN ('audio', 'video', 'unknown')),
   CONSTRAINT clips_status_check   CHECK (url_status IN ('ok', 'degraded', 'dead'))
 )
@@ -257,6 +257,22 @@ also now defends against this class of bug directly: it chains
 `.select().single()` after the update and treats a missing row as failure,
 rather than trusting an absent `error` to mean a row actually changed (see
 `api-conventions.md` Rule 5).
+
+### Google Drive clip provider (step 34)
+
+`google-drive` added to `clips.provider` alongside the original four
+values (`20260707191616_clips_google_drive_provider.sql`). Drive share
+links (`drive.google.com/file/d/{id}/...`) have a stable, confirmed
+embeddable form (`/file/d/{id}/preview` — verified directly: `200`, no
+`X-Frame-Options`/`frame-ancestors` blocking third-party embedding) and
+get the exact same treatment YouTube/Vimeo already do: no health
+verification (an unreachable embed just shows its own broken state
+in-iframe), never touched by the step 10 cron (which only checks
+`provider = 'direct'`). **Google Photos and iCloud shared links remain
+`unknown` by design, not as a remaining gap** — neither has an equivalent
+public, stable, embeddable URL for third-party use. See `components.md`
+§5 for the one real limitation: Drive's embed has no control SDK, so
+`GoogleDrivePlayer`'s `pause()` is a documented no-op.
 
 ### Placeholder authors (step 30)
 

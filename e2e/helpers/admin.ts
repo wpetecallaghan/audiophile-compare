@@ -128,7 +128,7 @@ export async function seedClip(
   label: 'A' | 'B',
   sourceUrl: string,
   urlStatus: 'ok' | 'degraded' | 'dead' = 'ok',
-  provider: 'youtube' | 'vimeo' | 'direct' | 'unknown' = 'youtube',
+  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown' = 'youtube',
   mediaType: 'audio' | 'video' | 'unknown' = 'video',
 ): Promise<SeededClip> {
   const admin = createAdminClient()
@@ -172,8 +172,8 @@ export async function seedCompleteTest(
   opts: {
     clipAStatus?: 'ok' | 'degraded' | 'dead'
     clipBStatus?: 'ok' | 'degraded' | 'dead'
-    clipAProvider?: 'youtube' | 'vimeo' | 'direct' | 'unknown'
-    clipBProvider?: 'youtube' | 'vimeo' | 'direct' | 'unknown'
+    clipAProvider?: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
+    clipBProvider?: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
     clipAMediaType?: 'audio' | 'video' | 'unknown'
     clipBMediaType?: 'audio' | 'video' | 'unknown'
   } = {},

@@ -1,8 +1,8 @@
 // Describes everything we can know about a clip URL before any network request
 export type DetectedClip = {
-  provider: 'youtube' | 'vimeo' | 'direct' | 'unknown'
+  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
   media_type: 'audio' | 'video' | 'unknown'
-  embed_id: string | null   // YouTube video ID or Vimeo video ID; null for direct/unknown
+  embed_id: string | null   // YouTube video ID, Vimeo video ID, or Drive file ID; null for direct/unknown
   canonical_url: string     // normalised URL suitable for the iframe src
 }
 
@@ -32,6 +32,17 @@ function extractVimeoId(url: URL): string | null {
     return match?.[1] ?? null   // ?. is optional chaining — safe access on possibly-null value
   }
   return null
+}
+
+// Google Drive file share URLs:
+//   https://drive.google.com/file/d/1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl/view?usp=sharing
+//   https://drive.google.com/file/d/1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl/preview  (already an embed URL)
+// Deliberately does NOT match /drive/folders/... (a folder, not a single
+// playable file) — only the /file/d/{id} shape.
+function extractGoogleDriveId(url: URL): string | null {
+  if (!url.hostname.includes('drive.google.com')) return null
+  const match = url.pathname.match(/\/file\/d\/([^/]+)/)
+  return match?.[1] ?? null
 }
 
 export function detectProvider(rawUrl: string): DetectedClip {
@@ -66,6 +77,20 @@ export function detectProvider(rawUrl: string): DetectedClip {
       media_type: 'video',
       embed_id: vimeoId,
       canonical_url: `https://player.vimeo.com/video/${vimeoId}`,
+    }
+  }
+
+  const googleDriveId = extractGoogleDriveId(url)
+  if (googleDriveId) {
+    return {
+      provider: 'google-drive',
+      // No reliable way to know audio vs video from the URL alone, but
+      // real clips shared this way are virtually always video recordings
+      // (e.g. filming a system playing back) — same 'video' default
+      // already used for youtube/vimeo rather than 'unknown'.
+      media_type: 'video',
+      embed_id: googleDriveId,
+      canonical_url: `https://drive.google.com/file/d/${googleDriveId}/preview`,
     }
   }
 

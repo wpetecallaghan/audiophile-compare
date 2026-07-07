@@ -46,6 +46,19 @@ describe('toClipData', () => {
     expect(result.canonical_url).toBe('https://player.vimeo.com/video/123456789')
   })
 
+  it('derives embed_id and canonical_url for a Google Drive source_url', () => {
+    const result = toClipData({
+      ...baseClip,
+      source_url: 'https://drive.google.com/file/d/1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl/view?usp=sharing',
+      provider: 'google-drive',
+      media_type: 'video',
+    })
+    expect(result.embed_id).toBe('1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl')
+    expect(result.canonical_url).toBe(
+      'https://drive.google.com/file/d/1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl/preview',
+    )
+  })
+
   it('returns null embed_id for a direct URL', () => {
     const result = toClipData({
       ...baseClip,

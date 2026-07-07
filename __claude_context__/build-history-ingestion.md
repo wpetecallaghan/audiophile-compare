@@ -2,20 +2,22 @@
 name: audiophile-compare-build-history-ingestion
 description: >
   Detailed step-by-step build plan for the Lejonklou forum ingestion
-  pipeline (build-history.md steps 30, 31, 33-38). Companion to
+  pipeline (build-history.md steps 30, 31, 33, 35-39). Companion to
   build-history.md (which holds only short pointer entries for these
   steps, to keep the main index scannable) and deferred-features.md
   (original architecture notes and rationale — the "why", not the "how").
-  Step 32 (import provenance UI) is UI work, not pipeline infrastructure —
-  it's fully detailed directly in build-history.md instead. Load this when
+  Steps 32 and 34 (import provenance UI; Google Drive clip provider
+  support) are UI/core-app work, not pipeline infrastructure — both are
+  fully detailed directly in build-history.md instead. Load this when
   working on any forum-ingestion build step.
 ---
 
 # Forum Ingestion Pipeline — Detailed Build Plan
 
-Full detail for `build-history.md` steps 30, 31, and 33–38 (step 32, import
-provenance UI, is detailed directly in `build-history.md` instead — see
-above). See `deferred-features.md`'s
+Full detail for `build-history.md` steps 30, 31, 33, and 35–39 (steps 32
+and 34 — import provenance UI, Google Drive provider support — are
+detailed directly in `build-history.md` instead — see above). See
+`deferred-features.md`'s
 "Forum ingestion pipeline" section for the original architecture notes this
 plan builds on and, in one place, deliberately diverges from — the original
 doc assumed a single `ingestion_bot` user owns everything imported; this plan
@@ -317,12 +319,12 @@ is currently implemented."
    is always safe.
 
 7. **Clip verification is *not* this route's job.** The route trusts that
-   clip health was already confirmed upstream — by step 34's extraction,
-   before a candidate was ever marked `ready`/`approved` — not by step 35's
+   clip health was already confirmed upstream — by step 35's extraction,
+   before a candidate was ever marked `ready`/`approved` — not by step 36's
    commit script, which is the one actually calling this route but does no
    validation of its own. Same "client already verified, server persists"
    pattern `POST /api/tests` already uses for browser-submitted clips.
-   Re-verifying server-side here would just duplicate step 34's clip-health
+   Re-verifying server-side here would just duplicate step 35's clip-health
    filter for no benefit.
 
 **Files to update:**
@@ -440,7 +442,7 @@ noted here so this section doesn't read as a closed, untouched chapter.
 **The gap this closes:** phase 1 of the pipeline (fetch) doesn't exist.
 Originally bundled with extraction as one step; split in two because they
 have very different risk profiles — this step is deterministic and fully
-testable, extraction (step 34) is genuinely uncertain and was already
+testable, extraction (step 35) is genuinely uncertain and was already
 flagged as needing its own design pass. Splitting also gives extraction a
 stable, re-runnable input: iterating on extraction logic no longer means
 re-scraping the forum each time.
@@ -457,17 +459,17 @@ re-scraping the forum each time.
 2. **Deterministic HTML parsing only — no LLM, no network calls beyond
    fetching thread pages and per-link oEmbed lookups (decision 8).** Walk
    the thread's pagination and, for each post, extract: `post_url`
-   (permalink — this is also what step 34 carries into each candidate's
+   (permalink — this is also what step 35 carries into each candidate's
    `source_url`, populating the "view original post" link `build-history.md`
    step 32 adds to the UI), `author` (raw forum username/display name as shown),
    `posted_at` (ISO 8601, parsed from the forum's displayed timestamp),
    `body_markdown` (converted deterministically from the raw HTML — quote
    blocks become `> text`, links become `[text](url)` — rather than kept
-   as raw HTML: extraction (step 34) is an LLM call, and clean, structured
+   as raw HTML: extraction (step 35) is an LLM call, and clean, structured
    text is cheaper and more reliable input than HTML tag soup), and
    `links` (every outbound URL found in the body — a flat list, no
    judgement about which ones are "the" comparison clips; that's a
-   semantic call, correctly left to step 34).
+   semantic call, correctly left to step 35).
 
 3. **Reply attribution needs a structured signal, not just prose.**
    Real thread behaviour (confirmed against how this specific forum is
@@ -476,9 +478,9 @@ re-scraping the forum each time.
    votes also interleave across multiple open tests, so position in the
    thread alone isn't reliable. Capture `quoted_post_url: string | null`
    — the `post_url` this post quotes/replies to, when the forum's quote
-   markup resolves to one — as the primary signal step 34 uses for
+   markup resolves to one — as the primary signal step 35 uses for
    attributing a reply to the right test. This won't always be present;
-   step 34 still needs a fallback for replies without one (see step 34's
+   step 35 still needs a fallback for replies without one (see step 35's
    decision 10).
 
 4. **Track identification enrichment: fetch oEmbed metadata for
@@ -518,7 +520,7 @@ re-scraping the forum each time.
    ```
    Written as a JSON file (path given via CLI arg, e.g.
    `scripts/scrape-lejonklou.ts <thread-url> <output-path>`) — this is the
-   interface boundary with step 34, and the reason step 34 can be iterated
+   interface boundary with step 35, and the reason step 35 can be iterated
    on without re-hitting the forum. Scraped output shouldn't be committed —
    add its default output location to `.gitignore`.
 
@@ -567,7 +569,7 @@ re-scraping the forum each time.
 - `package.json` — new `tsx` and `@types/jsdom` devDependencies; new
   `scrape:lejonklou` script.
 - `.gitignore` — `scripts/output/` (covers this step's scraped output and
-  step 34's future candidate files in one entry).
+  step 35's future candidate files in one entry).
 - `core.md` — build status line: step 33 done, 34–38 still planned; test
   counts updated (29 files / 308 tests).
 - `testing.md` — inventory rows for the new parsing/oEmbed unit tests.
@@ -600,7 +602,7 @@ phpBB structure):
   which happens to catch the new anchor too. Net effect: `quoted_post_url`
   is a *strong* signal for a real fraction of replies from the thread's
   more recent (and more voluminous) history, not the rare fallback
-  originally described — step 34's reply-attribution design should treat
+  originally described — step 35's reply-attribution design should treat
   it accordingly, while still needing the fallback heuristic for the
   majority of posts (either from before the upgrade, or with no quote at
   all).
@@ -622,7 +624,7 @@ phpBB structure):
   walking pagination and extracting real posts, including a real quoted
   reply, matching the fixture-based unit test expectations exactly. Two
   further real samples (100 posts from the start, 978 posts from the last
-  ~40 pages) drove the two corrections above and gave step 34 real,
+  ~40 pages) drove the two corrections above and gave step 35 real,
   representative examples of a vote-only post with no links, a genuine
   reveal post (`A = Lingo 2 ... B = Lingo 3`, confirming letter labels are
   real alongside the bare-number style seen in the earlier sample, and
@@ -630,21 +632,23 @@ phpBB structure):
   design), and a deferred-reveal announcement ("one more shootout, then
   I'll reveal...").
 
-**Open question surfaced during this verification, not resolved — affects
-step 34, not this step:** real clip hosting has shifted over time from
-Dropbox/YouTube (2016-era sample) to Google Drive, Google Photos, and
+**Finding from this verification, now being addressed by `build-history.md`
+step 34 (Google Drive clip provider support) — partially resolved, not
+blocking this step either way:** real clip hosting has shifted over time
+from Dropbox/YouTube (2016-era sample) to Google Drive, Google Photos, and
 iCloud shared links (current-era sample: 74 Drive + 52 Photos + 17 iCloud
-links, vs. 3 YouTube links total across both samples). None of these are
+links, vs. 3 YouTube links total across both samples). None were
 recognized by `detectProvider()` (`youtube`/`vimeo`/`direct`/`unknown`) —
-they'd all fall into `unknown`, where the existing clip-health check
-doesn't meaningfully validate them (a Drive/Photos share page returns
-`200 text/html` regardless of whether the underlying media actually
-plays) and the app's player shows a bare link rather than embedded
-playback. This is a real product question — bare-link treatment may be
-fine, or dedicated Drive/Photos/iCloud provider support may be worth its
-own consideration — not just an ingestion detail, since it would affect
-any future user pasting these links too. Deliberately left open; to be
-picked up later, not blocking step 34.
+all fell into `unknown`, where the existing clip-health check doesn't
+meaningfully validate them (a share page returns `200 text/html`
+regardless of whether the underlying media actually plays) and the app's
+player shows a bare link rather than embedded playback. Step 34 adds
+first-class `google-drive` provider support (a stable, confirmed-embeddable
+`/preview` URL exists), closing the gap for the largest single host (74 of
+143 links). **Google Photos and iCloud remain `unknown` by design, not as
+a remaining gap** — neither has a public, stable, embeddable URL for
+third-party use, and screen-scraping one would be fragile. Not blocking
+this step either way.
 
 **Tests:**
 - **Unit:** `lib/ingestion/scrape/__tests__/parse-thread-page.test.ts` (10
@@ -673,7 +677,7 @@ page (not just fixtures) — see "Decisions confirmed/refined" above.
 
 ---
 
-## ⬜ 34 — Extraction
+## ⬜ 35 — Extraction
 
 **The gap this closes:** phases 2–3 of the pipeline (semantic extraction,
 clip-health filtering) don't exist. This is genuinely new capability, not
@@ -687,7 +691,7 @@ this plan.
    all — it reads step 33's `ScrapedThread` JSON and writes one JSON file
    per candidate test (a draft `IngestPayload` plus `issues`) under
    `scripts/output/candidates/`. Committing (calling the ingest route) is
-   entirely step 35's job — see that step. This is the mechanism that lets
+   entirely step 36's job — see that step. This is the mechanism that lets
    a human fix a problem (like an unidentified track) *before* anything is
    ever sent, so the app itself never needs a "correct a field after
    ingest" feature.
@@ -709,9 +713,9 @@ this plan.
      pending/               candidates missing something required (decision 6)
      needs_review/          complete, but extraction flagged an issue (decision 7)
      ready/                 complete, no flagged issues — assigned automatically
-     approved/              a human moved it here — step 35's staging input
-     ingested/staging/      step 35 moved it here after committing to staging
-     ingested/production/   step 35 moved it here after committing to production
+     approved/              a human moved it here — step 36's staging input
+     ingested/staging/      step 36 moved it here after committing to staging
+     ingested/production/   step 36 moved it here after committing to production
    ```
    A candidate's status is simply which folder its file is sitting in —
    "approving" a `ready` (or fixed `needs_review`) candidate means moving
@@ -775,7 +779,7 @@ this plan.
    **The placeholder path is the expected common outcome here, not a rare
    fallback — real data quantifies this.** oEmbed enrichment succeeded on
    only ~1–4% of links across two real samples (1/25, then 3/217). Budget
-   `needs_review` review volume in step 36 accordingly: most candidates
+   `needs_review` review volume in step 37 accordingly: most candidates
    will need a human glance at track identity, not a handful of edge
    cases.
 
@@ -860,14 +864,17 @@ this plan.
     detect-provider.ts`, `lib/clips/check-url.ts` — the same code
     `POST /api/clips/verify` already uses) and drop the candidate (or mark
     it `needs_review`) if either URL is dead. Zero new clip-validation
-    logic. **Caveat, not resolved here — see step 33's open question:**
-    this guarantee is weaker than it sounds for the ~150 real Drive/
-    Photos/iCloud links found across both samples, since those fall into
-    `detectProvider`'s `unknown` bucket, where a HEAD check only confirms
-    the *share page* loads, not that the underlying media still plays.
-    "Unbroken" is meaningfully enforced for youtube/vimeo/direct links,
-    not for this now-dominant hosting style, until that open question is
-    resolved.
+    logic. **Caveat, partially resolved by `build-history.md` step 34:**
+    Drive links now get real embedded playback via the new `google-drive`
+    provider (no health check, same as youtube/vimeo — an unreachable
+    embed just shows its own broken state). Google Photos and iCloud
+    links (~69 of the ~150 found across both samples) remain in
+    `detectProvider`'s `unknown` bucket by design — no stable embeddable
+    URL exists for either — where a HEAD check only confirms the *share
+    page* loads, not that the underlying media still plays. "Unbroken" is
+    meaningfully enforced for youtube/vimeo/direct/google-drive links, not
+    for Photos/iCloud links, which is an accepted limitation, not an open
+    question anymore.
 
 13. **Validation happens continuously, not as a separate "dry-run mode."**
     Because extraction only ever writes local candidate files and never
@@ -929,12 +936,12 @@ this plan.
 
 ---
 
-## ⬜ 35 — Commit
+## ⬜ 36 — Commit
 
 **The gap this closes:** approved candidates need to actually reach the
 app. This is the only step in the whole pipeline that makes a real HTTP
 call to a deployed environment — deliberately separated from extraction
-(step 34) since it has none of extraction's uncertainty: no LLM, no
+(step 35) since it has none of extraction's uncertainty: no LLM, no
 judgment calls, nothing to review.
 
 **Decisions:**
@@ -1012,7 +1019,7 @@ judgment calls, nothing to review.
 
 ---
 
-## ⬜ 36 — Run the import: staging, then production
+## ⬜ 37 — Run the import: staging, then production
 
 **The gap this closes:** everything above is infrastructure; this step is
 the actual, one-time deliverable the user asked for — Lejonklou playground
@@ -1031,7 +1038,7 @@ thread content actually present in the app.
    staging commit.** Scrape the thread; run extraction; review the
    resulting `needs_review` candidates (resolve or accept each) and
    spot-check `ready` ones; approve what's ready to go. Re-scraping and
-   re-running extraction is safe and incremental (step 34 decision 4), so
+   re-running extraction is safe and incremental (step 35 decision 4), so
    this can repeat as needed before anything is committed.
 3. Run `commit-lejonklou.ts --env staging` for real against
    `audiophile-staging`. Manually verify a sample of imported tests render
@@ -1039,7 +1046,7 @@ thread content actually present in the app.
    track pages) — not just "the API call succeeded."
 4. Once satisfied, run `commit-lejonklou.ts --env production` — **not** a
    fresh scrape/extract/approve cycle. This commits exactly the
-   candidate set that just passed staging verification (step 35 decision
+   candidate set that just passed staging verification (step 36 decision
    1's folder chain makes this the only thing this command can do — it
    reads `ingested/staging/`, which is precisely that set). If more forum
    content has appeared since the staging run and you want it included
@@ -1049,15 +1056,15 @@ thread content actually present in the app.
 
 **Not part of this step:** the user-merge/claim flow (letting a real
 Lejonklou member claim their imported content once they join) is
-explicitly deferred — see below. Import rollback (step 37) is a documented
+explicitly deferred — see below. Import rollback (step 38) is a documented
 safety net that sits alongside this step, not a dependency of it.
 
-**Tests:** none new — this step *exercises* steps 30–35, it doesn't add
+**Tests:** none new — this step *exercises* steps 30–36, it doesn't add
 code. Verification is the manual review described above.
 
 ---
 
-## ⬜ 37 — Import rollback
+## ⬜ 38 — Import rollback
 
 **The gap this closes:** no documented, reviewed mechanism exists for
 undoing a bad production import. This needs to be written and reviewed
@@ -1133,16 +1140,16 @@ mistakes.
   adjacent SQL file), not something composed ad hoc against production.
 - `testing.md` §5 — cross-reference noting its FK-safe deletion order is
   reused here, beyond just E2E teardown.
-- This step, plus a cross-reference from step 36 (added above).
+- This step, plus a cross-reference from step 37 (added above).
 
 **Tests:** none — this is a documented, reviewed query, not application
 code. "Testing" here means dry-running it against staging's real,
-disposable post-step-36 data to confirm it identifies exactly the imported
+disposable post-step-37 data to confirm it identifies exactly the imported
 rows and nothing else, before it's ever needed for real.
 
 ---
 
-## ⬜ 38 — Claim flow (merge a placeholder into a real account)
+## ⬜ 39 — Claim flow (merge a placeholder into a real account)
 
 **The gap this closes:** step 32's provenance UI makes placeholder-owned
 content discoverable and, via its addendum below, contactable — but

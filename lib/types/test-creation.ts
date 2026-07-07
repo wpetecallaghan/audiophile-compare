@@ -32,7 +32,7 @@ export type SystemWithSnapshots = {
 
 // Result from /api/clips/verify
 export type VerifiedClip = {
-  provider: 'youtube' | 'vimeo' | 'direct' | 'unknown'
+  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
   media_type: 'audio' | 'video' | 'unknown'
   url_status: 'ok' | 'degraded' | 'dead'
   canonical_url: string

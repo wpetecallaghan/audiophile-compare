@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server'
 type ClipInput = {
   source_url: string
   canonical_url: string
-  provider: 'youtube' | 'vimeo' | 'direct' | 'unknown'
+  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
   media_type: 'audio' | 'video' | 'unknown'
   embed_id: string | null
 }

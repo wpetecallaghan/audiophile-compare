@@ -4,6 +4,7 @@ import { forwardRef, useImperativeHandle, useRef } from 'react'
 import NativePlayer, { type PlayerHandle } from './players/NativePlayer'
 import YouTubePlayer from './players/YouTubePlayer'
 import VimeoPlayer from './players/VimeoPlayer'
+import GoogleDrivePlayer from './players/GoogleDrivePlayer'
 import UnknownPlayer from './players/UnknownPlayer'
 
 // This is the shape of the clip data your API returns.
@@ -12,7 +13,7 @@ export type ClipData = {
   id: string
   label: 'A' | 'B'
   source_url: string
-  provider: 'youtube' | 'vimeo' | 'direct' | 'unknown'
+  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
   media_type: 'audio' | 'video' | 'unknown'
   canonical_url?: string
   embed_id?: string | null
@@ -51,6 +52,16 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
   if (clip.provider === 'vimeo' && clip.embed_id) {
     return (
       <VimeoPlayer
+        ref={innerRef}
+        videoId={clip.embed_id}
+        onPlay={onPlay}
+      />
+    )
+  }
+
+  if (clip.provider === 'google-drive' && clip.embed_id) {
+    return (
+      <GoogleDrivePlayer
         ref={innerRef}
         videoId={clip.embed_id}
         onPlay={onPlay}

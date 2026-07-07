@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (29 files · 308 tests · all passing)
+## 4. Unit test inventory (29 files · 314 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -80,15 +80,15 @@ indirectly through the step tests.
 | `components/__tests__/ProfileForm.test.tsx` | 13 | PATCH /api/profile, trim, validation, success/error states |
 | `components/__tests__/ChangeEmailForm.test.tsx` | 4 | updateUser({ email }), confirmation message, loading state |
 | `components/__tests__/ChangePasswordForm.test.tsx` | 9 | updateUser({ password }), validation, autoOpen prop, loading state |
-| `components/media/__tests__/ABPlayer.test.tsx` | 3 | Renders A and B labels; hideClipA/hideClipB hide that slot entirely |
+| `components/media/__tests__/ABPlayer.test.tsx` | 4 | Renders A and B labels; hideClipA/hideClipB hide that slot entirely; a Google Drive clip renders an iframe embed and the sibling's pause is a harmless no-op |
 | `components/tests/__tests__/VoteForm.test.tsx` | 22 | Rendering, Other field visibility, validation, submission, pre-population, hasDeadClip |
 | `components/tests/__tests__/StepSnapshots.test.tsx` | 28 | Open/close, validation, POST, onSnapshotCreated, inline system creation |
 | `components/systems/__tests__/AddSnapshotForm.test.tsx` | 14 | Open/close, POST, router.refresh on success, validation |
 | `components/systems/__tests__/CreateSystemForm.test.tsx` | 11 | POST /api/systems, validation, redirect, cancel |
 | `components/systems/__tests__/EditSystemForm.test.tsx` | 12 | PATCH /api/systems/[id], validation, redirect, cancel |
 | `components/systems/__tests__/SnapshotSection.test.tsx` | 27 | Display/edit mode, component rows, PATCH, router.refresh, delete confirm/cancel |
-| `lib/clips/__tests__/detect-provider.test.ts` | 9 | YouTube / Vimeo / direct / unknown URL classification |
-| `lib/clips/__tests__/to-clip-data.test.ts` | 5 | embed_id and canonical_url derivation for each provider |
+| `lib/clips/__tests__/detect-provider.test.ts` | 12 | YouTube / Vimeo / Google Drive / direct / unknown URL classification; a Drive folder link isn't misdetected as a file |
+| `lib/clips/__tests__/to-clip-data.test.ts` | 6 | embed_id and canonical_url derivation for each provider, including Google Drive |
 | `lib/clips/__tests__/find-shared-clips.test.ts` | 9 | Shared track finder; side A/B selection; no shared tracks |
 | `lib/votes/__tests__/compute-tally.test.ts` | 16 | Grouping, percentages, divergence detection, Other routing |
 | `lib/votes/__tests__/compute-outcome.test.ts` | 8 | Win/loss/draw/no-votes/open per snapshot |

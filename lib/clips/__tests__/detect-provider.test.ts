@@ -40,6 +40,33 @@ describe('detectProvider', () => {
     })
   })
 
+  describe('Google Drive', () => {
+    it('detects a standard file share URL', () => {
+      const result = detectProvider(
+        'https://drive.google.com/file/d/1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl/view?usp=sharing',
+      )
+      expect(result.provider).toBe('google-drive')
+      expect(result.embed_id).toBe('1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl')
+      expect(result.canonical_url).toBe(
+        'https://drive.google.com/file/d/1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl/preview',
+      )
+      expect(result.media_type).toBe('video')
+    })
+
+    it('detects an already-embedded preview URL', () => {
+      const result = detectProvider(
+        'https://drive.google.com/file/d/1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl/preview',
+      )
+      expect(result.provider).toBe('google-drive')
+      expect(result.embed_id).toBe('1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl')
+    })
+
+    it('does not misdetect a Drive folder link as a file', () => {
+      const result = detectProvider('https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOp')
+      expect(result.provider).not.toBe('google-drive')
+    })
+  })
+
   describe('direct', () => {
     it('classifies a direct audio URL as direct with unknown media_type', () => {
       // media_type for direct URLs is resolved by HEAD request, not URL pattern

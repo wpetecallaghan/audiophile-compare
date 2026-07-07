@@ -95,7 +95,7 @@ export type ClipData = {
   id: string
   label: 'A' | 'B'
   source_url: string
-  provider: 'youtube' | 'vimeo' | 'direct' | 'unknown'
+  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
   media_type: 'audio' | 'video' | 'unknown'
   canonical_url?: string
   embed_id?: string | null
@@ -137,6 +137,16 @@ const MyPlayer = forwardRef<PlayerHandle, Props>(function MyPlayer(props, ref) {
   return <div ref={containerRef} />
 })
 ```
+- **`google-drive` (step 34) is the one exception to "always fully
+  controllable."** `GoogleDrivePlayer` still follows the `forwardRef` +
+  `useImperativeHandle` structure above (for type consistency), but its
+  `pause()` is a documented no-op and it never calls `onPlay` — Google
+  doesn't publish a postMessage/SDK API for its `/preview` embed, unlike
+  YouTube's IFrame API or Vimeo's Player.js. Playing a Drive clip won't
+  auto-pause a concurrently-playing sibling, and vice versa (the pause
+  call just silently does nothing, the same graceful no-op `UnknownPlayer`
+  already exercises today). This is a real, accepted limitation, not a bug
+  to fix later.
 
 ---
 
