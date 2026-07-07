@@ -425,14 +425,13 @@ is currently implemented."
   users persisted as intended (confirmed via direct `import_authors`
   query).
 
-**Addendum (planned, not yet built) — reopened by `build-history.md` step
-32:** step 32 (import provenance UI) adds a nullable `tests.source_url`
-column and extends `IngestPayload`/`ingest_test`/the route to accept and
-store it, via a *new* migration layered on top of
-`20260707150400_ingest_test_function.sql` (not an edit to that
-already-applied file). See `build-history.md` step 32 for the full design;
-noted here so this section doesn't read as a closed, untouched chapter
-once that step is built.
+**Addendum (built as part of `build-history.md` step 32, now ✅):** step 32
+(import provenance UI) added a nullable `tests.source_url` column and
+extended `IngestPayload`/`ingest_test`/the route to accept and store it,
+via a new migration (`20260707173905_tests_source_url.sql`) layered on top
+of `20260707150400_ingest_test_function.sql`, not an edit to that
+already-applied file. See `build-history.md` step 32 for the full detail —
+noted here so this section doesn't read as a closed, untouched chapter.
 
 ---
 

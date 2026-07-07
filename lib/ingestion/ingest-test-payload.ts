@@ -19,6 +19,7 @@ export type IngestVote = {
 
 export type IngestPayload = {
   source_ref: string
+  source_url?: string
   title?: string
   author: IngestAuthor
   track: { artist: string; title: string; album?: string; passage_note?: string }
@@ -35,7 +36,7 @@ export type IngestValidationResult =
   | { valid: false; error: string }
 
 // Runtime validation for an untrusted request body — this route has no
-// other caller-side type safety (the scraper, step 32, is a separate
+// other caller-side type safety (the scraper, step 33, is a separate
 // process), so every required field is checked explicitly.
 export function validateIngestPayload(body: unknown): IngestValidationResult {
   if (typeof body !== 'object' || body === null) {

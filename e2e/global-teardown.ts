@@ -67,7 +67,66 @@ export default async function globalTeardown() {
     .eq('created_by', userId)
     .like('title', `${E2E_PREFIX}%`)
 
+  // Placeholder-owned fixtures (build step 32's provenance UI spec) use a
+  // different owner — a permanent placeholder identity, not the real test
+  // user — so they're invisible to the sweep above. Matched via
+  // is_placeholder rather than a specific user id, since any placeholder
+  // fixture author qualifies; the placeholder identity itself is not
+  // deleted, only its [E2E]-prefixed content.
+  const { data: placeholderTests } = await adminClient
+    .from('tests')
+    .select('id, creator:users!creator_id(is_placeholder)')
+    .like('title', `${E2E_PREFIX}%`)
+
+  const placeholderTestIds = (placeholderTests ?? [])
+    .filter((t: { creator: { is_placeholder: boolean } | { is_placeholder: boolean }[] | null }) => {
+      const creator = Array.isArray(t.creator) ? t.creator[0] : t.creator
+      return creator?.is_placeholder === true
+    })
+    .map((t: { id: string }) => t.id)
+
+  if (placeholderTestIds.length > 0) {
+    await adminClient.from('votes').delete().in('test_id', placeholderTestIds)
+    await adminClient.from('clip_mapping').delete().in('test_id', placeholderTestIds)
+    await adminClient.from('clips').delete().in('test_id', placeholderTestIds)
+    await adminClient.from('tests').delete().in('id', placeholderTestIds)
+  }
+
+  const { data: placeholderSystems } = await adminClient
+    .from('systems')
+    .select('id, owner:users!owner_id(is_placeholder)')
+    .like('name', `${E2E_PREFIX}%`)
+
+  const placeholderSystemIds = (placeholderSystems ?? [])
+    .filter((s: { owner: { is_placeholder: boolean } | { is_placeholder: boolean }[] | null }) => {
+      const owner = Array.isArray(s.owner) ? s.owner[0] : s.owner
+      return owner?.is_placeholder === true
+    })
+    .map((s: { id: string }) => s.id)
+
+  if (placeholderSystemIds.length > 0) {
+    await adminClient.from('system_snapshots').delete().in('system_id', placeholderSystemIds)
+    await adminClient.from('systems').delete().in('id', placeholderSystemIds)
+  }
+
+  const { data: placeholderTracks } = await adminClient
+    .from('tracks')
+    .select('id, creator:users!created_by(is_placeholder)')
+    .like('title', `${E2E_PREFIX}%`)
+
+  const placeholderTrackIds = (placeholderTracks ?? [])
+    .filter((t: { creator: { is_placeholder: boolean } | { is_placeholder: boolean }[] | null }) => {
+      const creator = Array.isArray(t.creator) ? t.creator[0] : t.creator
+      return creator?.is_placeholder === true
+    })
+    .map((t: { id: string }) => t.id)
+
+  if (placeholderTrackIds.length > 0) {
+    await adminClient.from('tracks').delete().in('id', placeholderTrackIds)
+  }
+
   console.log(
-    `${E2E_PREFIX} Teardown complete: deleted ${testIds.length} test(s), ${systemIds.length} system(s)`,
+    `${E2E_PREFIX} Teardown complete: deleted ${testIds.length} test(s), ${systemIds.length} system(s), ` +
+    `${placeholderTestIds.length} placeholder-owned test(s), ${placeholderSystemIds.length} placeholder-owned system(s)`,
   )
 }

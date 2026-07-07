@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (27 files · 291 tests · all passing)
+## 4. Unit test inventory (27 files · 292 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -94,7 +94,7 @@ indirectly through the step tests.
 | `lib/votes/__tests__/compute-outcome.test.ts` | 8 | Win/loss/draw/no-votes/open per snapshot |
 | `lib/admin/__tests__/is-admin-email.test.ts` | 7 | ADMIN_EMAILS allowlist: unset, null/undefined email, match, no match, case-insensitivity, whitespace, empty entries |
 | `lib/ingestion/__tests__/create-placeholder-author.test.ts` | 8 | Slugification (lowercase/strip/collapse/trim/truncate); resolves an existing (source, external_username) mapping without recreating; creates a new placeholder author; two usernames that slugify identically still get distinct placeholders; throws on auth user creation failure |
-| `lib/ingestion/__tests__/ingest-test-payload.test.ts` | 16 | `validateIngestPayload`: accepts a fully populated payload (with and without votes); rejects each missing required field on the top level, on `snapshot_a`/`snapshot_b`, and on a vote entry (`voter`, `chosen_label`, `technique_name`); `resolveTestTitle`: uses an explicit title, falls back to "artist – title" when omitted or whitespace-only |
+| `lib/ingestion/__tests__/ingest-test-payload.test.ts` | 17 | `validateIngestPayload`: accepts a fully populated payload (with and without votes, and with an optional `source_url`); rejects each missing required field on the top level, on `snapshot_a`/`snapshot_b`, and on a vote entry (`voter`, `chosen_label`, `technique_name`); `resolveTestTitle`: uses an explicit title, falls back to "artist – title" when omitted or whitespace-only |
 
 ---
 
@@ -117,6 +117,14 @@ indirectly through the step tests.
 2. Every record created by a test is prefixed `[E2E]` (e.g. `[E2E] Lejonklou Sagatun`, `[E2E] Power cable comparison`).
 3. `global-teardown.ts` deletes all `[E2E]`-prefixed records after every run using the admin client (bypasses RLS).
 
+**Placeholder-owned fixtures** (`seedPlaceholderOwnedTest` in `e2e/helpers/admin.ts`, added for
+`import-provenance.spec.ts`): exercises the real `create-placeholder-author.ts`, not a duplicate,
+to seed `[E2E]`-prefixed content owned by a permanent placeholder fixture author rather than the
+real `E2E_TEST_USER_EMAIL` account. Because the owner differs, this content is invisible to
+`global-teardown.ts`'s main sweep (which matches by that one specific user id) — the teardown has
+a second pass matching by `is_placeholder` instead, so it's still cleaned up. The placeholder
+identity itself is never deleted, same as the real test user account.
+
 **Do not** assert on exact record counts when reading existing staging data — assert on structure only.
 
 **Teardown deletion order** (no `ON DELETE CASCADE` — must respect FK constraints):
@@ -138,6 +146,7 @@ votes → clip_mapping → clips → tests → system_snapshots → systems → 
 | `delete.spec.ts` | Creator deletes a zero-vote test (redirects home); Delete hidden once a vote exists; owner deletes an unreferenced snapshot; Delete hidden when a test references the snapshot; owner deletes a snapshot-less system (redirects to systems list); Delete hidden when the system has a snapshot |
 | `clip-health.spec.ts` | Dead clip shows a warning and player still renders; vote form replaced with an explanatory message; creator replaces a dead clip's URL, clearing the warning; "Broken" badge shown on the track and system detail pages; unsupported-playback clip shows a bare link in blind view with no "could not be identified" message; once revealed, its Before/After label in the mapping badge links directly to it with no separate link below |
 | `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared |
+| `import-provenance.spec.ts` | Placeholder-owned content shows the "Imported" badge on the test detail page, feed card, and track's test row; test detail page also shows a working "view original post" link (`target="_blank"`) and the claim-contact text; system detail page shows the badge and claim-contact text; an ordinarily-owned test shows none of this |
 | `zz-sign-out.spec.ts` | Sign out clears the session; header reverts to unauthenticated. Runs last — see file for why |
 
 Step 17 is complete (24/24 passing against staging). Not covered by any spec

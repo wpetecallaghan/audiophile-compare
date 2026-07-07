@@ -1261,7 +1261,7 @@ Migration applied to staging only, not yet production; `INGEST_SECRET` is
 set in Vercel for Development/Preview/Production. Full plan and
 verification detail: `build-history-ingestion.md`.
 
-### ⬜ 32 — Import provenance UI (planned, not yet built)
+### ✅ 32 — Import provenance UI
 
 **The gap this closes:** step 30 made `import_authors` publicly readable
 specifically so the UI could show forum provenance — "may also help a real
@@ -1341,53 +1341,80 @@ gets its full detail directly here rather than in
    form or claim-request flow — step 38 (`build-history-ingestion.md`)
    handles verification and the actual merge from there.
 
-**Files to update:**
-- New migration (name TBD at build time) — `alter table public.tests add
-  column source_url text;` plus `create or replace function
-  public.ingest_test(...)` extended to store `payload->>'source_url'`.
-  Staging first, per the established convention.
+**Files updated:**
+- `supabase/migrations/20260707173905_tests_source_url.sql` (new) —
+  `alter table public.tests add column source_url text;` plus
+  `create or replace function public.ingest_test(...)` extended to store
+  `payload->>'source_url'`, re-affirming the EXECUTE lockdown from step 31.
+  Layered on top of the already-applied `20260707150400_...` migration, not
+  an edit to it. Applied to staging only, not yet production.
 - `lib/ingestion/ingest-test-payload.ts` — `IngestPayload.source_url?:
   string`.
-- `app/api/internal/ingest/route.ts` — pass `source_url` through to the
+- `app/api/internal/ingest/route.ts` — passes `source_url` through to the
   RPC payload.
-- `lib/ingestion/__tests__/ingest-test-payload.test.ts` — cover the new
-  optional field.
-- `app/api/internal/ingest/__tests__/route.integration.test.ts` — extend
-  an existing case (or add one) asserting `source_url` round-trips onto
-  the created `tests` row.
-- `components/ui/Badge.tsx` — new `imported` status variant.
-- `components/feed/FeedCard.tsx`, `app/tests/[id]/page.tsx`,
-  `app/tracks/[id]/page.tsx` — extend the creator query, render the
-  badge+link conditionally on `is_placeholder`.
-- `app/systems/[id]/page.tsx` — add the owner query and conditional
-  badge+link (net new).
-- `messages/en.json` — new `common` namespace keys, including the contact
-  link text (decision 8).
-- A new E2E fixture-seeding helper (alongside `e2e/helpers/admin.ts`) that
-  actually exercises `create-placeholder-author.ts` to seed a
-  placeholder-owned fixture test — every existing E2E helper seeds content
-  owned by the real `E2E_TEST_USER_EMAIL`, not a placeholder.
+- `lib/ingestion/__tests__/ingest-test-payload.test.ts` — new case
+  covering the optional field.
+- `app/api/internal/ingest/__tests__/route.integration.test.ts` — extended
+  to assert `source_url` round-trips onto the created `tests` row.
+- `components/ui/Badge.tsx` — new `imported` (purple) status variant.
+- `messages/en.json` — new `common` namespace keys: `importedBadge`,
+  `viewOriginalPost`, `claimContact` (reuses the existing contact address
+  already hardcoded in the privacy/terms pages).
+- `components/feed/FeedCard.tsx` + `app/page.tsx` — extended the creator
+  query with `is_placeholder`; badge only (no links — the whole card is
+  already a `<Link>`, so a nested link isn't valid HTML).
+- `app/tests/[id]/page.tsx` — extended the query with `source_url` and
+  `creator.is_placeholder`; full treatment (badge + "view original post"
+  link, shown only when `source_url` is present + claim-contact text).
+- `app/tracks/[id]/page.tsx` — extended the query with
+  `creator.is_placeholder`; badge only, same reasoning as `FeedCard`.
+- `app/systems/[id]/page.tsx` — added an `owner:users!owner_id(is_placeholder)`
+  join (this page previously showed no owner information at all) and a
+  conditional badge + claim-contact line — no "view original post" link,
+  since systems have no `source_url` of their own.
+- `e2e/helpers/admin.ts` — `seedSystem`/`seedTrack`/`seedTest` gained
+  optional owner/creator-id (and `seedTest` a `source_url`) parameters,
+  defaulting to the existing real-test-user behavior; new
+  `seedPlaceholderOwnedTest` helper exercises the real
+  `create-placeholder-author.ts` to seed a placeholder-owned fixture.
+- `e2e/global-teardown.ts` — extended with a second sweep matching
+  `[E2E]`-prefixed content by `is_placeholder` ownership, since the
+  original sweep only matched the one specific real test-user id and
+  would otherwise miss placeholder-owned fixtures entirely.
+- `e2e/tests/import-provenance.spec.ts` (new).
 - `__claude_context__/components.md` — the new Badge variant and the
-  conditional-provenance pattern.
+  conditional-provenance pattern, including why compact rows get badge-only.
 - `__claude_context__/audiophile-compare-schema.md` — `tests.source_url`
-  column.
-- `__claude_context__/api-conventions.md` §5 — note `IngestPayload.
+  column; `ingest_test` section updated; corrected a stale "not yet
+  implemented" cross-reference for the claim flow to point at step 38.
+- `__claude_context__/api-conventions.md` §5 — noted `IngestPayload.
   source_url`.
-- `__claude_context__/testing.md` — new unit/E2E rows, updated counts.
-- `__claude_context__/build-history-ingestion.md` — addendum note on step
-  31 (reopened by this step); update steps 33/34's plans to actually
-  populate `source_url`.
-- `__claude_context__/core.md` — build status line, once built.
+- `__claude_context__/testing.md` — new unit-test row and count, new E2E
+  spec row, and a note on placeholder-owned fixtures needing the second
+  teardown sweep.
+- `__claude_context__/core.md` — build status line.
 
-**Tests:**
-- **Unit:** `ingest-test-payload.test.ts` covers the optional
-  `source_url` field.
-- **Integration:** extend `route.integration.test.ts` to assert a payload
-  including `source_url` round-trips onto the created `tests` row.
-- **E2E:** the new fixture helper creates a placeholder-owned test; a spec
-  (new or extended) visits its detail page, the feed, its track page, and
-  its system page, asserting the "Imported" badge and working link appear
-  in all four places, and are absent on an ordinarily-owned fixture.
+**Verified:**
+- `npm run test` — 27 files / 292 tests, all passing (1 new case in
+  `ingest-test-payload.test.ts`). `npx tsc --noEmit` — no new errors (same
+  pre-existing, unrelated `__tests__/supabase-*.test.ts` failures as every
+  prior step).
+- **EXECUTE lockdown re-confirmed directly against staging with the anon
+  key after the `create or replace`:** `POST .../rest/v1/rpc/ingest_test`
+  → `401`, `"permission denied for function ingest_test"` — the
+  lockdown survives a function replacement, as expected, but worth
+  re-checking rather than assuming.
+- **`npm run test:integration` — 5/5 passing against staging**, including
+  the new assertion that a payload's `source_url` round-trips onto the
+  created `tests` row.
+- **Full Playwright suite run locally (48/48 passing)**, not just the 5
+  new `import-provenance.spec.ts` cases — confirms no regression in any
+  existing spec from the query/schema changes. Caught and fixed one real
+  bug during this run: the first version of the feed/track-row assertions
+  built a `RegExp` directly from a fixture title containing literal
+  `[E2E]` brackets, which are regex metacharacters — silently matched
+  nothing rather than erroring. Fixed by scoping via `page.locator('li',
+  { hasText })` (plain substring matching) instead of a role-name regex.
 
 ### ⬜ 33 — Forum ingestion: scraper (planned, not yet built)
 

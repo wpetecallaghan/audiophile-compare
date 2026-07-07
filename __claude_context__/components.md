@@ -370,7 +370,7 @@ and subtle/divider (`border-gray-100 dark:border-gray-800`).
 never raw `bg-*/text-*` classes:**
 ```tsx
 import { Badge } from '@/components/ui/Badge'
-<Badge status="win">Win</Badge>   {/* status: win | loss | draw | blind | revealed | broken */}
+<Badge status="win">Win</Badge>   {/* status: win | loss | draw | blind | revealed | broken | imported */}
 ```
 The color pairing for each status (e.g. `bg-green-100 text-green-700
 dark:bg-green-900/40 dark:text-green-300` for `win`) lives in exactly one
@@ -383,6 +383,25 @@ win/loss/blind/revealed status wherever it's computed: the feed
 and system detail (`app/systems/[id]/page.tsx`) all check "does any of
 this test's clips have `url_status = 'dead'`" before falling back to the
 normal status logic.
+
+**`imported` (step 32, purple)** — shown next to a test/system's owner
+byline whenever that owner `is_placeholder` (forum-ingested content, not
+yet claimed by a real user — see `audiophile-compare-schema.md`'s
+"Placeholder authors" section). Independent of, and can appear alongside,
+the win/loss/blind/revealed/broken status badge — it describes the
+*owner*, not the test's outcome. Wired into four places:
+`FeedCard.tsx`, `app/tests/[id]/page.tsx`, the per-test rows in
+`app/tracks/[id]/page.tsx`, and (net new — this page previously showed no
+owner information at all) `app/systems/[id]/page.tsx`. Each extends its
+existing `creator`/`owner` join with `is_placeholder`. The test detail page
+additionally shows two links when placeholder-owned: "view original post"
+(`tests.source_url`, when present — an external link using `Link`
+`variant="inline"` with `target="_blank" rel="noopener noreferrer"`; `Link`
+already wraps `next/link`, which renders a plain anchor for an absolute
+URL) and a static claim-contact string (`common.claimContact`). The feed
+card and track's per-test rows show the badge only, not the links — those
+rows are already whole-card `<Link>`s to the test's own detail page, so a
+nested link isn't valid HTML there; the full detail lives one click away.
 
 **Buttons — use `<Button variant size />` (`components/ui/Button.tsx`),
 never raw `bg-black`/`border` classes:**

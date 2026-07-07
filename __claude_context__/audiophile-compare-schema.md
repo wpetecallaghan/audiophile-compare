@@ -84,6 +84,10 @@ tests (
   created_at     timestamptz DEFAULT now(),
   source_ref     text UNIQUE,   -- ingestion provenance e.g. 'lejonklou-forum:thread-42:post-187'
                                 -- NULL for tests created via the web UI
+  source_url     text,          -- the real forum post URL, for the UI's "view
+                                -- original post" link (step 32) — NULL for
+                                -- web-UI-created tests and for imports that
+                                -- predate this column
   CONSTRAINT tests_status_check CHECK (status IN ('open', 'revealed'))
 )
 
@@ -270,8 +274,8 @@ admin/service-role client, which is also why neither needs a write RLS
 policy (see the table above). When a real person eventually claims their
 imported content, the expected merge repoints `import_authors.user_id`
 (preserving the "this account is forum-user X" fact) rather than deleting
-the row — not yet implemented, see `build-history-ingestion.md`'s
-"Explicitly deferred" section.
+the row — planned as `build-history-ingestion.md` step 38 (claim flow),
+not yet built.
 
 ### ingest_test function (step 31)
 
@@ -284,6 +288,9 @@ forum post. Called via `.rpc('ingest_test', { payload })` from
 call). Placeholder author resolution happens in application code *before*
 this function runs (`auth.admin.createUser()` can't run inside SQL) and is
 separately idempotent, so a partial failure here is self-healing on retry.
+Extended in step 32 (`20260707173905_tests_source_url.sql`, layered on top
+of the original migration, not an edit to it) to also accept and store
+`payload.source_url` onto the new `tests.source_url` column.
 
 **Security-critical:** because it's `security definer` and bypasses RLS,
 its migration explicitly revokes EXECUTE from `public`/`anon`/

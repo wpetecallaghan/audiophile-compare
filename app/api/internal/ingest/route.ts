@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
   const { data, error } = await admin.rpc('ingest_test', {
     payload: {
       source_ref: payload.source_ref,
+      source_url: payload.source_url ?? null,
       owner_id: ownerId,
       title: resolveTestTitle(payload),
       track: payload.track,

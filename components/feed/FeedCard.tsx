@@ -9,7 +9,7 @@ export type FeedTest = {
   created_at: string
   vote_count: number
   track: { artist: string; title: string } | null
-  creator: { display_name: string | null } | null
+  creator: { display_name: string | null; is_placeholder: boolean } | null
   snapshot_a: { label: string; system: { name: string } | null } | null
   snapshot_b: { label: string; system: { name: string } | null } | null
   has_dead_clip: boolean
@@ -28,6 +28,7 @@ function statusBadge(
 
 export default async function FeedCard({ test }: { test: FeedTest }) {
   const t = await getTranslations('feed')
+  const tCommon = await getTranslations('common')
   const badge = statusBadge(test.status, test.has_dead_clip, t)
 
   const snapshotLine = [
@@ -68,6 +69,14 @@ export default async function FeedCard({ test }: { test: FeedTest }) {
               </span>
               {' · '}
               {test.vote_count} {test.vote_count === 1 ? 'vote' : 'votes'}
+              {test.creator?.is_placeholder && (
+                <>
+                  {' · '}
+                  <Badge status="imported" className="align-middle">
+                    {tCommon('importedBadge')}
+                  </Badge>
+                </>
+              )}
             </p>
           </div>
           <Badge status={badge.status} className="shrink-0 mt-0.5">

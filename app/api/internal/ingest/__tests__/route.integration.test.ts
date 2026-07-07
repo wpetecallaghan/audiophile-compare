@@ -100,6 +100,7 @@ describe('POST /api/internal/ingest (integration)', () => {
   it('creates a test, resolves the post author and both voters, and records both votes', async () => {
     const { status, body } = await callIngest(
       payload({
+        source_url: 'https://www.lejonklou.com/forum/viewtopic.php?f=2&t=3233#p187',
         votes: [
           { voter: { forum_username: VOTER_1 }, chosen_label: 'A', technique_name: TECHNIQUE },
           { voter: { forum_username: VOTER_2 }, chosen_label: 'B', technique_name: TECHNIQUE },
@@ -120,6 +121,14 @@ describe('POST /api/internal/ingest (integration)', () => {
       .eq('test_id', body.testId)
 
     expect(count).toBe(2)
+
+    const { data: testRow } = await admin
+      .from('tests')
+      .select('source_url')
+      .eq('id', body.testId)
+      .single()
+
+    expect(testRow?.source_url).toBe('https://www.lejonklou.com/forum/viewtopic.php?f=2&t=3233#p187')
   })
 
   it('is a no-op when re-run with the same source_ref', async () => {

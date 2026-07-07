@@ -20,7 +20,7 @@ export default async function TrackDetailPage({ params }: Props) {
       id, artist, title, album, passage_note,
       tests(
         id, title, status, created_at,
-        creator:users!creator_id(display_name),
+        creator:users!creator_id(display_name, is_placeholder),
         clips(url_status)
       )
     `)
@@ -30,6 +30,7 @@ export default async function TrackDetailPage({ params }: Props) {
   if (error || !track) notFound()
 
   const t = await getTranslations('tracks')
+  const tCommon = await getTranslations('common')
 
   type TestRow = {
     id: string
@@ -37,8 +38,8 @@ export default async function TrackDetailPage({ params }: Props) {
     status: string
     created_at: string
     creator:
-      | { display_name: string | null }
-      | { display_name: string | null }[]
+      | { display_name: string | null; is_placeholder: boolean }
+      | { display_name: string | null; is_placeholder: boolean }[]
     clips: { url_status: string }[]
   }
 
@@ -108,6 +109,14 @@ export default async function TrackDetailPage({ params }: Props) {
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         by {creator?.display_name ?? t('anonymous')} ·{' '}
                         {new Date(test.created_at).toLocaleDateString()}
+                        {creator?.is_placeholder && (
+                          <>
+                            {' · '}
+                            <Badge status="imported" className="align-middle">
+                              {tCommon('importedBadge')}
+                            </Badge>
+                          </>
+                        )}
                       </p>
                     </div>
                     <Badge status={badge.status} className="ml-4 shrink-0">

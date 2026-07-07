@@ -26,7 +26,7 @@ export default async function HomePage({ searchParams }: Props) {
     .select(
       `
         id, title, status, created_at,
-        creator:users!creator_id(display_name),
+        creator:users!creator_id(display_name, is_placeholder),
         track:tracks(artist, title),
         snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
         snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name)),
@@ -42,7 +42,10 @@ export default async function HomePage({ searchParams }: Props) {
     title: string
     status: string
     created_at: string
-    creator: { display_name: string | null } | { display_name: string | null }[] | null
+    creator:
+      | { display_name: string | null; is_placeholder: boolean }
+      | { display_name: string | null; is_placeholder: boolean }[]
+      | null
     track: { artist: string; title: string } | { artist: string; title: string }[] | null
     snapshot_a: { label: string; system: { name: string } | { name: string }[] | null } | { label: string; system: { name: string } | { name: string }[] | null }[] | null
     snapshot_b: { label: string; system: { name: string } | { name: string }[] | null } | { label: string; system: { name: string } | { name: string }[] | null }[] | null

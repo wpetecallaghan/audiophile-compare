@@ -11,6 +11,7 @@ import DeleteSystemButton from '@/components/systems/DeleteSystemButton'
 import { Badge } from '@/components/ui/Badge'
 import { buttonVariants } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
+import { getTranslations } from 'next-intl/server'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -32,12 +33,14 @@ export default async function SystemDetailPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const tCommon = await getTranslations('common')
 
   // Fetch system with all its snapshots
   const { data: system, error } = await supabase
     .from('systems')
     .select(`
       id, name, description, owner_id,
+      owner:users!owner_id(is_placeholder),
       system_snapshots(id, version, label, notes, components, created_at)
     `)
     .eq('id', id)
@@ -46,6 +49,8 @@ export default async function SystemDetailPage({ params }: Props) {
   if (error || !system) notFound()
 
   const isOwner = user?.id === (system as unknown as { owner_id: string }).owner_id
+  const rawOwner = (system as unknown as { owner: { is_placeholder: boolean } | { is_placeholder: boolean }[] }).owner
+  const owner = Array.isArray(rawOwner) ? rawOwner[0] : rawOwner
 
   type SnapshotRow = {
     id: string
@@ -183,7 +188,20 @@ export default async function SystemDetailPage({ params }: Props) {
         )}
         <p className="text-xs text-gray-500 dark:text-gray-400">
           {snapshots.length} {snapshots.length === 1 ? 'snapshot' : 'snapshots'}
+          {owner?.is_placeholder && (
+            <>
+              {' · '}
+              <Badge status="imported" className="align-middle">
+                {tCommon('importedBadge')}
+              </Badge>
+            </>
+          )}
         </p>
+        {owner?.is_placeholder && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {tCommon('claimContact')}
+          </p>
+        )}
       </div>
 
       {/* Actions: add snapshot (owner only) + cross-check (when ≥2 snapshots exist) */}

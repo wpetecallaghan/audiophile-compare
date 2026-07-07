@@ -1,7 +1,10 @@
 {
   "common": {
     "cancel": "Cancel",
-    "networkError": "Network error — please try again"
+    "networkError": "Network error — please try again",
+    "importedBadge": "Imported",
+    "viewOriginalPost": "View original post",
+    "claimContact": "Think this is yours? Contact wpete.callaghan@gmail.com to claim it."
   },
   "nav": {
     "wordmark": "Compare",

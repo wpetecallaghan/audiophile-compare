@@ -16,6 +16,7 @@ import type { Technique, ExistingVote } from '@/components/tests/VoteForm'
 import type { RawVoteRow, TallyResult } from '@/lib/votes/compute-tally'
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
+import { Badge } from '@/components/ui/Badge'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -26,13 +27,14 @@ export default async function TestDetailPage({ params }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const t = await getTranslations('tests')
+  const tCommon = await getTranslations('common')
 
   const { data: test, error } = await supabase
     .from('tests')
     .select(`
-      id, title, status, revealed_at, created_at,
+      id, title, status, revealed_at, created_at, source_url,
       creator_id,
-      creator:users!creator_id(display_name),
+      creator:users!creator_id(display_name, is_placeholder),
       track:tracks(artist, title, album, passage_note),
       clips(id, label, source_url, provider, media_type, url_status)
     `)
@@ -158,7 +160,30 @@ export default async function TestDetailPage({ params }: Props) {
           by {creator?.display_name ?? t('anonymous')} ·{' '}
           {new Date(test.created_at).toLocaleDateString()} ·{' '}
           {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
+          {creator?.is_placeholder && (
+            <>
+              {' · '}
+              <Badge status="imported" className="align-middle">
+                {tCommon('importedBadge')}
+              </Badge>
+            </>
+          )}
         </p>
+        {creator?.is_placeholder && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 space-x-3">
+            {test.source_url && (
+              <Link
+                href={test.source_url}
+                variant="inline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {tCommon('viewOriginalPost')}
+              </Link>
+            )}
+            <span>{tCommon('claimContact')}</span>
+          </p>
+        )}
       </div>
 
       {/* Reveal badge */}

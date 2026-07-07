@@ -28,6 +28,16 @@ describe('validateIngestPayload', () => {
     expect(result.valid).toBe(true)
   })
 
+  it('accepts a payload with an optional source_url and passes it through', () => {
+    const result = validateIngestPayload(
+      validPayload({ source_url: 'https://www.lejonklou.com/forum/viewtopic.php?f=2&t=3233#p187' }),
+    )
+    expect(result).toEqual({
+      valid: true,
+      payload: validPayload({ source_url: 'https://www.lejonklou.com/forum/viewtopic.php?f=2&t=3233#p187' }),
+    })
+  })
+
   it('accepts a payload with a fully populated vote', () => {
     const result = validateIngestPayload(
       validPayload({
