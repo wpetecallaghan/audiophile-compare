@@ -76,34 +76,71 @@ on a real `auth.users` insert.
    about it — keeps a working, load-bearing trigger untouched for a
    feature-specific flag.
 
+6. **Resolved: the `forum_username → placeholder user_id` mapping lives in
+   a new `public.import_authors` table, not a derived/reconstructed email
+   lookup.** The alternative (recompute the expected placeholder email
+   from a deterministic slug of the username, look it up by email) doesn't
+   actually work on inspection: slugification is lossy (case/unicode/
+   punctuation stripped) and collision resolution is order-dependent (the
+   *n*th colliding username gets a `-n` suffix at creation time) — so
+   resolving a raw username back to "was this the 1st, 2nd, 3rd... colliding
+   registration" isn't recoverable from the email string alone. An explicit
+   table sidesteps this by keying on the *raw, unmodified* username directly:
+   ```sql
+   create table public.import_authors (
+     id                 uuid primary key default gen_random_uuid(),
+     source             text not null,              -- e.g. 'lejonklou-forum' — future-proofs other forums later
+     external_username  text not null,               -- raw, unmodified — not the lossy slug
+     user_id            uuid not null references public.users(id) on delete cascade,
+     created_at         timestamptz default now(),
+     unique (source, external_username)
+   );
+
+   alter table public.import_authors enable row level security;
+
+   create policy "import_authors: public read"
+     on public.import_authors for select using (true);
+   -- No insert/update/delete policy — only ever written via the
+   -- admin/service-role client (ingest route, future merge step),
+   -- which bypasses RLS entirely.
+   ```
+   **Public read, decided deliberately:** lets the UI show provenance (e.g.
+   "imported from the Lejonklou forum" on a system/test page), which may
+   also help a real forum member recognize their own imported content and
+   be more inclined to register and claim it. This doesn't newly expose the
+   username itself — that's already public via `display_name` regardless
+   (decision 5) — it only additionally reveals *which* forum it came from.
+
+   **Repointed, not deleted, at merge time.** The future merge step should
+   `UPDATE import_authors SET user_id = :real_user_id` rather than discard
+   the row — this preserves "this account is the forum's `BassHead99`" as a
+   permanent fact after merge, which the derived-email alternative had no
+   way to express at all (there'd be nothing to repoint). `ON DELETE
+   CASCADE` is only the defensive fallback for a placeholder deleted
+   outside the proper merge flow.
+
 **Files to update:**
 - New migration: `alter table public.users add column is_placeholder boolean not null default false;`
+  plus the `import_authors` table and policy above.
 - `lib/ingestion/create-placeholder-author.ts` (new) — the resolve-or-create
-  helper: given a forum username, look up an existing placeholder by a
-  `forum_username` we'll need to store somewhere to resolve on repeat runs
-  (see open question below), else slugify → check collision → insert
-  `auth.users` (admin client) → `update public.users set is_placeholder = true`.
+  helper: given `{ source, external_username, display_name? }`, look up
+  `import_authors` by `(source, external_username)`; if found, return its
+  `user_id`. Otherwise slugify `external_username` → check email collision
+  → insert `auth.users` (admin client) → `update public.users set
+  is_placeholder = true` → insert the new `import_authors` row → return the
+  new `user_id`.
 - `docs/` — no new user-facing doc needed (this is internal infrastructure,
-  not a user-visible feature); note the new column and its purpose in
-  `audiophile-compare-schema.md` at build time.
-
-**Open question to resolve before/during build:** where does the
-`forum_username → placeholder user_id` mapping live so re-running the
-importer resolves the *same* placeholder instead of creating duplicates?
-Options: (a) a new small `public.import_authors` table (`forum_username`
-unique, `user_id` references `public.users`), or (b) store the forum
-username in `public.users` itself (e.g. reuse `email`'s local-part via a
-deterministic slug, and look up by the exact placeholder email you'd
-construct for that username — no new table, but a bit implicit). Leaning
-towards (a) — an explicit small table is clearer and gives the ingest
-route (step 31) a fast, unambiguous lookup — but worth a final call at
-build time rather than in this planning pass.
+  not a user-visible feature); note the new column/table and their purpose
+  in `audiophile-compare-schema.md` at build time.
 
 **Tests:**
 - **Unit:** `create-placeholder-author.ts` — slugification (lowercase,
-  strip, truncate, collision suffix), and that it returns an existing
-  placeholder's id on a second call for the same username rather than
-  creating a duplicate.
+  strip, truncate, collision suffix); a second call with the same
+  `(source, external_username)` returns the existing `user_id` via
+  `import_authors` rather than creating a duplicate; two different raw
+  usernames that happen to slugify to the same string still resolve to two
+  distinct placeholders (proves the table-based lookup, not the email,
+  is the source of truth).
 - **E2E:** none — this is backend infrastructure with no page to drive.
 
 ---
@@ -128,7 +165,12 @@ is currently implemented."
    by `INGEST_SECRET` as its authorization boundary — same trust model the
    cron already relies on.
 
-2. **Extend the documented `IngestPayload` with an `author` field:**
+2. **Extend the documented `IngestPayload` with an `author` field.** No
+   `source` field on the payload itself — with only one forum in scope,
+   the route passes the constant `'lejonklou-forum'` to
+   `create-placeholder-author.ts` (step 30) itself. Add `source` to the
+   payload only if/when a second forum is actually being ingested, not
+   speculatively now.
    ```typescript
    type IngestPayload = {
      source_ref: string
