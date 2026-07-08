@@ -1577,11 +1577,13 @@ Gateway) rather than calling ingest directly — output is a local,
 human-editable candidate repository (one JSON file per candidate,
 organized into `pending`/`needs_review`/`ready`/`approved`/
 `ingested/staging`/`ingested/production`/`expired` subfolders — the
-folder a file sits in *is* its status), never a live API call. Built and
-unit-tested (34 files / 386 tests passing); **not yet trial-run against
-real data** — that needs a real `AI_GATEWAY_API_KEY` provisioned by a
-human (`docs/vercel-setup.md`), which doesn't exist yet. Full plan:
-`build-history-ingestion.md`.
+folder a file sits in *is* its status), never a live API call. Built,
+unit-tested (34 files / 386 tests passing), and trial-run twice against
+real data (a 40-page sample) — found and fixed two real bugs this way
+(a label-collision bug across multi-pair posts, and the model echoing a
+composite label back as a match target) and documented one accepted gap
+(`ambiguous_attribution` is defined but never actually triggers). Full
+plan: `build-history-ingestion.md`.
 
 ### ⬜ 36 — Forum ingestion: commit (planned, not yet built)
 

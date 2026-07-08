@@ -1467,9 +1467,10 @@ this plan.
   rather than through the usual per-environment dashboard scopes
   (extraction never runs as a deployed Function) — plus the same
   stable-credential-vs-`VERCEL_OIDC_TOKEN` reasoning as decision 14.
-- `.env.local` — **not yet added.** `AI_GATEWAY_API_KEY` needs a real key
-  provisioned from the Vercel dashboard, which only a human can do — see
-  "Verified" below for what's actually been confirmed without it.
+- `.env.local` — `AI_GATEWAY_API_KEY` added (a human provisioned the key
+  and a credit card/credits on the Vercel AI Gateway — both were
+  required; a card alone still hit a free-tier rate limit on the first
+  attempt, see "Verified" below).
 - `core.md` / `testing.md` — test counts (34 files / 386 tests) and new
   inventory rows.
 
@@ -1522,16 +1523,18 @@ this plan.
   `scripts/output/lejonklou-sample-tail/thread.json` (the last ~40 pages,
   already scraped), then hand-audit a meaningful fraction of the
   resulting `ready`/`needs_review`/`expired` candidates against the real
-  source posts before a full-thread run is attempted. **Not yet done —
-  needs a real `AI_GATEWAY_API_KEY`, see below.**
+  source posts before a full-thread run is attempted. **Done — twice**
+  (once before findings 3/4's fixes, once after); see findings 3-5 above
+  for what it found and "Verified" below for the final numbers.
 
-**Verified:** `npm run test` — 34 files / 386 tests, all passing (62 new:
-4 in the existing `ingest-test-payload.test.ts`, 58 across four new
-`lib/ingestion/extract/__tests__/*.test.ts` files). `npx tsc --noEmit` —
+**Verified:** `npm run test` — 34 files / 386 tests, all passing (64 new
+relative to step 33's 322: 4 in the existing `ingest-test-payload.test.ts`,
+60 across four new `lib/ingestion/extract/__tests__/*.test.ts` files,
+including regression tests for findings 3 and 4). `npx tsc --noEmit` —
 no new errors (same pre-existing, unrelated `__tests__/supabase-*.test.ts`
 failures as every prior step).
 
-**Four real findings from actually building this, not caught by any prior
+**Five real findings from actually building this, not caught by any prior
 review pass:**
 
 1. **A genuine bug, found and fixed by the tests themselves:**
@@ -1585,8 +1588,9 @@ review pass:**
    also surfaced a real, *irreducible* ambiguity distinct from the bug:
    a shared middle label in a chain (`'Brassic'` belongs to both
    adjacent pairs) can't be fully disambiguated from a bare label alone
-   — accepted as genuine source-material ambiguity, exactly what
-   `'ambiguous_attribution'` exists for, not something to solve further.
+   — genuine source-material ambiguity, not something to solve further.
+   (It doesn't actually get flagged `'ambiguous_attribution'` today — see
+   finding 5.)
 4. **A second real bug, found by the *full* 978-post trial run (not the
    earlier 8-post smoke sample) — the model echoing `candidateSummary`'s
    own display format back as a match target.** `lejonklou`'s real
@@ -1608,6 +1612,43 @@ review pass:**
    against the same real 89-post prefix: 3 of the 4 reveal entries now
    match correctly (the 4th lands on finding 3's already-accepted
    shared-middle-label ambiguity, not a new failure).
+5. **`'ambiguous_attribution'` is a defined `IssueCode` that the real
+   code never actually sets — found by auditing the full 978-post trial
+   run's output, not by a unit test.** Every real `needs_review`
+   candidate in the trial carries `unidentified_track` and nothing else;
+   `'ambiguous_attribution'` never appears once. The reason: when a
+   label lookup could plausibly match more than one open candidate
+   (finding 3's shared-middle-label case), the current code doesn't
+   detect that ambiguity at all — `findOpenCandidateByCreatorLabel`
+   (and its `Map`-based index) only ever returns *one* candidate,
+   whichever last-write-wins happened to leave there, with no signal
+   that another candidate was equally plausible. So genuine multi-
+   candidate ambiguity resolves silently today, rather than being
+   flagged for a human to look at, which is what decision 10 originally
+   intended `'ambiguous_attribution'` for. **Documented as a known,
+   accepted gap, not fixed** — the real-world impact observed so far is
+   narrow (it affected 1 of 4 pairs in the one chained-sequence example
+   found in this trial), and closing it properly means changing the
+   lookup to detect and report multiple matches, which is a real design
+   change to `candidate-index.ts`, not a quick patch — left for a
+   deliberate follow-up rather than a reactive fix.
+
+   **Full second trial run, after fixes 3 and 4 above, for the record:**
+   978 posts → 104 candidates (1 `ready`, 23 `needs_review` — all
+   `unidentified_track` only, no dead links/missing timestamps/
+   unresolvable IDs/invalid payloads — 80 `expired`). 87 reveal/vote
+   posts (16 reveal, 71 vote) still didn't match anything; sampling
+   several against real source text found them to be *correct*
+   rejections, not bugs — votes cast literally the day after their
+   test's own reveal (correctly excluded as non-blind, decision 10), or
+   referencing a test whose defining post falls outside this 40-page
+   window (an inherent bounded-sample limitation, not a defect). Spot
+   checks against real text found genuinely high-quality output: a real
+   track ("Henri Texier – Annobon") correctly identified with two
+   plausible votes attached; a single post describing three independent
+   tracks correctly split into three separate candidates with their
+   real, non-colliding labels (`A1/B1`, `A2/B2`, `A3/B3`), each
+   correctly scoped to only the votes that actually discussed it.
 
 ---
 
