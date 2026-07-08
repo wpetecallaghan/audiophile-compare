@@ -1560,7 +1560,7 @@ not folded into extraction.
 - Migration applied to staging; `clips_provider_check`'s new definition
   confirmed directly via the Management API.
 
-### ⬜ 35 — Forum ingestion: extraction (planned, not yet built)
+### ✅ 35 — Forum ingestion: extraction
 
 Takes step 33's raw posts and does the hard semantic work — per-author
 system/snapshot continuity (simplified to one placeholder system per
@@ -1569,17 +1569,19 @@ hardcoded to 'Tune Method' (the forum's stated convention), and a flagged
 placeholder for tracks that can't be identified from text or clip
 metadata. Reply-to-test attribution (matching a voter's reply against a
 different author's open candidate) was the highest-risk open design
-question; now resolved architecturally as a single chronological walk
-over the whole thread backed by one shared cross-author candidate index,
-with a reveal closing a candidate to further matching and a 21-day
-auto-expiry — real-world validation of that approach is still pending a
-trial run against a bounded sample before any full-thread run. Uses the
-Vercel AI SDK (`generateObject` + Zod, via the AI Gateway) rather than
-calling ingest directly — output is a local, human-editable candidate
-repository (one JSON file per candidate, organized into `pending`/
-`needs_review`/`ready`/`approved`/`ingested/staging`/`ingested/production`/
-`expired` subfolders — the folder a file sits in *is* its status), never
-a live API call. Full plan: `build-history-ingestion.md`.
+question; resolved architecturally as a single chronological walk over
+the whole thread backed by one shared cross-author candidate index, with
+a reveal closing a candidate to further matching and a 21-day
+auto-expiry. Uses the Vercel AI SDK (`generateObject` + Zod, via the AI
+Gateway) rather than calling ingest directly — output is a local,
+human-editable candidate repository (one JSON file per candidate,
+organized into `pending`/`needs_review`/`ready`/`approved`/
+`ingested/staging`/`ingested/production`/`expired` subfolders — the
+folder a file sits in *is* its status), never a live API call. Built and
+unit-tested (34 files / 386 tests passing); **not yet trial-run against
+real data** — that needs a real `AI_GATEWAY_API_KEY` provisioned by a
+human (`docs/vercel-setup.md`), which doesn't exist yet. Full plan:
+`build-history-ingestion.md`.
 
 ### ⬜ 36 — Forum ingestion: commit (planned, not yet built)
 

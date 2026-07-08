@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { validateIngestPayload, resolveTestTitle, type IngestPayload } from '../ingest-test-payload'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import {
+  validateIngestPayload,
+  resolveTestTitle,
+  TUNE_METHOD_TECHNIQUE_NAME,
+  type IngestPayload,
+} from '../ingest-test-payload'
 
 const SOURCE_REF = 'lejonklou-forum:thread-3233:post-42'
 const FORUM_USERNAME = 'BassHead99'
@@ -134,6 +141,66 @@ describe('validateIngestPayload', () => {
       }),
     )
     expect(result).toEqual({ valid: false, error: 'votes[0].technique_name is required' })
+  })
+
+  it('accepts a vote whose technique_name is in the optional knownTechniques list', () => {
+    const result = validateIngestPayload(
+      validPayload({
+        votes: [
+          {
+            voter: { forum_username: 'AnotherListener' },
+            chosen_label: 'A',
+            technique_name: TUNE_METHOD_TECHNIQUE_NAME,
+          },
+        ],
+      }),
+      [TUNE_METHOD_TECHNIQUE_NAME],
+    )
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects a vote whose technique_name is not in the optional knownTechniques list', () => {
+    const result = validateIngestPayload(
+      validPayload({
+        votes: [
+          {
+            voter: { forum_username: 'AnotherListener' },
+            chosen_label: 'A',
+            technique_name: 'Some Other Method',
+          },
+        ],
+      }),
+      [TUNE_METHOD_TECHNIQUE_NAME],
+    )
+    expect(result).toEqual({
+      valid: false,
+      error: 'votes[0].technique_name is not a known technique',
+    })
+  })
+
+  it('does not check technique_name against anything when knownTechniques is omitted', () => {
+    const result = validateIngestPayload(
+      validPayload({
+        votes: [
+          {
+            voter: { forum_username: 'AnotherListener' },
+            chosen_label: 'A',
+            technique_name: 'Anything At All',
+          },
+        ],
+      }),
+    )
+    expect(result.valid).toBe(true)
+  })
+})
+
+describe('TUNE_METHOD_TECHNIQUE_NAME', () => {
+  it('matches the real seeded listening_techniques row exactly', () => {
+    const migration = readFileSync(
+      join(process.cwd(), 'supabase/migrations/20260625094142_initial_schema.sql'),
+      'utf-8',
+    )
+    expect(migration).toContain(`('${TUNE_METHOD_TECHNIQUE_NAME}',`)
   })
 })
 

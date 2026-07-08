@@ -4,6 +4,12 @@
 // (see testing.md), but this logic is plain data transformation, not a
 // route concern.
 
+// The forum's stated listening-technique convention (build-history-ingestion.md
+// step 35 decision 11) — every vote extraction hardcodes to this literal, so
+// it's exported once here rather than repeated inline. Pinned by a unit test
+// against the real seeded `listening_techniques` row.
+export const TUNE_METHOD_TECHNIQUE_NAME = 'Tune Method'
+
 export type IngestAuthor = {
   forum_username: string
   display_name?: string
@@ -38,7 +44,19 @@ export type IngestValidationResult =
 // Runtime validation for an untrusted request body — this route has no
 // other caller-side type safety (the scraper, step 33, is a separate
 // process), so every required field is checked explicitly.
-export function validateIngestPayload(body: unknown): IngestValidationResult {
+//
+// `knownTechniques`, when passed, additionally rejects a vote whose
+// `technique_name` isn't a member of that list — an optional, additive
+// check (build-history-ingestion.md step 35 decision 13) that the real
+// ingest route doesn't pass, since forum-import payloads there aren't
+// restricted to one technique; extraction (step 35) passes
+// `[TUNE_METHOD_TECHNIQUE_NAME]` to catch drift between decision 11's
+// hardcoded constant and this list before it ever reaches `ingest_test`'s
+// own (only other) real check.
+export function validateIngestPayload(
+  body: unknown,
+  knownTechniques?: string[],
+): IngestValidationResult {
   if (typeof body !== 'object' || body === null) {
     return { valid: false, error: 'Request body must be a JSON object' }
   }
@@ -76,6 +94,9 @@ export function validateIngestPayload(body: unknown): IngestValidationResult {
     }
     if (!vote.technique_name?.trim()) {
       return { valid: false, error: `votes[${i}].technique_name is required` }
+    }
+    if (knownTechniques && !knownTechniques.includes(vote.technique_name)) {
+      return { valid: false, error: `votes[${i}].technique_name is not a known technique` }
     }
   }
 

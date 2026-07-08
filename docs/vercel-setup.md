@@ -137,6 +137,34 @@ branch when done testing.
 
 ---
 
+## Forum ingestion: `AI_GATEWAY_API_KEY` (local-script-only)
+
+The extraction step of the forum ingestion pipeline (`scripts/extract-lejonklou.ts`,
+`build-history-ingestion.md` step 35) calls the Vercel AI Gateway to classify forum
+posts. Unlike every other variable above, this one is **not** added to the
+Production/Preview/Development scopes in the dashboard — extraction never runs as a
+deployed Vercel Function, only as a local script a human runs by hand, so it only
+ever needs to exist in `.env.local`.
+
+1. In the Vercel dashboard, go to your team → **AI Gateway** → **API Keys**
+2. Create a new key and copy it
+3. Add it to `.env.local` directly (not via `vercel env pull` / the dashboard's
+   per-environment scopes):
+   ```
+   AI_GATEWAY_API_KEY=<your key>
+   ```
+
+**Why not just rely on `VERCEL_OIDC_TOKEN`?** Running `vercel env pull` (Step 5
+above) already populates a `VERCEL_OIDC_TOKEN` in `.env.local`, which can also
+authenticate to the Gateway — but it's short-lived and meant to be kept fresh by an
+active `vercel dev` session. Extraction is a long-running, unattended batch script
+(potentially processing thousands of posts across a re-run), a poor fit for a token
+that can expire mid-run. A dedicated `AI_GATEWAY_API_KEY` doesn't expire, so it's
+the right credential for this specific use, even though `VERCEL_OIDC_TOKEN` is
+already sitting there.
+
+---
+
 ## Ongoing workflow
 
 | Action | Result |

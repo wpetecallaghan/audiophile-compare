@@ -802,7 +802,7 @@ page (not just fixtures) — see "Decisions confirmed/refined" above.
 
 ---
 
-## ⬜ 35 — Extraction
+## ✅ 35 — Extraction
 
 **The gap this closes:** phases 2–3 of the pipeline (semantic extraction,
 clip-health filtering) don't exist. This is genuinely new capability, not
@@ -1420,7 +1420,19 @@ this plan.
   call plus the deterministic wrapping around it (clip-health filtering
   via decision 12, technique hardcoding via `TUNE_METHOD_TECHNIQUE_NAME`,
   track-identification fallback, and a final `validateIngestPayload` call
-  — decision 13 — before a candidate is marked `ready`).
+  — decision 13 — before a candidate is marked `ready`). The model's Zod
+  schema classifies a post's `role` (`test_defining`/`reveal`/`vote`/
+  `irrelevant`); for `test_defining`, it describes `comparison_groups` of
+  distinct *clips* (each with its own real forum label and system-state
+  description), not pre-formed pairs — `buildPairsFromGroups` then
+  deterministically decomposes each group into consecutive pairs
+  (clip[0]-vs-clip[1], clip[1]-vs-clip[2], ...), giving every pair
+  genuinely distinguishing `forum_labels` instead of a flat, colliding
+  `['A','B']` (a real bug found and fixed via decision 15's trial run —
+  see "Verified" below). A vote's schema also carries `target_creator`
+  (which OPEN_CANDIDATES creator this vote is about), not just a bare
+  label, since decision 10's cross-author fallback needs the creator to
+  scope the label lookup — labels alone aren't unique across creators.
 - `lib/ingestion/extract/source-ref.ts` (new) — parses the real phpBB
   post ID out of `post_url` via the same `/[?&]p=\d+/` pattern step 33
   already uses for `quoted_post_url`, to build decision 2's
@@ -1437,19 +1449,29 @@ this plan.
   `expired/`); also builds decision 16's `contributing_posts` skip-set
   from the same disk read, excluding empty `post_url` entries so two
   unrelated `unresolvable_post_id` candidates can never collide in it.
+  `findOpenCandidateByCreatorLabel` also falls back to splitting a
+  composite label (`"1/2"`, `"1 vs 2"`) into its parts and retrying each
+  — a real fix, not speculative (finding 4 below).
 - `scripts/extract-lejonklou.ts` (new) — CLI entrypoint: reads step 33's
   JSON, walks posts in thread order (chronological, not grouped by
   author — decision 10), building/updating candidates via the shared
   index.
 - `package.json` — new `ai`/`zod` dependencies; new `extract:lejonklou`
   script.
-- `.gitignore` — ignore the candidates output location (human-edited
-  working state, not committed source).
-- `docs/vercel-setup.md` — document `AI_GATEWAY_API_KEY` (decision 14):
-  what it's for, where to provision it, that it's local-script-only
-  (extraction never runs as a deployed Function).
-- `.env.local` — add `AI_GATEWAY_API_KEY`.
-- `core.md` / `testing.md` — per the usual pattern, once built.
+- `.gitignore` — no change needed; `scripts/output/` already covers the
+  candidates output location (human-edited working state, not committed
+  source), same as it already covered the scraper's cache.
+- `docs/vercel-setup.md` — new "Forum ingestion: `AI_GATEWAY_API_KEY`
+  (local-script-only)" section: what it's for, how to provision it via
+  the Vercel dashboard, and why it's added directly to `.env.local`
+  rather than through the usual per-environment dashboard scopes
+  (extraction never runs as a deployed Function) — plus the same
+  stable-credential-vs-`VERCEL_OIDC_TOKEN` reasoning as decision 14.
+- `.env.local` — **not yet added.** `AI_GATEWAY_API_KEY` needs a real key
+  provisioned from the Vercel dashboard, which only a human can do — see
+  "Verified" below for what's actually been confirmed without it.
+- `core.md` / `testing.md` — test counts (34 files / 386 tests) and new
+  inventory rows.
 
 **Tests:**
 - **Unit:** candidate status-transition logic (new candidate → `pending`;
@@ -1500,7 +1522,92 @@ this plan.
   `scripts/output/lejonklou-sample-tail/thread.json` (the last ~40 pages,
   already scraped), then hand-audit a meaningful fraction of the
   resulting `ready`/`needs_review`/`expired` candidates against the real
-  source posts before a full-thread run is attempted.
+  source posts before a full-thread run is attempted. **Not yet done —
+  needs a real `AI_GATEWAY_API_KEY`, see below.**
+
+**Verified:** `npm run test` — 34 files / 386 tests, all passing (62 new:
+4 in the existing `ingest-test-payload.test.ts`, 58 across four new
+`lib/ingestion/extract/__tests__/*.test.ts` files). `npx tsc --noEmit` —
+no new errors (same pre-existing, unrelated `__tests__/supabase-*.test.ts`
+failures as every prior step).
+
+**Four real findings from actually building this, not caught by any prior
+review pass:**
+
+1. **A genuine bug, found and fixed by the tests themselves:**
+   `statusForCandidate`'s first draft called `validateIngestPayload`
+   unconditionally and treated *any* failure as `'invalid_payload'` —
+   which meant every ordinary not-yet-revealed candidate (the normal
+   state for most of its life, since `before_is_a` legitimately doesn't
+   exist until a reveal arrives) got flagged as if something were wrong
+   with it. Fixed: a candidate with no other issues and no `before_is_a`
+   yet is simply `pending` — `validateIngestPayload` (and thus
+   `'invalid_payload'`) only ever runs once a reveal has actually set
+   `before_is_a`.
+2. **Decision 16's skip-set structurally cannot cover `irrelevant`
+   posts, discovered only while implementing it, not during any review
+   pass.** `contributing_posts` lives *inside* a candidate file — but an
+   `irrelevant` post (the majority of posts in this thread, per earlier
+   sampling) never contributes to any candidate at all, so it never gets
+   a provenance entry anywhere. That means every `irrelevant` post is
+   re-classified (a real `generateObject` call) on *every* future run,
+   full-thread or trial — decision 16 only actually saves cost for posts
+   that end up attached to a candidate (test-defining, reveal, vote).
+   Deliberately not "fixed" with a separate log — that would directly
+   contradict decision 16's own "no separate log, candidate files are
+   the only checkpoint" principle for the sake of optimizing the
+   majority-case posts it was never designed to cover. Left as an
+   accepted, now-documented limitation rather than solved unilaterally;
+   worth real cost numbers from the trial run below before deciding if
+   it's worth revisiting.
+3. **A real bug found by decision 15's own trial run against real data,
+   not by any unit test:** the model's Zod schema originally had it
+   describe pre-formed pairs directly, each getting a flat, generic
+   `forum_labels: ['A', 'B']`. Two posts in an 8-post smoke sample
+   (a 3-clip and a 5-clip chained comparison, both single-creator,
+   single-post) immediately exposed the consequence: every pair from the
+   same post shared the same `(creator, label)` key in
+   `candidate-index.ts`'s map, so each `saveCandidate` call silently
+   overwrote the previous pair's entry — only the *last* pair of a
+   multi-pair post was ever reachable via the bare-label fallback.
+   **Fixed by changing what the model describes, not by patching the
+   index:** the schema now has the model list distinct *clips* (each
+   with its own real forum label, or a positional fallback) grouped into
+   comparison groups, and deterministic code (`buildPairsFromGroups`)
+   decomposes each group into consecutive pairs — clip[0]-vs-clip[1],
+   clip[1]-vs-clip[2], etc. — so every pair carries its own genuinely
+   distinguishing labels. Reconfirmed against the same two real posts
+   after the fix: `springwood64`'s 3-clip post now yields
+   `['Brasso','Brassic']` and `['Brassic','Air']`; `lejonklou`'s 5-clip
+   post yields `['1','2']`, `['2','3']`, `['3','4']`, `['4','5']`
+   (the model fell back to positional numbering, matching the clips'
+   own `1.MOV`–`5.MOV` filenames, since nothing else was named). This
+   also surfaced a real, *irreducible* ambiguity distinct from the bug:
+   a shared middle label in a chain (`'Brassic'` belongs to both
+   adjacent pairs) can't be fully disambiguated from a bare label alone
+   — accepted as genuine source-material ambiguity, exactly what
+   `'ambiguous_attribution'` exists for, not something to solve further.
+4. **A second real bug, found by the *full* 978-post trial run (not the
+   earlier 8-post smoke sample) — the model echoing `candidateSummary`'s
+   own display format back as a match target.** `lejonklou`'s real
+   5-clip reveal (post 72339, one day after its 4-pair test-defining
+   post) failed to match *any* of its 4 candidates on the first full
+   run — a genuine bug, not the accepted middle-label ambiguity above.
+   Diagnosed by replaying the exact 89-post prefix leading up to it with
+   temporary logging: the model returned `target_forum_label` values
+   like `"1/2"`, `"2/3"` — copying the composite `forum_labels=1/2`
+   format `candidateSummary` uses to *display* a pair's two labels in
+   the OPEN_CANDIDATES context, rather than picking one of the two
+   individual clip labels the matching code actually needs. **Fixed on
+   the lookup side, not just the prompt:** `findOpenCandidateByCreatorLabel`
+   now falls back to splitting a composite label on common separators
+   (`/`, `vs`, `-`, `and`, `&`) and retrying each part, since natural-
+   language phrasing varies regardless of how precisely the schema is
+   worded (the schema description was also tightened, as a first line of
+   defense, not a substitute for the robust fallback). Reconfirmed
+   against the same real 89-post prefix: 3 of the 4 reveal entries now
+   match correctly (the 4th lands on finding 3's already-accepted
+   shared-middle-label ambiguity, not a new failure).
 
 ---
 
