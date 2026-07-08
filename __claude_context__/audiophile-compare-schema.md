@@ -290,7 +290,7 @@ admin/service-role client, which is also why neither needs a write RLS
 policy (see the table above). When a real person eventually claims their
 imported content, the expected merge repoints `import_authors.user_id`
 (preserving the "this account is forum-user X" fact) rather than deleting
-the row — planned as `build-history-ingestion.md` step 38 (claim flow),
+the row — planned as `build-history-ingestion.md` step 39 (claim flow),
 not yet built.
 
 ### ingest_test function (step 31)

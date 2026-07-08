@@ -1328,17 +1328,17 @@ gets its full detail directly here rather than in
 
 7. **The scraper/extraction steps (33/34) need to actually populate
    `source_url`.** Step 33 (scraper) already plans to capture each post's
-   real `post_url`; step 34 (extraction) needs to carry the *specific
+   real `post_url`; step 35 (extraction) needs to carry the *specific
    pair's* post URL into the candidate's `source_url` field. This is a
    plan update to `build-history-ingestion.md`, not new code, since those
    steps aren't built yet.
 
-8. **Addendum (from step 38's design): a contact link next to the badge,
+8. **Addendum (from step 39's design): a contact link next to the badge,
    so provenance actually leads somewhere.** Something like "Think this is
    yours? [contact email]" alongside the "View original post" link —
    otherwise this step shows *who* imported content belongs to with no way
    for that person to act on it. A static mailto/contact string, not a new
-   form or claim-request flow — step 38 (`build-history-ingestion.md`)
+   form or claim-request flow — step 39 (`build-history-ingestion.md`)
    handles verification and the actual merge from there.
 
 **Files updated:**
@@ -1386,7 +1386,7 @@ gets its full detail directly here rather than in
   conditional-provenance pattern, including why compact rows get badge-only.
 - `__claude_context__/audiophile-compare-schema.md` — `tests.source_url`
   column; `ingest_test` section updated; corrected a stale "not yet
-  implemented" cross-reference for the claim flow to point at step 38.
+  implemented" cross-reference for the claim flow to point at step 39.
 - `__claude_context__/api-conventions.md` §5 — noted `IngestPayload.
   source_url`.
 - `__claude_context__/testing.md` — new unit-test row and count, new E2E
@@ -1564,17 +1564,22 @@ not folded into extraction.
 
 Takes step 33's raw posts and does the hard semantic work — per-author
 system/snapshot continuity (simplified to one placeholder system per
-creator; reply-to-test attribution via quote references remains the
-highest-risk, most-open part of this whole plan), clip-health filtering
-(reusing existing verify logic), technique hardcoded to 'Tune Method' (the
-forum's stated convention), and a flagged placeholder for tracks that
-can't be identified from text or clip metadata. Uses the Vercel AI SDK
-(`generateObject` + Zod, via the AI Gateway) rather than calling ingest
-directly — output is a local, human-editable candidate repository (one
-JSON file per candidate, organized into `pending`/`needs_review`/`ready`/
-`approved`/`ingested/staging`/`ingested/production` subfolders — the
-folder a file sits in *is* its status), never a live API call. Full plan:
-`build-history-ingestion.md`.
+creator), clip-health filtering (reusing existing verify logic), technique
+hardcoded to 'Tune Method' (the forum's stated convention), and a flagged
+placeholder for tracks that can't be identified from text or clip
+metadata. Reply-to-test attribution (matching a voter's reply against a
+different author's open candidate) was the highest-risk open design
+question; now resolved architecturally as a single chronological walk
+over the whole thread backed by one shared cross-author candidate index,
+with a reveal closing a candidate to further matching and a 21-day
+auto-expiry — real-world validation of that approach is still pending a
+trial run against a bounded sample before any full-thread run. Uses the
+Vercel AI SDK (`generateObject` + Zod, via the AI Gateway) rather than
+calling ingest directly — output is a local, human-editable candidate
+repository (one JSON file per candidate, organized into `pending`/
+`needs_review`/`ready`/`approved`/`ingested/staging`/`ingested/production`/
+`expired` subfolders — the folder a file sits in *is* its status), never
+a live API call. Full plan: `build-history-ingestion.md`.
 
 ### ⬜ 36 — Forum ingestion: commit (planned, not yet built)
 
