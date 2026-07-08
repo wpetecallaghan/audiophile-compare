@@ -650,32 +650,36 @@ a remaining gap** — neither has a public, stable, embeddable URL for
 third-party use, and screen-scraping one would be fragile. Not blocking
 this step either way.
 
-**Planned refinement (not yet built): resumable per-page caching, so a
-re-run doesn't re-fetch (or re-hit) the live forum for pages it already
-has.** Today every run walks pagination from page 1 and re-fetches every
-page over the network, every time — fine for a first scrape, wasteful and
+**Refinement (built): resumable per-page caching, so a re-run doesn't
+re-fetch (or re-hit) the live forum for pages it already has.** Before
+this, every run walked pagination from page 1 and re-fetched every page
+over the network, every time — fine for a first scrape, wasteful and
 impolite to the real forum for a re-run that's only trying to pick up a
 few new pages, or to re-derive output after a parser fix (like the real
 `username-coloured` bug found and fixed above) without needing fresh
-network content at all. Planned layout:
+network content at all. Layout, derived from the CLI's own
+`<output-path>` argument rather than a hardcoded location (the script's
+signature is `scrape-lejonklou.ts <thread-url> <output-path>` — the
+output path is caller-supplied, so the cache must be too):
 ```
-scripts/output/scrape/
+<dirname(outputPath)>/scrape-cache/
   raw/page-0001.html, page-0002.html, ...      cached raw HTML per page
-  parsed/page-0001.json, page-0002.json, ...   parsed ScrapedPost[] per page
-  lejonklou-thread.json                         assembled ScrapedThread —
+  parsed/page-0001.json, page-0002.json, ...   parsed, oEmbed-enriched
+                                                ScrapedPost[] per page
+<outputPath>                                    assembled ScrapedThread —
                                                  unchanged interface, still
                                                  what extraction reads
 ```
 Walking pagination, each page checks its own `raw/` cache first: present
 → read from disk instead of fetching (no network call at all, no load on
 the real forum); its `parsed/` file also checked separately — present →
-skip parsing too, absent → re-parse the cached HTML (still no network
-call). This gives a human two distinct, file-deletion-driven signals:
-delete only a page's `parsed/` file to force a re-parse from cache (the
-right move after a parser fix); delete both `raw/` and `parsed/` to force
-a genuine re-fetch (the right move when the live content itself needs
-refreshing). The final `lejonklou-thread.json` — extraction's actual
-input — is still assembled and written every run exactly as today;
+skip parsing (and oEmbed enrichment, see below) too, absent → re-parse the
+cached HTML (still no network call). This gives a human two distinct,
+file-deletion-driven signals: delete only a page's `parsed/` file to force
+a re-parse from cache (the right move after a parser fix); delete both
+`raw/` and `parsed/` to force a genuine re-fetch (the right move when the
+live content itself needs refreshing). The final assembled thread file —
+extraction's actual input — is still written every run exactly as today;
 nothing about step 35's interface to this step changes. **Accepted
 limitation, not solved by this design:** caching by page assumes the
 forum's own pagination boundaries stay stable between runs; if an old
@@ -690,24 +694,86 @@ of network activity than a prior run, and only an identifier tied to
 the post's own permanent identity survives that; an array-position key
 would silently drift.
 
+**oEmbed enrichment moves per-page, folded into the `parsed/` cache —
+not a separate whole-thread pass at the end.** The original draft of
+this refinement only cached the fetch+parse cost; oEmbed lookups
+(decision 4) still ran as one pass over every post after the whole walk
+finished, regardless of caching, so a cached page would still re-pay its
+oEmbed cost on every run. Fixed by enriching a page's links immediately
+after parsing it, before writing that page's `parsed/` cache file — a
+cached page's parsed JSON already carries its enrichment, so only
+genuinely new/reprocessed pages make oEmbed calls at all. No change to
+the output itself, just when enrichment happens.
+
 **Coupling with step 35's own "delete a file to reprocess" mechanism
 (decision 16), not to be confused with each other:** deleting a
 candidate file forces extraction to reprocess the posts that built it,
-but only using whatever's currently in `lejonklou-thread.json` — if that
-still reflects a stale cached page (nobody cleared `raw/`/`parsed/` for
-it), the candidate gets "reprocessed" against the same old content, not
-fresh content. Getting genuinely fresh live content into a reprocessed
-candidate requires clearing *both* caches — this step's page cache and
-step 35's candidate file — not just the one that seems relevant.
+but only using whatever's currently in the assembled thread file — if
+that still reflects a stale cached page (nobody cleared `raw/`/`parsed/`
+for it), the candidate gets "reprocessed" against the same old content,
+not fresh content. Getting genuinely fresh live content into a
+reprocessed candidate requires clearing *both* caches — this step's page
+cache and step 35's candidate file — not just the one that seems
+relevant.
 
-**Files to update, when this refinement is actually built:**
+**Files updated (this refinement):**
+- `lib/ingestion/scrape/page-cache.ts` (new) — read/write helpers for a
+  page's raw HTML and parsed+enriched JSON, given a base cache directory
+  and page number; pure and unit-testable, no network calls, following
+  this step's own established pattern (decision 8: parsing logic lives
+  in `lib/`, not the script, precisely so it's testable without a live
+  network call). Cache misses return `null` (never throw); any
+  non-`ENOENT` read error still propagates rather than being silently
+  treated as a miss.
 - `scripts/scrape-lejonklou.ts` — per-page read-cache-or-fetch and
-  read-cache-or-parse logic; still assembles and writes
-  `lejonklou-thread.json` unchanged at the end.
-- `lib/ingestion/scrape/parse-thread-page.ts` — no change to
-  `parsePostsFromPage`/`findNextPageUrl` themselves, just new callers.
-- `.gitignore` — already covers `scripts/output/` as a whole, no change
-  needed for the new `raw/`/`parsed/` subfolders.
+  read-cache-or-parse-and-enrich logic (`loadPage`), using
+  `page-cache.ts`'s helpers; cache directory derived from
+  `join(dirname(outputPath), 'scrape-cache')`; the polite
+  `REQUEST_DELAY_MS` delay now only applies after a page that was
+  actually fetched over the network, not a cache hit; still assembles
+  and writes the final thread file unchanged at the end. Also gained a
+  new optional third CLI argument, `[max-pages]`, capping how many pages
+  a single invocation walks (independent of the existing `MAX_PAGES=500`
+  safety constant) — added so a bounded sample near the thread's end
+  could be taken and then resumed without walking the whole thread from
+  page 1 to get there; `<thread-url>` was already usable with any
+  `start=` offset, not just the thread's first page, so no change was
+  needed there, just documented more explicitly in the script's header
+  comment.
+- `lib/ingestion/scrape/parse-thread-page.ts` — unchanged, as planned;
+  `parsePostsFromPage`/`findNextPageUrl` have no new callers' concerns to
+  accommodate.
+- `.gitignore` — no change needed; `scripts/output/` already covers the
+  new `scrape-cache/` subfolder since the output path stays under it.
+- `__claude_context__/testing.md` / `core.md` — new inventory row and
+  updated test counts (30 files / 322 tests).
+
+**Verified:** `npx vitest run lib/ingestion/scrape/__tests__/page-cache.test.ts`
+— 8/8 passing (cache miss returns `null`; raw HTML and parsed+enriched
+JSON round-trip; keyed correctly per page number, not overwriting
+siblings; page numbers zero-padded on disk; cache directory created on
+first write without needing to pre-exist; a non-`ENOENT` read error
+propagates rather than being swallowed). Full suite:
+`npm run test` — 30 files / 322 tests, all passing (8 new). `npx tsc
+--noEmit` — no new errors (same pre-existing, unrelated
+`__tests__/supabase-*.test.ts` failures as every prior step).
+
+**Also confirmed live, end-to-end, against the real forum** (fetched the
+thread's own page 1 first, once, to read its real pagination — 316 pages,
+25 posts/page, 7,878 posts total at time of testing — and compute a
+starting URL 40 pages from the end, rather than walking there from page
+1): ran the CLI twice against `https://www.lejonklou.com/forum/
+viewtopic.php?f=2&t=3233&start=6900`, first capped at 39 pages, then
+uncapped. Run 1 made 39 genuine fetches and stopped exactly one page
+short of the real end (975 posts). Run 2 read all 39 pages from cache —
+zero network requests for any of them — and made exactly one real fetch,
+for the true last page (978 posts, the 3-post difference matching what's
+actually on that page). Cache directory held 40 `raw/` + 40 `parsed/`
+files afterward, one per page. This output became the new
+`scripts/output/lejonklou-sample-tail/thread.json` (see decision 15 in
+step 35), superseding the older one-off-script-generated sample of the
+same name — now regenerable via this CLI directly rather than a
+throwaway script.
 
 **Tests:**
 - **Unit:** `lib/ingestion/scrape/__tests__/parse-thread-page.test.ts` (10
@@ -1253,7 +1319,7 @@ this plan.
     full-thread run is a real commitment to get wrong repeatedly while
     iterating. So extraction gets validated the same way step 33
     validated the scraper itself: against the last ~40 pages of the
-    thread — `scripts/output/lejonklou-sample-tail.json` is already
+    thread — `scripts/output/lejonklou-sample-tail/thread.json` is already
     scraped and available, no new scraping needed. A trial run means
     running the extraction CLI against that file, then manually auditing
     a meaningful fraction of the resulting `ready`/`needs_review`/
@@ -1431,7 +1497,7 @@ this plan.
   the model call itself isn't unit-testable in the traditional sense.
 - **E2E / integration:** none — no deployed route is touched.
 - **Manual (not automated):** decision 15's trial run — extract against
-  `scripts/output/lejonklou-sample-tail.json` (the last ~40 pages,
+  `scripts/output/lejonklou-sample-tail/thread.json` (the last ~40 pages,
   already scraped), then hand-audit a meaningful fraction of the
   resulting `ready`/`needs_review`/`expired` candidates against the real
   source posts before a full-thread run is attempted.

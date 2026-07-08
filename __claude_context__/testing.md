@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (29 files · 314 tests · all passing)
+## 4. Unit test inventory (30 files · 322 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -97,6 +97,7 @@ indirectly through the step tests.
 | `lib/ingestion/__tests__/ingest-test-payload.test.ts` | 17 | `validateIngestPayload`: accepts a fully populated payload (with and without votes, and with an optional `source_url`); rejects each missing required field on the top level, on `snapshot_a`/`snapshot_b`, and on a vote entry (`voter`, `chosen_label`, `technique_name`); `resolveTestTitle`: uses an explicit title, falls back to "artist – title" when omitted or whitespace-only |
 | `lib/ingestion/scrape/__tests__/parse-thread-page.test.ts` | 10 | Author/timestamp/permalink/body/links extraction from a phpBB post; ephemeral `sid` stripped from permalinks; quote block → markdown, `quoted_post_url` resolves to `null` for phpBB's default quote (no post link) and to a real URL when a quote manually links one; links inside a quote excluded from the post's own `links`; a post with no username link or no timestamp doesn't throw; multiple posts on one page extracted in order; `findNextPageUrl` via `rel="next"`, `null` on the last page |
 | `lib/ingestion/scrape/__tests__/fetch-oembed.test.ts` | 6 | Successful YouTube/Vimeo oEmbed lookups populate `oembed_title`/`oembed_author`; a non-YouTube/Vimeo link is skipped with no network call; a failed/404 response or a network error is swallowed, not thrown; `enrichLinksWithOEmbed` enriches each link independently, preserving order |
+| `lib/ingestion/scrape/__tests__/page-cache.test.ts` | 8 | Resumable per-page scrape cache: raw HTML and parsed+enriched JSON round-trip, keyed by page number; cache miss returns `null` rather than throwing; a non-ENOENT read error (e.g. a directory where a file is expected) still propagates; writing creates the cache directory if it doesn't exist; page numbers are zero-padded on disk |
 
 ---
 
