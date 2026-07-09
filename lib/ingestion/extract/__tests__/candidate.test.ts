@@ -25,11 +25,12 @@ function candidate(sourceRef: string, overrides: Partial<Candidate> = {}): Candi
 }
 
 describe('isProtectedStatus', () => {
-  it('protects approved, both ingested stages, and expired', () => {
+  it('protects approved, both ingested stages, expired, and broken', () => {
     expect(isProtectedStatus('approved')).toBe(true)
     expect(isProtectedStatus('ingested_staging')).toBe(true)
     expect(isProtectedStatus('ingested_production')).toBe(true)
     expect(isProtectedStatus('expired')).toBe(true)
+    expect(isProtectedStatus('broken')).toBe(true)
   })
 
   it('does not protect pending, needs_review, or ready', () => {
@@ -138,7 +139,7 @@ describe('candidate file storage', () => {
     await expect(findExistingCandidate(baseDir, 't:post-1:pair-1')).resolves.toBeNull()
   })
 
-  it('reads every candidate across all seven status folders', async () => {
+  it('reads every candidate across all eight status folders', async () => {
     await writeCandidate(baseDir, 'pending', candidate('t:post-1:pair-1'))
     await writeCandidate(baseDir, 'needs_review', candidate('t:post-2:pair-1'))
     await writeCandidate(baseDir, 'ready', candidate('t:post-3:pair-1'))
@@ -146,12 +147,14 @@ describe('candidate file storage', () => {
     await writeCandidate(baseDir, 'ingested_staging', candidate('t:post-5:pair-1'))
     await writeCandidate(baseDir, 'ingested_production', candidate('t:post-6:pair-1'))
     await writeCandidate(baseDir, 'expired', candidate('t:post-7:pair-1'))
+    await writeCandidate(baseDir, 'broken', candidate('t:post-8:pair-1'))
 
     const all = await readAllCandidates(baseDir)
-    expect(all).toHaveLength(7)
+    expect(all).toHaveLength(8)
     expect(all.map((r) => r.status).sort()).toEqual(
       [
         'approved',
+        'broken',
         'expired',
         'ingested_production',
         'ingested_staging',

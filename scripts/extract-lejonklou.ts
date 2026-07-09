@@ -10,7 +10,12 @@
 // step 36's job.
 
 import { readFile } from 'node:fs/promises'
-import { buildCandidateIndex, sweepExpiredCandidates, isPostAccountedFor } from '../lib/ingestion/extract/candidate-index'
+import {
+  buildCandidateIndex,
+  sweepExpiredCandidates,
+  isPostAccountedFor,
+  isReplyToBrokenCandidate,
+} from '../lib/ingestion/extract/candidate-index'
 import { extractPost } from '../lib/ingestion/extract/extract-post'
 import type { ScrapedThread } from '../lib/ingestion/scrape/parse-thread-page'
 
@@ -49,7 +54,8 @@ async function main() {
   const index = await buildCandidateIndex(candidatesDir)
 
   let processed = 0
-  let skipped = 0
+  let skippedAccountedFor = 0
+  let skippedBroken = 0
 
   for (const post of thread.posts) {
     // decision 10: the walk visits every post regardless of skip status,
@@ -58,7 +64,16 @@ async function main() {
     await sweepExpiredCandidates(index, candidatesDir, post.posted_at)
 
     if (isPostAccountedFor(index, post.post_url)) {
-      skipped++
+      skippedAccountedFor++
+      continue
+    }
+
+    // A reply quoting an already-`broken` candidate's post can't be a
+    // useful vote or reveal for anything — skip the generateObject call
+    // entirely rather than spend tokens classifying a reply to a test
+    // nobody can ever actually watch.
+    if (post.quoted_post_url && isReplyToBrokenCandidate(index, post.quoted_post_url)) {
+      skippedBroken++
       continue
     }
 
@@ -67,8 +82,8 @@ async function main() {
   }
 
   console.log(
-    `Processed ${processed} post(s), skipped ${skipped} already-accounted-for post(s), ` +
-      `out of ${thread.posts.length} total.`,
+    `Processed ${processed} post(s), skipped ${skippedAccountedFor} already-accounted-for post(s) ` +
+      `and ${skippedBroken} reply/replies to a known-broken test, out of ${thread.posts.length} total.`,
   )
 }
 

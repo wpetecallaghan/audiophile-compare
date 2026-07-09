@@ -11,8 +11,24 @@ export type IssueCode =
   | 'unresolvable_post_id' // decision 2
   | 'missing_timestamp' // decision 10
   | 'ambiguous_attribution' // decision 10
-  | 'dead_clip_url' // decision 12
+  | 'dead_clip_url' // decision 12 — genuinely unreachable (404, DNS failure, timeout)
+  | 'missing_clip_url' // clip-health follow-up — a comparison group's clip URL was empty
+  | 'unplayable_clip_url' // clip-health follow-up — reachable, but not embeddable/playable media
+  | 'unverifiable_clip_url' // clip-health follow-up — a google-drive URL; can't be network-checked, needs a human look
   | 'invalid_payload' // decision 13
+
+// Issues a human genuinely cannot fix by editing the candidate file — the
+// clip itself is unusable, not just under-described. Distinct from
+// `unidentified_track` (a human can type in the real name) or
+// `unresolvable_post_id`/`ambiguous_attribution`/`invalid_payload` (all
+// still resolvable, or at least worth a human's attention as a candidate
+// that might become usable). A candidate carrying any of these routes
+// straight to `broken`, not `needs_review` — see `statusForCandidate`.
+export const FATAL_CLIP_ISSUES: readonly IssueCode[] = [
+  'dead_clip_url',
+  'missing_clip_url',
+  'unplayable_clip_url',
+]
 
 export type Candidate = {
   // The test-defining post's own posted_at — decision 10's expiry clock
@@ -40,39 +56,62 @@ export type Candidate = {
 // inside the JSON at all. `ingested_staging`/`ingested_production` map to
 // the nested `ingested/staging`/`ingested/production` folders; every other
 // status is a flat top-level folder under the given base directory.
-export const CANDIDATE_STATUSES = [
-  'pending',
-  'needs_review',
-  'ready',
-  'approved',
-  'ingested_staging',
-  'ingested_production',
-  'expired',
-] as const
+//
+// A single named source of truth for each status value — call sites use
+// `CandidateStatusValue.READY` etc. rather than repeating the string
+// literal `'ready'`, so a typo can't silently create a bogus status with
+// no compiler catch (this repo's repeated-string-constants convention,
+// applied here — test files asserting against a real value are the
+// normal, expected exception, not a repetition to fix).
+export const CandidateStatusValue = {
+  PENDING: 'pending',
+  NEEDS_REVIEW: 'needs_review',
+  READY: 'ready',
+  APPROVED: 'approved',
+  INGESTED_STAGING: 'ingested_staging',
+  INGESTED_PRODUCTION: 'ingested_production',
+  EXPIRED: 'expired',
+  // A human-only destination — nothing in extraction ever writes here
+  // automatically (unlike `EXPIRED`, which decision 10's sweep sets on
+  // its own). A reviewer moves a candidate here after checking its
+  // clip URLs by hand and finding them genuinely unusable (dead hosting,
+  // taken-down share links, etc.) — distinct from decision 12's
+  // `dead_clip_url` issue, which only ever catches a `direct`-provider
+  // link failing its HEAD check *at extraction time*; a youtube/vimeo/
+  // google-drive link trusted by URL shape, or a link that later goes
+  // dead after extraction, needs a human to actually notice.
+  BROKEN: 'broken',
+} as const
 
-export type CandidateStatus = (typeof CANDIDATE_STATUSES)[number]
+export type CandidateStatus = (typeof CandidateStatusValue)[keyof typeof CandidateStatusValue]
+export const CANDIDATE_STATUSES = Object.values(CandidateStatusValue) as CandidateStatus[]
 
 const STATUS_FOLDERS: Record<CandidateStatus, string> = {
-  pending: 'pending',
-  needs_review: 'needs_review',
-  ready: 'ready',
-  approved: 'approved',
-  ingested_staging: 'ingested/staging',
-  ingested_production: 'ingested/production',
-  expired: 'expired',
+  [CandidateStatusValue.PENDING]: 'pending',
+  [CandidateStatusValue.NEEDS_REVIEW]: 'needs_review',
+  [CandidateStatusValue.READY]: 'ready',
+  [CandidateStatusValue.APPROVED]: 'approved',
+  [CandidateStatusValue.INGESTED_STAGING]: 'ingested/staging',
+  [CandidateStatusValue.INGESTED_PRODUCTION]: 'ingested/production',
+  [CandidateStatusValue.EXPIRED]: 'expired',
+  [CandidateStatusValue.BROKEN]: 'broken',
 }
 
 // decision 4: re-running never touches a candidate whose file already
 // exists in one of these — a human decision, once made, isn't silently
 // clobbered, and an automatically-`expired` candidate (decision 10) can't
-// be silently un-expired either. Callers (candidate-index.ts) are
-// responsible for checking this before writing or moving a candidate;
-// these low-level helpers don't enforce it themselves.
+// be silently un-expired either. `broken` is protected for the same
+// reason as `approved`: it's a human's definitive determination, not
+// something extraction should ever second-guess on a re-run. Callers
+// (candidate-index.ts) are responsible for checking this before writing
+// or moving a candidate; these low-level helpers don't enforce it
+// themselves.
 const PROTECTED_STATUSES: readonly CandidateStatus[] = [
-  'approved',
-  'ingested_staging',
-  'ingested_production',
-  'expired',
+  CandidateStatusValue.APPROVED,
+  CandidateStatusValue.INGESTED_STAGING,
+  CandidateStatusValue.INGESTED_PRODUCTION,
+  CandidateStatusValue.EXPIRED,
+  CandidateStatusValue.BROKEN,
 ]
 
 export function isProtectedStatus(status: CandidateStatus): boolean {
@@ -169,7 +208,7 @@ export async function moveCandidate(
   await rm(filePathFor(baseDir, from, sourceRef))
 }
 
-// Reads every candidate currently on disk, across all seven status
+// Reads every candidate currently on disk, across all status
 // folders — the basis for decision 10's shared index (open-candidate
 // matching, drawn only from pending/needs_review/ready) and decision 16's
 // contributing_posts skip-set (which needs every folder's provenance, so a

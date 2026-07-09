@@ -25,7 +25,11 @@ function post(overrides: Partial<ScrapedPost> = {}): ScrapedPost {
     posted_at: '2024-01-01T00:00:00Z',
     body_markdown: 'A vs B, new DAC.',
     quoted_post_url: null,
-    links: [],
+    // clip-health.ts's isRealPostLink requires a clip URL to actually be
+    // one of the post's own real links — most test-defining tests use
+    // these two, so they're covered by default; tests exercising other
+    // clip URLs override this.
+    links: [{ url: YOUTUBE_A }, { url: YOUTUBE_B }],
     ...overrides,
   }
 }
@@ -142,11 +146,111 @@ describe('extractPost', () => {
       )
 
       const index = await buildCandidateIndex(baseDir)
-      await extractPost(THREAD_REF, post(), index, baseDir)
+      await extractPost(
+        THREAD_REF,
+        post({ links: [{ url: 'https://example.com/a.mp3' }, { url: YOUTUBE_B }] }),
+        index,
+        baseDir,
+      )
 
       const sourceRef = `${THREAD_REF}:post-72033:pair-1`
       expect(index.candidatesByRef.get(sourceRef)?.candidate.issues).toContain('dead_clip_url')
+      // A fatal clip issue routes straight to broken, not needs_review —
+      // there's nothing a human can fix here by editing the file.
+      expect(index.candidatesByRef.get(sourceRef)?.status).toBe('broken')
+    })
+
+    it('flags missing_clip_url when a comparison group clip URL is empty', async () => {
+      mockClassification(
+        classification({
+          role: 'test_defining',
+          comparison_groups: [
+            {
+              clips: [clip('', 'A'), clip(YOUTUBE_B, 'B')],
+              track_name_is_confident: false,
+            },
+          ],
+        }),
+      )
+
+      const index = await buildCandidateIndex(baseDir)
+      await extractPost(THREAD_REF, post(), index, baseDir)
+
+      const sourceRef = `${THREAD_REF}:post-72033:pair-1`
+      expect(index.candidatesByRef.get(sourceRef)?.candidate.issues).toContain('missing_clip_url')
+      expect(index.candidatesByRef.get(sourceRef)?.status).toBe('broken')
+    })
+
+    it('flags missing_clip_url when a clip URL is not actually one of the post\'s own links (a model error)', async () => {
+      mockClassification(
+        classification({
+          role: 'test_defining',
+          comparison_groups: [
+            {
+              clips: [clip('https://example.com/fabricated.mp3', 'A'), clip(YOUTUBE_B, 'B')],
+              track_name_is_confident: false,
+            },
+          ],
+        }),
+      )
+
+      const index = await buildCandidateIndex(baseDir)
+      // post()'s default links don't include the fabricated URL.
+      await extractPost(THREAD_REF, post(), index, baseDir)
+
+      const sourceRef = `${THREAD_REF}:post-72033:pair-1`
+      expect(index.candidatesByRef.get(sourceRef)?.candidate.issues).toContain('missing_clip_url')
+      expect(checkDirectUrl).not.toHaveBeenCalled()
+    })
+
+    it('flags unplayable_clip_url when a link is reachable but not playable media (e.g. a Dropbox/Photos/iCloud page)', async () => {
+      const pageUrl = 'https://www.dropbox.com/scl/fi/abc/clip.mov?rlkey=xyz&dl=0'
+      vi.mocked(checkDirectUrl).mockResolvedValue({
+        url_status: 'ok',
+        media_type: 'unknown',
+        duration_ms: null,
+      })
+      mockClassification(
+        classification({
+          role: 'test_defining',
+          comparison_groups: [
+            {
+              clips: [clip(pageUrl, 'A'), clip(YOUTUBE_B, 'B')],
+              track_name_is_confident: false,
+            },
+          ],
+        }),
+      )
+
+      const index = await buildCandidateIndex(baseDir)
+      await extractPost(THREAD_REF, post({ links: [{ url: pageUrl }, { url: YOUTUBE_B }] }), index, baseDir)
+
+      const sourceRef = `${THREAD_REF}:post-72033:pair-1`
+      expect(index.candidatesByRef.get(sourceRef)?.candidate.issues).toContain('unplayable_clip_url')
+      expect(index.candidatesByRef.get(sourceRef)?.status).toBe('broken')
+    })
+
+    it('flags unverifiable_clip_url (and needs_review, not broken) for a google-drive link — an anonymous request can\'t tell a dead Drive file from a healthy one', async () => {
+      const driveUrl = 'https://drive.google.com/file/d/abc123/view?usp=sharing'
+      mockClassification(
+        classification({
+          role: 'test_defining',
+          comparison_groups: [
+            {
+              clips: [clip(driveUrl, 'A'), clip(YOUTUBE_B, 'B')],
+              track_name_is_confident: false,
+            },
+          ],
+        }),
+      )
+
+      const index = await buildCandidateIndex(baseDir)
+      await extractPost(THREAD_REF, post({ links: [{ url: driveUrl }, { url: YOUTUBE_B }] }), index, baseDir)
+
+      const sourceRef = `${THREAD_REF}:post-72033:pair-1`
+      expect(index.candidatesByRef.get(sourceRef)?.candidate.issues).toContain('unverifiable_clip_url')
       expect(index.candidatesByRef.get(sourceRef)?.status).toBe('needs_review')
+      expect(checkDirectUrl).not.toHaveBeenCalled()
     })
 
     it('never calls checkDirectUrl for a youtube/vimeo link — trusted by URL shape only', async () => {
@@ -221,20 +325,26 @@ describe('extractPost', () => {
     })
 
     it('decomposes a chained multi-clip group into consecutive pairs with distinguishing labels, not a flat A/B', async () => {
-      // These photos.app.goo.gl-style links are real-world examples (decision
-      // 15's trial run) that detectProvider classifies as 'direct' — give
-      // them a healthy check so this test stays focused on label
-      // decomposition, not clip-health (already covered above).
-      vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'ok', media_type: 'unknown', duration_ms: null })
+      // These photos.app.goo.gl-style links are real-world examples
+      // (decision 15's trial run) that detectProvider classifies as
+      // 'direct' — give them a healthy, real-media check so this test
+      // stays focused on label decomposition, not clip-health (covered
+      // separately below).
+      vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'ok', media_type: 'video', duration_ms: null })
+      const clipUrls = [
+        'https://photos.app.goo.gl/1',
+        'https://photos.app.goo.gl/2',
+        'https://photos.app.goo.gl/3',
+      ]
       mockClassification(
         classification({
           role: 'test_defining',
           comparison_groups: [
             {
               clips: [
-                clip('https://photos.app.goo.gl/1', 'Brasso', 'brass footers'),
-                clip('https://photos.app.goo.gl/2', 'Brassic', 'brass-steel footers'),
-                clip('https://photos.app.goo.gl/3', 'Air', 'no footers'),
+                clip(clipUrls[0], 'Brasso', 'brass footers'),
+                clip(clipUrls[1], 'Brassic', 'brass-steel footers'),
+                clip(clipUrls[2], 'Air', 'no footers'),
               ],
               track_name_is_confident: false,
             },
@@ -243,7 +353,7 @@ describe('extractPost', () => {
       )
 
       const index = await buildCandidateIndex(baseDir)
-      await extractPost(THREAD_REF, post(), index, baseDir)
+      await extractPost(THREAD_REF, post({ links: clipUrls.map((url) => ({ url })) }), index, baseDir)
 
       const pair1 = index.candidatesByRef.get(`${THREAD_REF}:post-72033:pair-1`)?.candidate
       const pair2 = index.candidatesByRef.get(`${THREAD_REF}:post-72033:pair-2`)?.candidate

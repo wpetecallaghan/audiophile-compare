@@ -928,6 +928,16 @@ this plan.
      expired/               closed automatically — no reveal within 21 days
                              of the candidate's post (decision 10); not part
                              of the approved → ingested chain, a dead end
+     broken/                a human moved it here after manually checking its
+                             clip URLs and finding them genuinely unusable —
+                             added post-trial (decision 15's real run), once
+                             candidates with real dead hosting (taken-down
+                             share links, etc.) started showing up; distinct
+                             from decision 12's dead_clip_url, which only
+                             ever catches a direct-provider link failing its
+                             HEAD check at extraction time — never a
+                             youtube/vimeo/google-drive link trusted by URL
+                             shape, and never a link that goes dead later
    ```
    A candidate's status is simply which folder its file is sitting in —
    "approving" a `ready` (or fixed `needs_review`) candidate means moving
@@ -939,22 +949,27 @@ this plan.
    34 decision 1 for why `ingested/staging/` is also production's *input*
    folder, not just a record. `expired/` is the one transition extraction
    makes on its own without a human moving anything — see decision 10.
+   `broken/` is the opposite: nothing ever writes there automatically,
+   only a human, the same manual-edit spirit as decision 7's track
+   resolution.
 
 4. **Extraction is incremental and safe to re-run.** Re-running against an
    updated scrape (e.g. after a re-scrape picks up new posts) creates or
    updates a candidate's file in `pending/`, `needs_review/`, or `ready/`
    as more of the thread resolves, but **never touches a candidate whose
    file already exists in `approved/`, `ingested/staging/`,
-   `ingested/production/`, or `expired/`** — checked by looking for that
-   `source_ref`'s filename in those four folders first. A human decision,
-   once made, isn't silently clobbered by a later run; a candidate
-   already in flight through the ingest chain can't be reset back to
-   `pending` by a fresh scrape; and an automatically-`expired/` candidate
-   (decision 10) can't be silently un-expired by a later run either —
-   even if a late reveal eventually shows up in an updated scrape, it's
-   ignored, consistent with "a vote/reveal after the close point doesn't
-   count." This decision is about which *files* a re-run won't move or
-   overwrite; decision 16 covers the complementary question of which
+   `ingested/production/`, `expired/`, or `broken/`** — checked by
+   looking for that `source_ref`'s filename in those five folders first.
+   A human decision, once made, isn't silently clobbered by a later run;
+   a candidate already in flight through the ingest chain can't be reset
+   back to `pending` by a fresh scrape; an automatically-`expired/`
+   candidate (decision 10) can't be silently un-expired by a later run
+   either — even if a late reveal eventually shows up in an updated
+   scrape, it's ignored, consistent with "a vote/reveal after the close
+   point doesn't count" — and a human's `broken/` determination can't be
+   silently reversed by a later run either. This decision is about which
+   *files* a re-run won't move or overwrite; decision 16 covers the
+   complementary question of which
    *posts* a re-run won't bother re-sending to the model at all.
 
 5. **Three distinct concepts, not one — clarified against how the forum
@@ -1473,6 +1488,52 @@ this plan.
   attempt, see "Verified" below).
 - `core.md` / `testing.md` — test counts (34 files / 386 tests) and new
   inventory rows.
+- `lib/ingestion/extract/candidate.ts` — added `broken/` to
+  `CANDIDATE_STATUSES`/`STATUS_FOLDERS`/`PROTECTED_STATUSES` (finding 6).
+- `lib/ingestion/extract/extract-post.ts` — `statusForCandidate` exported
+  (finding 6, so `resolve-candidate-track.ts` can reuse it exactly).
+- `scripts/resolve-candidate-track.ts` (new) — finding 6's per-candidate
+  track-resolution tool.
+- `scripts/default-before-is-a.ts` (new) — finding 6's batch
+  reveal-never-matched override tool.
+- `lib/ingestion/extract/candidate.ts` — `CandidateStatusValue` named-
+  constant object replacing the `CANDIDATE_STATUSES` array literal
+  (`CandidateStatus` now `(typeof CandidateStatusValue)[keyof typeof
+  CandidateStatusValue]`); every status literal across this pipeline
+  (`candidate.ts`, `candidate-index.ts`, `extract-post.ts`,
+  `default-before-is-a.ts`, `recheck-clip-health.ts`) now reads from it
+  instead of a bare string. Scope deliberately limited to `CandidateStatus`
+  only, not `IssueCode` — a human instruction, not an oversight. Also adds
+  `FATAL_CLIP_ISSUES` (finding 7).
+- `lib/ingestion/extract/clip-health.ts` (new) — finding 7's thorough clip
+  check, replacing the inline `isClipDead` helper that used to live in
+  `extract-post.ts`. `checkClipStatus(url, postLinks)` combines
+  `isRealPostLink` (catches a model-hallucinated clip URL not actually in
+  the post — see finding 3's sibling issue) with `checkClipHealth`, which
+  tightens decision 12's original reachability-only check into a real
+  media check for `direct`-provider URLs, and returns `'unverifiable'`
+  for `google-drive` URLs without any network call (finding 7 explains
+  why).
+- `lib/ingestion/extract/extract-post.ts` — `issueForClipStatus` maps
+  `ClipHealthStatus` to the right `IssueCode`; `statusForCandidate` now
+  checks `FATAL_CLIP_ISSUES` *before* the general "any issue ->
+  needs_review" rule, routing straight to `broken` (finding 7).
+- `lib/ingestion/extract/candidate-index.ts` — new `candidateByPostUrl:
+  Map<string, string>` field on `CandidateIndex` (every contributing
+  post's URL -> its candidate's `source_ref`, any status, not just open
+  ones) and `isReplyToBrokenCandidate(index, quotedPostUrl)`, letting the
+  walk skip a `generateObject` call entirely for a reply that directly
+  quotes an already-`broken` candidate's post (finding 7).
+- `scripts/extract-lejonklou.ts` — wires `isReplyToBrokenCandidate` into
+  the main walk loop, alongside decision 16's existing
+  `isPostAccountedFor` skip; logs a separate `skippedBroken` count.
+- `scripts/recheck-clip-health.ts` (new) — a standalone, non-LLM
+  retroactive sweep for candidates extracted before finding 7's thorough
+  check existed. Re-derives clip health directly from each candidate's
+  stored `clip_a_url`/`clip_b_url` rather than re-running extraction;
+  only ever touches `pending/`, `needs_review/`, and `ready/` (the
+  non-protected statuses), same protection principle as everywhere else
+  in this pipeline.
 
 **Tests:**
 - **Unit:** candidate status-transition logic (new candidate → `pending`;
@@ -1527,10 +1588,12 @@ this plan.
   (once before findings 3/4's fixes, once after); see findings 3-5 above
   for what it found and "Verified" below for the final numbers.
 
-**Verified:** `npm run test` — 34 files / 386 tests, all passing (64 new
+**Verified:** `npm run test` — 35 files / 405 tests, all passing (83 new
 relative to step 33's 322: 4 in the existing `ingest-test-payload.test.ts`,
-60 across four new `lib/ingestion/extract/__tests__/*.test.ts` files,
-including regression tests for findings 3 and 4). `npx tsc --noEmit` —
+19 more across four new `lib/ingestion/extract/__tests__/*.test.ts` files
+from finding 6's work, including regression tests for findings 3 and 4;
+one new `clip-health.test.ts` file plus additions to `extract-post.test.ts`
+and `candidate-index.test.ts` from finding 7 below). `npx tsc --noEmit` —
 no new errors (same pre-existing, unrelated `__tests__/supabase-*.test.ts`
 failures as every prior step).
 
@@ -1649,6 +1712,129 @@ review pass:**
    tracks correctly split into three separate candidates with their
    real, non-colliding labels (`A1/B1`, `A2/B2`, `A3/B3`), each
    correctly scoped to only the votes that actually discussed it.
+
+6. **Human-review tooling, built during the actual post-trial review
+   (not anticipated in the original plan), plus a new status decision 3
+   didn't originally have.** Manually reviewing the trial's real
+   `needs_review`/`expired` output surfaced two concrete needs:
+   - `scripts/resolve-candidate-track.ts <candidate-json-path> <artist>
+     <title>` — automates the mechanical part of decision 7's manual
+     track-resolution workflow: set the real track, clear
+     `unidentified_track`, recompute status via the same
+     `statusForCandidate` extraction itself uses (now exported), and
+     move the file if that was the only thing outstanding.
+   - `scripts/default-before-is-a.ts <candidates-dir>` — a batch human
+     override for candidates whose reveal never matched at all (as
+     opposed to matching incorrectly, findings 3/4's territory):
+     defaults `before_is_a: true` for every candidate in `needs_review/`
+     and `expired/` that doesn't already have a real boolean value,
+     recomputes status, and moves accordingly. Deliberately bypasses
+     `candidate-index.ts`'s `saveCandidate` (which throws on a move out
+     of a protected status) in favor of `candidate.ts`'s lower-level
+     `writeCandidate`/`deleteCandidate` directly — the same pattern
+     `resolve-candidate-track.ts` already established — since a human
+     overriding an automated `expired/` determination is exactly the
+     case decision 4's protection exists to defer to a human, not
+     something the automated walk should ever do to itself.
+   - **A new `broken/` status** (decision 3), added after manually
+     checking every candidate that had ended up in `expired/` and
+     finding their clip URLs genuinely dead. Distinct from decision 12's
+     `dead_clip_url`: that only ever catches a `direct`-provider link
+     failing its HEAD check *at extraction time* — a youtube/vimeo/
+     google-drive link is trusted by URL shape alone (decision 12's own
+     accepted limitation) and a link that goes dead *after* extraction
+     has no automated check at all. `broken/` is protected the same way
+     `approved/` is — nothing writes there automatically, only a human,
+     and a re-run can't silently reverse the determination.
+
+   One real, human-caught near-miss during this process, worth recording
+   precisely because it *wasn't* a code bug: two revealed (real,
+   correctly-matched `before_is_a`) candidates were briefly suspected of
+   being another candidate-index bug — a revealed candidate sitting in
+   `expired/` looks exactly like decision 10's "closed candidates are
+   immune to expiry" invariant being violated. They turned out to be
+   manual misfilings by the human reviewer while browsing the output,
+   not a bug — moved back to `needs_review/` once clarified. Diagnosing
+   this consumed real investigation effort (isolated replay of the exact
+   post sequence with temporary logging) before the explanation arrived;
+   worth noting as a reminder that "looks exactly like a known bug
+   pattern" isn't the same as "is that bug."
+
+7. **A more thorough clip-health check, token-saving fatal-issue routing,
+   a retroactive sweep script, and a real limitation found while building
+   it — all from continued manual review of finding 6's `broken/`
+   candidates.** Manually checking every clip in `broken/` found three
+   distinct failure shapes decision 12's original check never caught,
+   since it only ever checked reachability (`url_status`), never whether
+   the response was actually playable media: a missing clip URL on a
+   comparison group, a clip URL that doesn't resolve to media (a Dropbox
+   preview page, a Google Photos share link, an iCloud share link — all
+   return a healthy `200 text/html`, all fall into `detectProvider`'s
+   generic `direct` bucket since none match the youtube/vimeo/
+   google-drive patterns), and a genuinely dead link. `checkClipHealth`
+   now checks `media_type` as well as `url_status` for any `direct` link,
+   catching all three uniformly with one tightened check — no
+   provider-specific special-casing needed. A Dropbox `dl=0` -> `dl=1`
+   URL-rewrite fix was considered and rejected: verified against real
+   broken examples (both HEAD and GET) that it doesn't change the
+   response at all.
+
+   Two new non-fatal-adjacent `IssueCode`s were added for this
+   (`missing_clip_url`, `unplayable_clip_url`), joining `dead_clip_url` in
+   a new `FATAL_CLIP_ISSUES` set — issues a human can't fix by editing the
+   candidate file, since the clip itself is unusable. A candidate carrying
+   any of them now routes straight to `broken` in `statusForCandidate`,
+   checked *before* the general "any issue -> needs_review" rule, closing
+   it to further matching immediately. This directly enables a token
+   saving: `isReplyToBrokenCandidate` lets the walk skip the
+   `generateObject` call entirely for a reply that directly quotes an
+   already-`broken` candidate's post — there's no point spending tokens
+   figuring out a vote for a test nobody can ever actually watch. This
+   only catches *direct* quotes of a broken candidate's own contributing
+   posts; a reply-to-a-reply chain with no quote at all still gets a real
+   classification call, same as any other bare-label reference (decision
+   10's existing fallback).
+
+   **A real, curl-verified limitation found while building the
+   retroactive sweep, that reversed an in-flight decision:** the original
+   plan (per a human's explicit choice) was to add a real network check
+   for `google-drive` URLs too, the same way `direct` URLs already get
+   one. Building it turned up a hard technical wall: a confirmed-broken
+   (deleted) Drive file id and a still-unreviewed one both returned an
+   *identical* anonymous 404 "Page not found" page — tried `/preview`,
+   `/view`, and the `uc?export=download` redirect chain, with and without
+   a browser User-Agent, all four combinations identical for both file
+   ids. Zero `drive.google.com` links exist anywhere in `ready/` either,
+   so there was no confirmed-healthy example to compare against. Google
+   Drive's file endpoints require a real signed-in browser session to
+   render; an unauthenticated automated request can't distinguish a dead
+   file from a healthy one, so a network check would flag *every* Drive
+   link as broken, healthy or not. Brought back to a human for a decision
+   rather than shipped anyway: settled on a third path — `checkClipHealth`
+   returns a new `'unverifiable'` status for any `google-drive` URL,
+   mapped to a new non-fatal `unverifiable_clip_url` IssueCode, which
+   routes to `needs_review` (not `broken`) so it surfaces for a human to
+   check by hand, same as the workflow already in use for
+   `unidentified_track`.
+
+   `scripts/recheck-clip-health.ts` re-derives clip health directly from
+   each candidate's stored clip URLs — a purely deterministic operation —
+   rather than re-running the expensive LLM-backed extraction pipeline
+   just to redo a network check. Run for real against the actual
+   `scripts/output/candidates/` repository: 83 candidates moved or
+   updated out of `pending`/`needs_review`/`ready` (`pending` and `ready`
+   both empty going in/out), `broken/` grew from 43 to 52 (previously
+   undetected non-media-page and missing-URL cases), and 32 of the 34
+   candidates left in `needs_review/` carry the new
+   `unverifiable_clip_url` issue — the google-drive links the retroactive
+   sweep can only flag for a human, not resolve itself.
+
+   This deliberately does not touch `lib/clips/detect-provider.ts` /
+   `check-url.ts` — the same functions `POST /api/clips/verify` and the
+   live app's player use — so live-app behavior for a human submitting a
+   URL there (who has already confirmed it plays) is unaffected; this is
+   an extraction-only tightening, wrapping the same primitives rather
+   than changing them.
 
 ---
 

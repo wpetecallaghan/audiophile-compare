@@ -4,6 +4,7 @@ import {
   deleteCandidate,
   isProtectedStatus,
   isRevealed,
+  CandidateStatusValue,
   type Candidate,
   type CandidateStatus,
 } from './candidate'
@@ -13,12 +14,19 @@ import {
 // grouping posts by author. Built once from disk at the start of a walk,
 // then kept current in memory as posts are processed — see `saveCandidate`.
 export type CandidateIndex = {
-  // decision 16: every post_url already accounted for, across all seven
-  // status folders, never just the open ones — the basis for skipping a
+  // decision 16: every post_url already accounted for, across all status
+  // folders, never just the open ones — the basis for skipping a
   // post's `generateObject` call entirely on a resumed run. Never includes
   // an empty post_url (an `unresolvable_post_id` candidate never poisons
   // this set for a different, unrelated post that also lacks a post_url).
   accountedForPostUrls: Set<string>
+
+  // Same population as accountedForPostUrls, but keeping *which*
+  // candidate each post_url belongs to (any status, not just open) —
+  // lets the walk check "does this quoted post belong to an
+  // already-`broken` candidate" before spending a generateObject call on
+  // a reply that can't possibly matter (see isReplyToBrokenCandidate).
+  candidateByPostUrl: Map<string, string>
 
   // decision 10: only a still-open (not yet revealed, not sitting in a
   // protected/closed-by-definition status) candidate is ever offered as a
@@ -46,6 +54,7 @@ function creatorLabelKey(creator: string, label: string): string {
 function emptyIndex(): CandidateIndex {
   return {
     accountedForPostUrls: new Set(),
+    candidateByPostUrl: new Map(),
     openCandidateByPostUrl: new Map(),
     openCandidateByCreatorLabel: new Map(),
     openSourceRefsByCreator: new Map(),
@@ -79,7 +88,10 @@ function addToIndex(
   index.candidatesByRef.set(sourceRef, { status, candidate })
 
   for (const postUrl of candidate.contributing_posts) {
-    if (postUrl) index.accountedForPostUrls.add(postUrl)
+    if (postUrl) {
+      index.accountedForPostUrls.add(postUrl)
+      index.candidateByPostUrl.set(postUrl, sourceRef)
+    }
   }
 
   const creator = candidate.payload.author?.forum_username
@@ -120,8 +132,10 @@ function removeFromIndex(index: CandidateIndex, sourceRef: string): void {
   for (const creator of index.allSourceRefsByCreator.keys()) {
     removeFrom(index.allSourceRefsByCreator, creator, sourceRef)
   }
-  // accountedForPostUrls is deliberately left alone — within a single run
-  // it only ever needs to grow, never shrink (see saveCandidate).
+  // accountedForPostUrls and candidateByPostUrl are deliberately left
+  // alone — within a single run they only ever need to grow (or have an
+  // entry reassigned to the same source_ref again), never shrink (see
+  // saveCandidate).
 }
 
 function upsert(index: CandidateIndex, status: CandidateStatus, candidate: Candidate): void {
@@ -143,6 +157,21 @@ export async function buildCandidateIndex(baseDir: string): Promise<CandidateInd
 
 export function isPostAccountedFor(index: CandidateIndex, postUrl: string): boolean {
   return postUrl !== '' && index.accountedForPostUrls.has(postUrl)
+}
+
+// A deterministic, pre-classification check: does this quoted post belong
+// to a candidate already known to be `broken`? If so, the walk can skip
+// the generateObject call for the reply quoting it entirely — there's no
+// point spending tokens figuring out a vote for a test nobody can ever
+// actually watch. Only catches *direct* quotes of a broken candidate's
+// own contributing posts (its test-defining post, or any vote/reveal that
+// managed to attach before it was marked broken) — a reply-to-a-reply
+// chain with no quote at all still needs a real classification call, same
+// as any other bare-label reference (decision 10's fallback).
+export function isReplyToBrokenCandidate(index: CandidateIndex, quotedPostUrl: string): boolean {
+  const sourceRef = index.candidateByPostUrl.get(quotedPostUrl)
+  if (!sourceRef) return false
+  return index.candidatesByRef.get(sourceRef)?.status === CandidateStatusValue.BROKEN
 }
 
 export function findOpenCandidateByPostUrl(
@@ -267,6 +296,6 @@ export async function sweepExpiredCandidates(
     if (Number.isNaN(createdAt)) continue
     if (now - createdAt <= EXPIRY_MS) continue
 
-    await saveCandidate(index, baseDir, 'expired', entry.candidate)
+    await saveCandidate(index, baseDir, CandidateStatusValue.EXPIRED, entry.candidate)
   }
 }

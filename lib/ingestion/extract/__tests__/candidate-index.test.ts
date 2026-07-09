@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import {
   buildCandidateIndex,
   isPostAccountedFor,
+  isReplyToBrokenCandidate,
   findOpenCandidateByPostUrl,
   findOpenCandidateByCreatorLabel,
   getOpenCandidatesForCreator,
@@ -44,7 +45,7 @@ describe('candidate-index', () => {
       expect(index.accountedForPostUrls.size).toBe(0)
     })
 
-    it('accounts for every post_url across all seven status folders, not just open ones', async () => {
+    it('accounts for every post_url across every status folder, not just open ones', async () => {
       await writeCandidate(baseDir, 'pending', candidate('t:post-1:pair-1'))
       await writeCandidate(
         baseDir,
@@ -98,13 +99,21 @@ describe('candidate-index', () => {
       expect(isPostAccountedFor(index, 'https://forum.example/t:post-1:pair-1')).toBe(true)
     })
 
-    it('never offers an approved/ingested/expired candidate as an open match, even if unrevealed', async () => {
+    it('never offers an approved/ingested/expired/broken candidate as an open match, even if unrevealed', async () => {
       // Contrived (approved should always be revealed in practice), but
       // confirms protected-status exclusion is independent of isRevealed.
       await writeCandidate(baseDir, 'approved', candidate('t:post-1:pair-1'))
+      await writeCandidate(
+        baseDir,
+        'broken',
+        candidate('t:post-2:pair-1', { payload: { source_ref: 't:post-2:pair-1', author: { forum_username: 'Charlie1' } } }),
+      )
 
       const index = await buildCandidateIndex(baseDir)
       expect(findOpenCandidateByPostUrl(index, 'https://forum.example/t:post-1:pair-1')).toBeNull()
+      expect(findOpenCandidateByPostUrl(index, 'https://forum.example/t:post-2:pair-1')).toBeNull()
+      // Still accounted for in the skip-set, even though it's not an open match target.
+      expect(isPostAccountedFor(index, 'https://forum.example/t:post-2:pair-1')).toBe(true)
     })
 
     it('resolves the bare-label fallback scoped per creator', async () => {
@@ -181,6 +190,33 @@ describe('candidate-index', () => {
         't:post-1:pair-1',
         't:post-2:pair-1',
       ])
+    })
+  })
+
+  describe('isReplyToBrokenCandidate', () => {
+    it('is true when the quoted post belongs to a broken candidate', async () => {
+      await writeCandidate(
+        baseDir,
+        'broken',
+        candidate('t:post-1:pair-1', {
+          contributing_posts: ['https://forum.example/t:post-1:pair-1'],
+        }),
+      )
+
+      const index = await buildCandidateIndex(baseDir)
+      expect(isReplyToBrokenCandidate(index, 'https://forum.example/t:post-1:pair-1')).toBe(true)
+    })
+
+    it('is false when the quoted post belongs to a candidate that is not broken', async () => {
+      await writeCandidate(baseDir, 'pending', candidate('t:post-1:pair-1'))
+
+      const index = await buildCandidateIndex(baseDir)
+      expect(isReplyToBrokenCandidate(index, 'https://forum.example/t:post-1:pair-1')).toBe(false)
+    })
+
+    it('is false when the quoted post is not accounted for by any candidate at all', async () => {
+      const index = await buildCandidateIndex(baseDir)
+      expect(isReplyToBrokenCandidate(index, 'https://forum.example/unknown-post')).toBe(false)
     })
   })
 

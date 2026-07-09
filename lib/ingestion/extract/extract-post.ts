@@ -1,11 +1,10 @@
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import { detectProvider } from '@/lib/clips/detect-provider'
-import { checkDirectUrl } from '@/lib/clips/check-url'
 import type { ScrapedPost } from '../scrape/parse-thread-page'
 import { validateIngestPayload, TUNE_METHOD_TECHNIQUE_NAME } from '../ingest-test-payload'
 import { buildSourceRef } from './source-ref'
-import type { Candidate, IssueCode } from './candidate'
+import { checkClipStatus, type ClipHealthStatus } from './clip-health'
+import { CandidateStatusValue, FATAL_CLIP_ISSUES, type Candidate, type IssueCode } from './candidate'
 import {
   type CandidateIndex,
   findOpenCandidateByPostUrl,
@@ -189,15 +188,12 @@ async function classifyPost(post: ScrapedPost, index: CandidateIndex): Promise<P
   return object
 }
 
-// decision 12: precisely mirrors POST /api/clips/verify's real branch —
-// only a `direct` link gets a real network check; every other provider is
-// trusted by URL shape alone. Returns the dead-or-not verdict only; zero
-// new clip-validation logic.
-async function isClipDead(url: string): Promise<boolean> {
-  const detected = detectProvider(url)
-  if (detected.provider !== 'direct') return false
-  const checked = await checkDirectUrl(detected)
-  return checked.url_status === 'dead'
+function issueForClipStatus(status: ClipHealthStatus): IssueCode | null {
+  if (status === 'missing') return 'missing_clip_url'
+  if (status === 'dead') return 'dead_clip_url'
+  if (status === 'unplayable') return 'unplayable_clip_url'
+  if (status === 'unverifiable') return 'unverifiable_clip_url'
+  return null
 }
 
 function emptyCandidate(createdAt: string): Candidate {
@@ -229,16 +225,34 @@ function addIssue(candidate: Candidate, issue: IssueCode): void {
 // legitimately absent for most of a candidate's life, so validation (which
 // requires it) only ever runs once a reveal has actually arrived; before
 // that, an otherwise-clean candidate is just `pending`, not flagged.
-function statusForCandidate(candidate: Candidate): 'pending' | 'needs_review' | 'ready' {
-  if (candidate.issues.length > 0) return 'needs_review'
-  if (typeof candidate.payload.before_is_a !== 'boolean') return 'pending'
+//
+// A fatal clip issue (dead/missing/unplayable) routes straight to
+// `broken`, checked *before* the general "any issue -> needs_review"
+// rule — there's nothing a human can fix here by editing the file, so
+// there's no point sitting in needs_review first. This also closes the
+// candidate to further matching immediately (`broken` is a protected,
+// non-open status — see candidate-index.ts), which is what lets the walk
+// skip later replies that quote it without spending a generateObject
+// call figuring out votes for a test nobody can ever actually watch.
+export function statusForCandidate(
+  candidate: Candidate,
+):
+  | typeof CandidateStatusValue.PENDING
+  | typeof CandidateStatusValue.NEEDS_REVIEW
+  | typeof CandidateStatusValue.READY
+  | typeof CandidateStatusValue.BROKEN {
+  if (candidate.issues.some((issue) => FATAL_CLIP_ISSUES.includes(issue))) {
+    return CandidateStatusValue.BROKEN
+  }
+  if (candidate.issues.length > 0) return CandidateStatusValue.NEEDS_REVIEW
+  if (typeof candidate.payload.before_is_a !== 'boolean') return CandidateStatusValue.PENDING
 
   const result = validateIngestPayload(candidate.payload, [TUNE_METHOD_TECHNIQUE_NAME])
-  if (result.valid) return 'ready'
+  if (result.valid) return CandidateStatusValue.READY
 
   addIssue(candidate, 'invalid_payload')
   candidate.notes = [...(candidate.notes ?? []), result.error]
-  return 'needs_review'
+  return CandidateStatusValue.NEEDS_REVIEW
 }
 
 type Clip = z.infer<typeof ClipSchema>
@@ -292,11 +306,14 @@ async function applyTestDefining(
     if (unresolvable) addIssue(candidate, 'unresolvable_post_id')
 
     const creatorSystemName = `${post.author}'s system`
-    const [clipADead, clipBDead] = await Promise.all([
-      isClipDead(pair.clipA.url),
-      isClipDead(pair.clipB.url),
+    const postLinkUrls = post.links.map((l) => l.url)
+    const [statusA, statusB] = await Promise.all([
+      checkClipStatus(pair.clipA.url, postLinkUrls),
+      checkClipStatus(pair.clipB.url, postLinkUrls),
     ])
-    if (clipADead || clipBDead) addIssue(candidate, 'dead_clip_url')
+    for (const issue of [issueForClipStatus(statusA), issueForClipStatus(statusB)]) {
+      if (issue) addIssue(candidate, issue)
+    }
 
     const track = pair.track_name_is_confident && pair.track_artist && pair.track_title
       ? { artist: pair.track_artist, title: pair.track_title }
