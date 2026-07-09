@@ -234,7 +234,8 @@
     "passwordMismatch": "Passwords don\u2019t match",
     "updatePasswordButton": "Update password",
     "updatingPassword": "Updating\u2026",
-    "passwordUpdated": "Password updated."
+    "passwordUpdated": "Password updated.",
+    "adminHeading": "Admin"
   },
   "feed": {
     "heading": "Listening tests",

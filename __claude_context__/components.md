@@ -499,6 +499,13 @@ A heading with genuinely different sizing (e.g. `ChangePasswordForm.tsx`'s
 smaller `text-sm` disclosure heading) is not a `level={2}` — leave it raw
 rather than force a size it doesn't have.
 
+`app/profile/page.tsx`'s admin-only section (step 41 — links to
+`/admin/erase-user-data` and `/admin/claim`, shown only when
+`isAdminEmail(user.email)`) is a real example of `Heading level={2}` plus
+a short stack of `Link variant="inline"` entries — the right shape for a
+handful of static links that aren't a list of entities (contrast with
+`variant="card"` below, which is for exactly that).
+
 **Field labels — use `<FieldLabel tone />` (`components/ui/FieldLabel.tsx`):**
 ```tsx
 import { FieldLabel } from '@/components/ui/FieldLabel'

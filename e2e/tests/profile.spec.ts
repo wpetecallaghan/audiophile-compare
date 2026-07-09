@@ -34,4 +34,13 @@ test.describe('Profile', () => {
 
     await expect(page.getByRole(ROLE.button, { name: m.profile.saveButton })).toBeDisabled()
   })
+
+  test('non-admin user does not see the Admin section (build step 41)', async ({ page }) => {
+    await page.goto(routes.profile())
+
+    await expect(page.getByRole(ROLE.heading, { name: m.profile.heading })).toBeVisible()
+    await expect(page.getByRole(ROLE.heading, { name: m.profile.adminHeading })).not.toBeVisible()
+    await expect(page.getByRole(ROLE.link, { name: m.admin.eraseUserData.heading })).not.toBeVisible()
+    await expect(page.getByRole(ROLE.link, { name: m.admin.claim.heading })).not.toBeVisible()
+  })
 })

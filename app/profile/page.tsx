@@ -5,6 +5,8 @@ import ChangeEmailForm from '@/components/ChangeEmailForm'
 import ChangePasswordForm from '@/components/ChangePasswordForm'
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
+import { Link } from '@/components/ui/Link'
+import { isAdminEmail } from '@/lib/admin/is-admin-email'
 
 export default async function ProfilePage({
   searchParams,
@@ -18,6 +20,9 @@ export default async function ProfilePage({
 
   const params = await searchParams
   const t = await getTranslations('profile')
+  const tEraseUserData = await getTranslations('admin.eraseUserData')
+  const tClaim = await getTranslations('admin.claim')
+  const isAdmin = isAdminEmail(user.email)
 
   const { data: profile } = await supabase
     .from('users')
@@ -53,6 +58,23 @@ export default async function ProfilePage({
       <section className="space-y-3">
         <ChangePasswordForm autoOpen={params.reset === 'true'} />
       </section>
+
+      {isAdmin && (
+        <>
+          <hr className="border-gray-100 dark:border-gray-800" />
+
+          {/* Admin — build step 41. Link labels reuse each admin page's own
+              heading string rather than duplicating the copy, so they can
+              never drift from what those pages call themselves. */}
+          <section className="space-y-3">
+            <Heading level={2}>{t('adminHeading')}</Heading>
+            <div className="flex flex-col items-start gap-2">
+              <Link href="/admin/erase-user-data">{tEraseUserData('heading')}</Link>
+              <Link href="/admin/claim">{tClaim('heading')}</Link>
+            </div>
+          </section>
+        </>
+      )}
     </main>
   )
 }

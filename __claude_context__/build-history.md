@@ -1650,20 +1650,28 @@ user instead. Not the same thing as
 step 36, an interim ingestion-pipeline-only tool, unrelated to this step,
 left unchanged). Full plan: `build-history-ingestion.md`.
 
-### ⬜ 39 — Claim flow (planned, not yet built)
+### ✅ 39 — Claim flow (merge a placeholder into a real account)
 
 Lets a real Lejonklou forum member claim their imported content. Identity
 verification is a forum PM to the site owner's own forum account — no
 generated code, no new UI, since the sender's forum identity is itself the
 proof; proportionate to an estimated dozen or so total claims. Admin-
-triggered (reuses the existing `isAdminEmail` gate already used by
-`/version`), not self-service, and no new claim-request state machine. The
-merge itself is a `security definer` Postgres function mirroring
-`ingest_test`'s design — same EXECUTE lockdown, same atomicity — that
-reassigns ownership, repoints (not deletes) `import_authors`, deletes the
-placeholder, and drops a colliding vote in favor of the real user's own
-existing one. Small addendum to step 32: a contact link next to the
-provenance badge, so there's actually a way to start a claim. Full plan:
+triggered (reuses the same `isAdminEmail` gate as `/version` and step 38's
+erasure routes), not self-service, and no new claim-request state
+machine. The merge itself is `claim_placeholder`, a `security definer`
+Postgres function mirroring step 38's `erase_user_*` functions' shape —
+same EXECUTE lockdown, same atomicity — that reassigns all five content
+FK columns (`systems.owner_id`, `tests.creator_id`, `tracks.created_by`,
+`comments.user_id`, `votes.user_id`), repoints (not deletes)
+`import_authors`, deletes the placeholder's `public.users` row, and drops
+a colliding vote in favor of the real user's own existing one. Admin
+route/page/form (`app/api/admin/claim/`, `app/admin/claim/`) built with a
+preview-before-merge step, matching step 38's own UX pattern. Migration
+applied to and independently re-verified on both `audiophile-staging` and
+`audiophile-prod` (`supabase migration list` checked directly against
+both); 17/17 integration tests passing for real (3 for
+`claim_placeholder`), unit suite and typecheck unaffected, admin gate
+curl-verified for real (401/404). Full plan and verification:
 `build-history-ingestion.md`.
 
 ### ✅ 40 — Surface system/snapshot info consistently: test detail page + ingested test titles
@@ -1864,6 +1872,92 @@ same staging Supabase project via the ambient `.env.local` credentials)
 the first run's failure was a deployment-staleness artifact, not a code
 bug, verified by comparing the two runs directly rather than assumed.
 
+### ✅ 41 — Surface admin page links on the profile page
+
+**The gap this closes:** two admin-only pages exist —
+`/admin/erase-user-data` (step 38) and `/admin/claim` (step 39) — both
+gated server-side by `isAdminEmail(user.email)`, but neither was linked
+from anywhere in the app; an admin had to type the URL by hand.
+`SiteHeader.tsx` renders the same nav to every signed-in user regardless
+of admin status — there was no admin-only nav surface anywhere.
+
+**Decisions:**
+
+1. **Where the check happens.** Inline in `app/profile/page.tsx`, calling
+   `isAdminEmail(user.email)` on the `user` the page already fetches for
+   its own redirect check — the same pattern every other call site
+   (`/version`, `/admin/erase-user-data`, `/admin/claim`) already uses,
+   with no shared wrapper. One more call site didn't justify extracting
+   one.
+2. **Placement and markup.** A new section at the end of the page, after
+   "Change password", separated by the same `<hr>` the other sections
+   use. The section heading uses `<Heading level={2}>` — the correct,
+   current component per `components.md`'s "one h2 per page section"
+   rule — rather than copying the page's own pre-existing hand-rolled
+   `<h2 className="text-sm font-semibold">` on the "Change email"
+   section (that hand-rolled instance predates/bypasses step 22's
+   `Heading` extraction; left as-is, not fixed here, but not perpetuated
+   in new code either). Inside the section, two stacked
+   `Link variant="inline"` entries, not `variant="card"` (reserved for
+   list-of-entities rows like feed/track/system cards — two static
+   admin links aren't a list of entities).
+3. **Link labels reuse existing strings, not new copies.**
+   `messages/en.json` already has `admin.eraseUserData.heading` and
+   `admin.claim.heading` — the exact page titles for those two routes.
+   The profile page pulls both via two extra `getTranslations()` calls
+   and uses them directly as link text, so the labels can never drift
+   from what those pages call themselves. Only one new string was
+   needed: `profile.adminHeading` ("Admin").
+4. **Order:** erase-user-data link first, then claim — matches
+   `api-conventions.md` Rule 8's caller list order and the `app/admin/`
+   directory listing order.
+5. **Testing proportionality — matches steps 38/39's own admin pages,
+   not full E2E coverage for a two-link section.** No unit test (the
+   page is an async server component with no client-side logic, same
+   established convention as every other server page). E2E covers the
+   negative case only — confirmed `E2E_TEST_USER_EMAIL` is not in
+   `ADMIN_EMAILS` in this environment, so one new assertion in the
+   existing `profile.spec.ts` (the Admin section is absent for a normal
+   authenticated user) is a real regression guard at zero new fixture
+   cost. The positive case (an admin actually sees the links) isn't
+   automated — a dedicated admin-only Playwright fixture (its own
+   `ADMIN_EMAILS`-listed account, its own storageState, a second
+   project) would be disproportionate for two static links; verified
+   manually instead, the same way steps 38/39's own admin pages were.
+
+**Files updated:**
+- `app/profile/page.tsx` — `isAdminEmail` check, two `getTranslations()`
+  calls (`admin.eraseUserData`, `admin.claim`), the new conditional
+  section.
+- `messages/en.json` — `profile.adminHeading`.
+- `e2e/tests/profile.spec.ts` — new assertion: non-admin doesn't see the
+  Admin section.
+- `__claude_context__/testing.md` §6 — `profile.spec.ts` coverage row
+  updated.
+- `__claude_context__/components.md` — a short note under the
+  `Heading`/`Link` usage docs pointing at this page as a real example of
+  `Heading level={2}` + stacked `Link variant="inline"` for a short,
+  non-entity link list.
+- `__claude_context__/core.md` §6 — new ✅ 41 entry.
+- `__claude_context__/build-history.md` (this file) — this entry, plus a
+  correction to the previously-stale step 39 stub above (it still said
+  "planned, not yet built" from before step 39 was actually built and
+  verified in a later session; full detail always lived in
+  `build-history-ingestion.md`, only this file's short summary was out
+  of date).
+
+**Tests:** covered inline above — one new E2E assertion, no new files.
+
+**Verified:** `npm run test` — 38 files / 440 tests, all passing, no
+change (no unit tests added, matching the plan). `npx tsc --noEmit` — no
+new errors (same pre-existing, unrelated `__tests__/supabase-*.test.ts`
+failures as every prior step). `npx playwright test
+e2e/tests/profile.spec.ts` — run against a local dev server, all 4 tests
+passing including the new non-admin assertion. Manual admin-session
+verification (the positive case) is still outstanding — same closing
+step steps 38/39 both needed a real admin session for, not something the
+assistant can do directly in this environment.
+
 ---
 
-Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30, 31, 33, and 35–39 above have their full detailed plan in `build-history-ingestion.md`; steps 32, 34, and 40 (UI/core-app work, not pipeline infrastructure) are fully detailed here instead — see that file's frontmatter for why.
+Deferred features (agentic ingestion pipeline, owned blob storage, mobile app) are documented in `deferred-features.md`. Steps 30, 31, 33, and 35–39 above have their full detailed plan in `build-history-ingestion.md`; steps 32, 34, 40, and 41 (UI/core-app work, not pipeline infrastructure) are fully detailed here instead — see that file's frontmatter for why.

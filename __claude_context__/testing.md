@@ -161,7 +161,7 @@ tracks are never deleted by either).
 | `voting.spec.ts` | Tally hidden before voting; vote count visible; system/snapshot info visible unconditionally before any reveal (step 40 Part A); cast vote; update existing vote; creator can reveal |
 | `delete.spec.ts` | Creator deletes a zero-vote test (redirects home); Delete hidden once a vote exists; owner deletes an unreferenced snapshot; Delete hidden when a test references the snapshot; owner deletes a snapshot-less system (redirects to systems list); Delete hidden when the system has a snapshot |
 | `clip-health.spec.ts` | Dead clip shows a warning and player still renders; vote form replaced with an explanatory message; creator replaces a dead clip's URL, clearing the warning; "Broken" badge shown on the track and system detail pages; unsupported-playback clip shows a bare link in blind view with no "could not be identified" message; once revealed, its Before/After label in the mapping badge links directly to it with no separate link below |
-| `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared |
+| `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared; non-admin user does not see the Admin section (step 41) |
 | `import-provenance.spec.ts` | Placeholder-owned content shows the "Imported" badge on the test detail page, feed card, and track's test row; test detail page also shows a working "view original post" link (`target="_blank"`) and the claim-contact text; system detail page shows the badge and claim-contact text; an ordinarily-owned test shows none of this |
 | `zz-sign-out.spec.ts` | Sign out clears the session; header reverts to unauthenticated. Runs last — see file for why |
 
