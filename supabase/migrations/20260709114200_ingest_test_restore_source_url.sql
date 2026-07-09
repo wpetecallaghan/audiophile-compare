@@ -1,33 +1,27 @@
--- Forum ingestion follow-up: two real bugs found by manually reviewing
--- imported tests on staging after step 36's first real commit run.
+-- Fixes a regression in 20260709110700_ingest_test_reveal_and_date.sql,
+-- as a new migration rather than an edit to that file — that migration
+-- was already applied to staging (confirmed via `supabase migration
+-- list`: version 20260709110700 shows up on both "local" and "remote")
+-- before this bug was found, so editing it further would have done
+-- nothing on the next `supabase db push` (a push only applies migration
+-- versions the remote doesn't already have recorded — it doesn't diff or
+-- re-run one it thinks it already ran). Editing that file anyway, and
+-- only noticing when a real `db push` silently no-opped, is the actual
+-- mistake here — worth stating plainly rather than glossing over.
 --
--- 1. ingest_test always inserted status='open' and never set revealed_at,
---    regardless of whether the imported test carries any votes. Since
---    tests.status='revealed' is what actually gates the before/after
---    mapping and vote tally being visible (app/tests/[id]/page.tsx) and
---    what blocks new voting (app/api/votes/route.ts's 409 "Cannot vote
---    on a revealed test"), every imported historical test was silently
---    sitting open to a live visitor voting on a years-old forum clip.
---    Fixed: a test with at least one vote in its payload is inserted
---    already 'revealed' (revealed_at = now(), the commit time — the
---    real forum reveal date isn't separately tracked by the extraction
---    pipeline, only the test-defining post's own date is). A test with
---    zero votes stays 'open', same as before — nobody actually evaluated
---    it blind, so there's no historical answer to protect from a fresh
---    vote.
--- 2. tests.created_at always defaulted to now() (real ingestion time),
---    never the original forum post's date, even though extraction
---    already tracks that date on its own Candidate.created_at. Fixed:
---    accepts an optional created_at in the payload, falling back to
---    now() when absent (unchanged behavior for web-created tests, which
---    never set it).
+-- What broke: 20260709110700's ingest_test body was copied from the
+-- *original* creation migration (20260707150400_ingest_test_function.sql),
+-- missing that 20260707173905_tests_source_url.sql (step 32) had already
+-- layered tests.source_url support on top of it. create-or-replace
+-- replaces the whole function body, so applying 20260709110700 silently
+-- deleted source_url handling — the "view original post" link
+-- disappearing from every test detail page, caught by a human reviewing
+-- real staging output, not by anything automated.
 --
--- NOTE: this version has a known regression, fixed in
--- 20260709120500_ingest_test_restore_source_url.sql, not here — this
--- file is left exactly as it was when first applied to staging (it's
--- already recorded in that environment's migration history, so editing
--- it further would silently do nothing on a future `supabase db push`;
--- see that migration's own header for what happened and why).
+-- This migration is otherwise identical to 20260709110700's intent:
+-- restores v_source_url/source_url, keeps the status/revealed_at/
+-- created_at fixes exactly as they already are on staging (they were
+-- correct — only source_url regressed).
 
 create or replace function public.ingest_test(payload jsonb)
 returns jsonb
@@ -37,6 +31,7 @@ set search_path = public
 as $$
 declare
   v_source_ref   text        := payload->>'source_ref';
+  v_source_url   text        := payload->>'source_url';
   v_owner_id     uuid        := (payload->>'owner_id')::uuid;
   v_title        text        := payload->>'title';
   v_track        jsonb       := payload->'track';
@@ -45,8 +40,11 @@ declare
   v_before_is_a  boolean     := (payload->>'before_is_a')::boolean;
   v_votes        jsonb       := coalesce(payload->'votes', '[]'::jsonb);
   v_created_at   timestamptz := coalesce((payload->>'created_at')::timestamptz, now());
-  v_status       text        := case when jsonb_array_length(coalesce(payload->'votes', '[]'::jsonb)) > 0 then 'revealed' else 'open' end;
-  v_revealed_at  timestamptz := case when jsonb_array_length(coalesce(payload->'votes', '[]'::jsonb)) > 0 then now() else null end;
+  -- Declared after v_votes above — PL/pgSQL evaluates a DECLARE block's
+  -- initializers in order, so referencing an already-declared variable
+  -- here is safe and avoids repeating the same coalesce expression twice.
+  v_status       text        := case when jsonb_array_length(v_votes) > 0 then 'revealed' else 'open' end;
+  v_revealed_at  timestamptz := case when jsonb_array_length(v_votes) > 0 then now() else null end;
 
   v_existing_test_id uuid;
   v_track_id         uuid;
@@ -143,15 +141,16 @@ begin
   end if;
 
   -- Test row. status/revealed_at reflect whether this import already
-  -- carries votes (see header comment); created_at is the real forum
-  -- post date when the caller supplies one, now() otherwise.
-  insert into public.tests (creator_id, track_id, snapshot_a_id, snapshot_b_id, title, status, revealed_at, created_at, source_ref)
-  values (v_owner_id, v_track_id, v_snapshot_a_id, v_snapshot_b_id, v_title, v_status, v_revealed_at, v_created_at, v_source_ref)
+  -- carries votes; created_at is the real forum post date when the
+  -- caller supplies one, now() otherwise; source_url (step 32, restored
+  -- here) powers the "view original post" link.
+  insert into public.tests (creator_id, track_id, snapshot_a_id, snapshot_b_id, title, status, revealed_at, created_at, source_ref, source_url)
+  values (v_owner_id, v_track_id, v_snapshot_a_id, v_snapshot_b_id, v_title, v_status, v_revealed_at, v_created_at, v_source_ref, v_source_url)
   returning id into v_test_id;
 
   -- Clips — provider/media_type are pre-computed by the caller
   -- (lib/clips/detect-provider.ts); reachability was already verified by
-  -- the scraper (step 32), not re-checked here (decision 7).
+  -- the scraper (step 33), not re-checked here (step 31 decision 7).
   insert into public.clips (test_id, label, source_url, provider, media_type, url_status)
   values (v_test_id, 'A', payload->>'clip_a_url', payload->>'clip_a_provider', payload->>'clip_a_media_type', 'ok')
   returning id into v_clip_a_id;
@@ -204,9 +203,9 @@ end;
 $$;
 
 -- Function ownership/grants are unaffected by create-or-replace, but
--- restated here for the same reason the original migration did: nothing
--- should ever rely on implicit default grants for a security-definer
--- function that bypasses RLS.
+-- restated here for the same reason every prior migration touching this
+-- function did: nothing should ever rely on implicit default grants for
+-- a security-definer function that bypasses RLS.
 revoke all on function public.ingest_test(jsonb) from public;
 revoke all on function public.ingest_test(jsonb) from anon;
 revoke all on function public.ingest_test(jsonb) from authenticated;
