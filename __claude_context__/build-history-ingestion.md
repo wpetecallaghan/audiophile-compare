@@ -2370,13 +2370,60 @@ through the ordinary UI.
    systems, snapshots and tests") lists tracks either — consistent with
    what was actually asked for, not just consistent with precedent.
 
-4. **Case → function mapping, one-to-one with the three real scenarios:**
+4. **Case → function mapping.** Resolved (was previously flagged as an
+   open assumption — confirmed): case 3 deletes the account entirely,
+   not just its data. That turned out to need a **third** function,
+   `erase_user_account`, and a real schema fix — see decision 4a below.
    - Case 1 (votes only): `erase_user_votes(placeholder_id)`.
    - Case 2 (tests + systems): `erase_user_content(placeholder_id)`.
-   - Case 3 (everything): both functions, same `real_user_id`, one after
-     the other (each is independently atomic — see decision 6 — so
-     there's no need for a third combined function; a failure between
-     the two calls just means a safe, idempotent retry of the second).
+   - Case 3 (everything, including the account): `erase_user_votes` →
+     `erase_user_content` → `erase_user_account`, then
+     `admin.auth.admin.deleteUser(user_id)` from application code (the
+     Admin SDK call can't run inside a SQL function — same constraint
+     `create-placeholder-author.ts` and step 39's planned
+     `claim_placeholder` already work within). Each SQL step is
+     independently atomic (decision 6), so a failure partway through
+     just means a safe, idempotent retry from wherever it stopped.
+
+4a. **A real schema blocker, found by checking rather than assuming
+   "delete the account" is simple: `tracks.created_by uuid not null
+   references public.users(id)` has no cascade
+   (`supabase/migrations/20260625094142_initial_schema.sql:33`), and
+   tracks are deliberately never deleted (decision 3).** If the erased
+   user ever created a track — even one a *different*, surviving test
+   still uses — deleting their `public.users` row would fail outright
+   with a foreign-key violation. Checked whether `created_by` is ever
+   read anywhere before deciding how to resolve this: it's write-only,
+   set once at creation (`app/api/tracks/route.ts:65`) and never
+   displayed or joined anywhere in the app. Safe to null out. Fix: a new
+   migration drops the `not null` constraint
+   (`alter table public.tracks alter column created_by drop not null`),
+   and `erase_user_account(target_user_id uuid) returns jsonb` nulls
+   `tracks.created_by` for that user's tracks before deleting their
+   `public.users` row — `{tracks_orphaned: n, account_deleted: true}`.
+   Same EXECUTE lockdown as the other two (decision 9).
+
+   **A second table with the identical shape, found by checking every
+   FK to `public.users(id)` exhaustively rather than stopping at
+   tracks:** `comments.user_id uuid not null references
+   public.users(id)` (line 101 of the same migration) — also no
+   cascade. Unlike tracks, `comments` has zero rows and is never
+   referenced anywhere in `app/`/`lib/`/`components/` — RLS policies
+   exist (`public read`/`authenticated insert`/`owner delete`) but no
+   route or component actually reads or writes it; it's a schema-only
+   stub for a feature described in the app spec but never built. Doesn't
+   block anything *today*, but the identical failure mode would silently
+   reappear the moment that feature ships and someone comments — fixed
+   now rather than left as a dormant bug for whoever builds it later.
+   Treated differently from tracks, deliberately: a comment is this
+   user's own authored content (like a vote), not incidental provenance
+   (like a track's `created_by`), so it's *deleted*, not anonymized —
+   `erase_user_content` also deletes `comments` on any test it's
+   removing (by anyone, same as votes/clip_mapping/clips — the test is
+   gone, its comments can't survive it), and `erase_user_account` also
+   deletes this user's *own* comments on any surviving test (scoped by
+   `user_id`, same as `erase_user_votes` — necessary to clear the last
+   possible reference before `public.users` can be deleted).
 
 5. **Placeholder accounts and `import_authors` mappings are never
    deleted by either function — deliberately different from `claim_
@@ -2414,16 +2461,10 @@ through the ordinary UI.
      expected volume, matching step 39's own reasoning for staying
      admin-only rather than building a self-service flow.
 
-   **Flagged assumption, not silently decided — confirm before build:**
-   the requirement lists exactly "votes, systems, snapshots and tests"
-   for case 3, not "their account." This plan takes that literally —
-   `erase_user_votes`/`erase_user_content` never touch `auth.users`/
-   `public.users`, so the account itself survives, empty, still able to
-   sign in afterward. If the real intent is closer to full account
-   deletion (mirroring `claim_placeholder`'s `admin.auth.admin.
-   deleteUser()` precedent), that's a third, distinct operation this
-   plan doesn't currently include — worth confirming which is wanted
-   before this step is built, not assumed either way.
+   **Resolved (was a flagged assumption):** confirmed before build —
+   case 3 deletes the account entirely, not just its data. See decision
+   4/4a for the `erase_user_account` function this required and the real
+   `tracks.created_by` schema blocker it surfaced.
 
 8. **Preview before destroy, matching this whole project's "preview
    before a destructive action" discipline** (`rollback.ts`'s own
@@ -2450,23 +2491,28 @@ through the ordinary UI.
     is actually built, not blocking the plan itself.
 
 **Files to update (once built):**
-- New migration — `erase_user_votes`/`erase_user_content`, plus
-  `revoke`/`grant` matching `ingest_test`/`claim_placeholder`'s pattern.
+- New migration — drops `tracks.created_by`'s `not null` constraint
+  (decision 4a); `erase_user_votes`/`erase_user_content`/
+  `erase_user_account`, plus `revoke`/`grant` matching `ingest_test`/
+  `claim_placeholder`'s pattern for all three.
 - `app/api/admin/erase-user-data/route.ts` (new) — `isAdminEmail`-gated;
-  accepts a target user id and a scope (`votes` | `content` | `both`);
-  does the preview read (decision 8), then calls the function(s).
+  accepts a target user id and a scope (`votes` | `content` | `full`,
+  `full` = both plus account deletion); does the preview read (decision
+  8), then calls the function(s) in order, then `admin.auth.admin.
+  deleteUser()` for `full`.
 - `app/admin/erase-user-data/page.tsx` (new) — minimal form: user
   identifier, scope selection, preview counts, confirm.
-- `docs/audiophile-compare-app-specification.md` / schema docs — the two
-  new functions, and an explicit note that `DELETE /api/tests/[id]`'s
-  "can't delete a voted-on test" rule has an admin-only, human-verified
-  exception now, so a future reader doesn't take that rule as absolute.
+- `docs/audiophile-compare-app-specification.md` / schema docs — the
+  three new functions, the now-nullable `tracks.created_by`, and an
+  explicit note that `DELETE /api/tests/[id]`'s "can't delete a
+  voted-on test" rule has an admin-only, human-verified exception now,
+  so a future reader doesn't take that rule as absolute.
 - `api-conventions.md` — new admin route, mirroring how step 39's
   `/api/admin/claim` is documented once built.
 - `testing.md` §5 — already done ahead of the build (the cross-reference
-  noting `rollback.ts` and, once built, these two functions both reuse
-  its FK-safe order), since it cost nothing to fix while writing this
-  plan rather than waiting.
+  noting `rollback.ts` and, once built, these functions both reuse its
+  FK-safe order), since it cost nothing to fix while writing this plan
+  rather than waiting.
 - `core.md`, `testing.md` §4/§7 — per the usual pattern, once built.
 
 **Tests (planned):**
@@ -2481,11 +2527,35 @@ through the ordinary UI.
   that vote is gone too, not just the target's own rows); confirms a
   track referenced by the erased content survives if any other test
   still references it (or simply: confirm tracks are never touched, per
-  decision 3); confirms `import_authors`/the placeholder's own
-  `auth.users`/`public.users` rows survive erasure (decision 5); EXECUTE
-  lockdown confirmed directly against staging with the anon key.
+  decision 3); `erase_user_content` also deletes comments on the tests
+  it removes, by any author, not just the target's own; `erase_user_
+  account` nulls `tracks.created_by` for that user's own tracks
+  (confirming the track row itself survives), deletes that user's own
+  comments on any surviving test, and deletes the `public.users` row;
+  confirms `import_authors`/a placeholder's own `auth.users`/
+  `public.users` rows survive `erase_user_votes`/`erase_user_content`
+  (decision 5) but not `erase_user_account`; EXECUTE lockdown confirmed
+  directly against staging with the anon key, for all three functions.
 - **E2E:** none — an admin-only backend operation behind a minimal form,
   same reasoning step 39 gives for skipping E2E on `/admin/claim`.
+
+**Verified so far — code-complete, migration not yet applied:**
+`npx tsc --noEmit` clean on the new migration, route, page, form
+component, and integration test. Manually `curl`-verified the route's
+unauthenticated paths for real: no session → `401 {"error":
+"Unauthorised"}`; the page with no session → `307` redirect to
+`/login?redirectTo=/admin/erase-user-data`. Could not browser-verify the
+authenticated admin happy path — the permanent E2E test-user account
+isn't in `ADMIN_EMAILS`, and the real admin account's credentials aren't
+available in this environment; said so explicitly rather than claiming
+full UI verification. `supabase migration list` confirms
+`20260709133200_data_erasure_requests.sql` is still local-only
+(`remote: ""`) — the three functions and the now-nullable `tracks.
+created_by` don't exist on staging yet, so the new integration test
+(`app/api/admin/erase-user-data/__tests__/route.integration.test.ts`)
+cannot pass for real until it's applied. Per this session's own
+established pattern (`build-history-ingestion.md` step 36 finding 9),
+migrations get applied by the user, not run by the assistant directly.
 
 ---
 

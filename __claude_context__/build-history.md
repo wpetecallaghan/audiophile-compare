@@ -1617,7 +1617,7 @@ up in `broken/` (dead/missing/unplayable clip links) — see
 `build-history-ingestion.md` step 35's clip-health work. Full plan and
 verification: `build-history-ingestion.md`.
 
-### ⬜ 38 — Data erasure requests (votes / content / full account) (planned, not yet built)
+### ⬜ 38 — Data erasure requests (votes / content / full account) (code-complete, migration not yet applied)
 
 Rescoped from an original "undo a bad production import" safety-net plan
 (superseded — its ownership-check design had a real gap: it never
@@ -1625,15 +1625,23 @@ considered that a test's voters are separately claimable identities from
 the test's own creator) to what the real need turned out to be: admin-
 triggered, human-verified deletion for three support scenarios — an
 unmerged placeholder's votes only, an unmerged placeholder's tests and
-systems, or a registered user's full data (votes, systems, snapshots,
-tests). Two reusable `security definer` Postgres functions
-(`erase_user_votes`/`erase_user_content`), atomic by construction —
-deliberately learning from a real gap found in `rollback.ts` (see below),
-which does the equivalent deletion as 4 separate non-transactional calls.
-Not the same thing as `scripts/rollback-lejonklou.ts`/`lib/ingestion/
-rollback.ts` (built during step 36, an interim ingestion-pipeline-only
-tool, unrelated to this step, left unchanged). Full plan:
-`build-history-ingestion.md`.
+systems, or a registered user's full data including the account itself
+(votes, systems, snapshots, tests, then `auth.users`/`public.users`).
+Three reusable `security definer` Postgres functions
+(`erase_user_votes`/`erase_user_content`/`erase_user_account`), atomic by
+construction — deliberately learning from a real gap found in
+`rollback.ts` (see below), which does the equivalent deletion as 4
+separate non-transactional calls. `erase_user_account` needed a real
+schema fix first: `tracks.created_by` was `not null` with no cascade,
+which would have blocked deleting `public.users` the moment the erased
+user had ever created a track — now nullable, nulled rather than
+blocking (tracks are shared, `created_by` is provenance only). Admin
+route + minimal form built (`app/api/admin/erase-user-data/`,
+`app/admin/erase-user-data/`); integration tests written but can't pass
+yet — the migration is local-only, not yet applied to staging. Not the
+same thing as `scripts/rollback-lejonklou.ts`/`lib/ingestion/rollback.ts`
+(built during step 36, an interim ingestion-pipeline-only tool, unrelated
+to this step, left unchanged). Full plan: `build-history-ingestion.md`.
 
 ### ⬜ 39 — Claim flow (planned, not yet built)
 

@@ -63,7 +63,10 @@ system_snapshots (
 -- Musical passage used as a test reference (shared across all users)
 tracks (
   id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_by    uuid NOT NULL REFERENCES users(id),
+  created_by    uuid REFERENCES users(id),  -- nullable since step 38 (was NOT NULL) —
+                                             -- provenance only, never displayed; nulled
+                                             -- by erase_user_account rather than blocking
+                                             -- account deletion (tracks are never deleted)
   artist        text NOT NULL,
   title         text NOT NULL,
   album         text,
@@ -317,6 +320,42 @@ otherwise let anyone with the anon key call
 ingest route's `INGEST_SECRET` check. Verified directly against staging
 with the anon key: calling the RPC returns `401`,
 `"permission denied for function ingest_test"`.
+
+### Data erasure functions (step 38)
+
+Three `security definer` Postgres functions supporting admin-triggered,
+human-verified removal of a user's data — see `build-history-ingestion.md`
+step 38 for the full design. Called via `.rpc(...)` from
+`app/api/admin/erase-user-data/route.ts`, never directly from the client.
+Not the same thing as `scripts/rollback-lejonklou.ts`/`lib/ingestion/
+rollback.ts` (an interim ingestion-pipeline-only tool, unrelated to this).
+
+- **`erase_user_votes(target_user_id uuid) returns jsonb`** — deletes
+  every row in `votes` where `user_id = target_user_id`, wherever cast.
+  Returns `{votes_deleted: n}`.
+- **`erase_user_content(target_user_id uuid) returns jsonb`** — deletes
+  every test this user created and every system they own, fully:
+  `comments` and `votes` (by *anyone* on those specific tests) →
+  `clip_mapping` → `clips` → `tests` → `system_snapshots` → `systems`.
+  Tracks are never touched (globally shared, matched by `(artist,
+  title)` — `created_by` is provenance, not ownership). Returns
+  `{tests_deleted: n, systems_deleted: n, votes_deleted: n}`.
+- **`erase_user_account(target_user_id uuid) returns jsonb`** — the
+  final step of a full account erasure: nulls `tracks.created_by` for
+  this user's own tracks (the track row survives — see the `tracks`
+  table note above), deletes this user's own `comments` on any
+  surviving test, then deletes their `public.users` row. Returns
+  `{tracks_orphaned: n, account_deleted: boolean}`. Deliberately never
+  deletes `import_authors`/a placeholder's identity — only meant to run
+  against a real, registered (non-placeholder) user; deleting a
+  placeholder's identity is `claim_placeholder`'s (step 39) job, not
+  this. The corresponding `auth.users` row isn't touched by this
+  function either — `admin.auth.admin.deleteUser()` from application
+  code handles that afterward (an Admin SDK call, can't run inside SQL).
+
+**Security-critical**, same discipline as `ingest_test`: all three
+explicitly revoke EXECUTE from `public`/`anon`/`authenticated` and grant
+only to `service_role`.
 
 ### test_vote_count function (public vote count)
 

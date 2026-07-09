@@ -281,6 +281,32 @@
     "environmentLabel": "Environment",
     "unavailable": "Not available (local development)"
   },
+  "admin": {
+    "eraseUserData": {
+      "heading": "Erase user data",
+      "description": "Admin-only, human-verified data erasure. Confirm the requester's identity (forum PM for an unmerged placeholder, matching registered email for a real user) before using this.",
+      "userIdLabel": "User ID",
+      "userIdPlaceholder": "uuid",
+      "scopeLabel": "Scope",
+      "scopeVotes": "Votes only (case 1 — unmerged placeholder)",
+      "scopeContent": "Tests + systems (case 2 — unmerged placeholder)",
+      "scopeFull": "Everything, including the account (case 3 — registered user)",
+      "previewButton": "Preview",
+      "previewing": "Loading…",
+      "previewHeading": "This will affect:",
+      "previewVotes": "{count} vote(s)",
+      "previewTests": "{count} test(s)",
+      "previewSystems": "{count} system(s)",
+      "eraseButton": "Erase",
+      "confirmHeading": "This cannot be undone",
+      "confirmWarning": "This permanently deletes the data shown above. There is no undo.",
+      "confirmButton": "Yes, erase",
+      "erasing": "Erasing…",
+      "cancelButton": "Cancel",
+      "successMessage": "Erasure complete.",
+      "networkError": "Something went wrong. Check the console and try again."
+    }
+  },
   "about": {
     "heading": "About Audiophile Compare",
     "whyHeading": "Why this exists",

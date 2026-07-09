@@ -570,6 +570,11 @@ owns the actual `fetch` call and what happens after: return `{ error }` to
 show an inline `FormMessage` and stay on the confirm step, or navigate/
 `router.refresh()` and return nothing when the action succeeded (the
 component doesn't assume the caller's target still exists to render into).
+Also used by `components/admin/EraseUserDataForm.tsx` (step 38) — there,
+`onConfirm` doesn't navigate on success (there's nothing to navigate to;
+the erased content/account is simply gone), it clears the preview state
+and shows an inline success `FormMessage` instead, same "return `{ error
+}` or nothing" contract either way.
 
 **A URL input with a Verify button and inline verified/dead message — use
 `<ClipInput />` (`components/clips/ClipInput.tsx`), not a hand-rolled copy:**

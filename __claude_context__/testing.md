@@ -179,11 +179,17 @@ Unit tests mock Supabase internals; E2E tests run against the live staging
 DB through a browser. Integration tests sit between them — testing an API
 route against a real (staging) database, in-process, with no browser.
 
+A second was added in step 38
+(`app/api/admin/erase-user-data/__tests__/route.integration.test.ts`) —
+exercises the three `erase_user_*` Postgres functions directly via
+`.rpc(...)`, not the HTTP route itself (that route's own auth is
+session-based, not header-based like `INGEST_SECRET`, so faking it
+without a browser isn't practical the same way; its unauthenticated paths
+were instead manually `curl`-verified once — see §11).
+
 Other candidates for this tier, not yet added:
 - Protected route access patterns at the API boundary, for other routes
 - Form submission workflows end-to-end through API routes
-
-No timeline set for extending beyond the ingest route.
 
 ---
 
@@ -282,3 +288,22 @@ falls back to ingestion time exactly as before; the created test's title
 follows `resolveTestTitle`'s new "system · artist – title" fallback
 format (build-history.md step 40 Part B); a request with the wrong
 `x-ingest-secret` is rejected with 403.
+
+**Coverage** (`app/api/admin/erase-user-data/__tests__/route.integration.test.ts`,
+5 tests, step 38): calls the three `erase_user_*` functions directly via
+`.rpc(...)` rather than importing the route handler (see §7 for why) —
+`erase_user_votes` deletes exactly the target's votes on a test, leaving
+a different user's vote on the same test untouched; `erase_user_content`
+deletes the target's test and system fully, including a vote cast by a
+*different* user on that test (the test is gone, its votes can't survive
+it, regardless of whose they were), while the track it used survives
+untouched (never deleted, per decision 3); `erase_user_account` nulls
+`tracks.created_by` for a disposable real (non-placeholder) test user's
+own track, deletes their `public.users` row, and confirms
+`admin.auth.admin.deleteUser()` still succeeds afterward against the
+now-orphaned auth identity; `erase_user_votes`/`erase_user_content` leave
+`import_authors` and the placeholder's own account untouched (decision
+5); all three functions reject an anon-key caller (EXECUTE lockdown).
+Requires `supabase/migrations/20260709133200_data_erasure_requests.sql`
+to be applied first — the three functions and the now-nullable
+`tracks.created_by` don't exist on staging until it is.

@@ -214,6 +214,37 @@ All three are hard deletes — no `deleted_at` column, no restore/undo. See
 `audiophile-compare-schema.md`'s "Delete rules" section for the full
 cascade/RESTRICT design.
 
+**Not absolute — step 38 adds a separate, more privileged exception.**
+`POST /api/admin/erase-user-data` (admin-only, human-verified — see Rule 8)
+can delete a voted-on test, and a user's votes on any test, via
+`erase_user_content`/`erase_user_votes`. This is a distinct, deliberately
+separate path — it doesn't change `DELETE /api/tests/[id]`'s own behavior,
+which still refuses a voted-on test exactly as before for any normal,
+self-service caller.
+
+### Rule 8 — admin-gated routes/pages (step 39's `/version` precedent, extended by step 38)
+
+Session + `isAdminEmail(user.email)` (`lib/admin/is-admin-email.ts`,
+checks the `ADMIN_EMAILS` env var) — not `INGEST_SECRET`, not a DB role.
+A human, browser-driven action from the site owner's own logged-in
+session, distinct from the forum-ingestion pipeline's server-to-server
+callers below.
+
+```typescript
+const { data: { user } } = await supabase.auth.getUser()
+if (!user) redirect('/login?redirectTo=...')          // page — safety net, middleware already covers this
+// or: return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })  // route
+
+if (!isAdminEmail(user.email)) notFound()              // page — 404, not 403: don't confirm
+// or: return NextResponse.json({ error: 'Not found' }, { status: 404 })     // route — this route exists to a non-admin
+```
+
+Two real callers: `app/version/page.tsx` (read-only deployment info) and
+`app/admin/erase-user-data/page.tsx` / `app/api/admin/erase-user-data/
+route.ts` (step 38 — calls `erase_user_votes`/`erase_user_content`/
+`erase_user_account` via the admin client, then `admin.auth.admin.
+deleteUser()` for a full account erasure).
+
 ### Rule 7 — clip health rules (step 27)
 
 - `POST /api/votes` re-checks every chosen clip's `url_status` and returns
