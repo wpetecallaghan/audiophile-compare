@@ -305,5 +305,6 @@ now-orphaned auth identity; `erase_user_votes`/`erase_user_content` leave
 `import_authors` and the placeholder's own account untouched (decision
 5); all three functions reject an anon-key caller (EXECUTE lockdown).
 Requires `supabase/migrations/20260709133200_data_erasure_requests.sql`
-to be applied first — the three functions and the now-nullable
-`tracks.created_by` don't exist on staging until it is.
+to be applied first — applied to staging, confirmed via
+`supabase migration list` and 14/14 passing for real (production not
+yet — separate step).

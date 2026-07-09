@@ -2275,7 +2275,7 @@ step 40's formatting otherwise.
 
 ---
 
-## ⬜ 38 — Data erasure requests (votes / content / full account)
+## ✅ 38 — Data erasure requests (votes / content / full account)
 
 **This step's scope has changed from its original plan — read this first.**
 The original plan below this notice (kept for its still-relevant
@@ -2539,23 +2539,38 @@ through the ordinary UI.
 - **E2E:** none — an admin-only backend operation behind a minimal form,
   same reasoning step 39 gives for skipping E2E on `/admin/claim`.
 
-**Verified so far — code-complete, migration not yet applied:**
-`npx tsc --noEmit` clean on the new migration, route, page, form
-component, and integration test. Manually `curl`-verified the route's
-unauthenticated paths for real: no session → `401 {"error":
-"Unauthorised"}`; the page with no session → `307` redirect to
-`/login?redirectTo=/admin/erase-user-data`. Could not browser-verify the
-authenticated admin happy path — the permanent E2E test-user account
-isn't in `ADMIN_EMAILS`, and the real admin account's credentials aren't
-available in this environment; said so explicitly rather than claiming
-full UI verification. `supabase migration list` confirms
-`20260709133200_data_erasure_requests.sql` is still local-only
-(`remote: ""`) — the three functions and the now-nullable `tracks.
-created_by` don't exist on staging yet, so the new integration test
-(`app/api/admin/erase-user-data/__tests__/route.integration.test.ts`)
-cannot pass for real until it's applied. Per this session's own
-established pattern (`build-history-ingestion.md` step 36 finding 9),
-migrations get applied by the user, not run by the assistant directly.
+**Verified — migration applied to staging by the user
+(`supabase migration list` confirms `20260709133200` now shows
+`remote: "20260709133200"`), then re-verified independently rather than
+just taken on report:**
+- `npm run test:integration` — **14/14 passing** (9 pre-existing +
+  5 new), including `erase_user_votes`/`erase_user_content`/
+  `erase_user_account` all behaving exactly as designed against real
+  staging data, `import_authors`/a placeholder's own account surviving
+  `erase_user_votes`/`erase_user_content`, and all three functions
+  rejecting an anon-key caller (EXECUTE lockdown confirmed for real, not
+  assumed from the migration's `revoke`/`grant` statements alone).
+- `npx tsc --noEmit` and the full unit suite (38 files / 440 tests)
+  re-run clean after the migration landed.
+- Gate re-verified for real with an actual authenticated session, not
+  just anonymous requests: reused the saved E2E storageState cookie
+  (`playwright/.auth/user.json`, a real but non-admin account) against a
+  local dev server — both the page and the route correctly return `404`
+  (`{"error":"Not found"}` from the route) for an authenticated
+  non-admin, the same as the unauthenticated case's `401`/redirect
+  already confirmed. Four of the gate's states now confirmed for real:
+  unauthenticated page, unauthenticated route, authenticated-non-admin
+  page, authenticated-non-admin route.
+- **Still not verified: the actual authenticated-admin happy path** —
+  the permanent E2E test-user account isn't in `ADMIN_EMAILS`, and the
+  real admin account's credentials aren't available in this environment.
+  Said so explicitly rather than claiming full UI verification; worth a
+  manual pass by whoever holds the real admin session before relying on
+  this for a real request.
+- **Staging only — production has not had this migration applied.**
+  Consistent with this project's "staging first" convention; a separate,
+  deliberate step whenever this is actually needed for a real request,
+  not assumed to follow automatically from staging verification.
 
 ---
 
