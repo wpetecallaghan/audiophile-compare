@@ -2930,12 +2930,12 @@ regressions. The admin route's gate manually curl-verified for real
 against a local dev server: no session → 401 `{"error":
 "Unauthorised"}`; the saved E2E storageState cookie (an authenticated,
 non-admin session) → 404 `{"error": "Not found"}` — both match Rule 8
-exactly. The Vercel deploy itself — staging and production, not the migration,
-which is already applied to both databases — is still outstanding as of
-this note: the code (route/page/form) only exists on `main`/whatever
-branch this was built on locally, not yet live on either Vercel
-environment. The one gap the assistant still can't close directly once
-it is deployed — the authenticated-admin happy path itself, no real
-admin credentials available in this environment — is the same
-limitation step 38 had, closed there by the user confirming the form
-presented correctly; the same closing step remains for this one.
+exactly. Deployed to `Dev`, `Staging`, and `main` alongside step 41
+(`6cb757c`) — the code was already committed (`027115f`/`1432bae`) by the
+time that push went out, so it shipped as part of the same deploy rather
+than needing a separate one. The one gap the assistant couldn't close
+directly — the authenticated-admin happy path itself, no real admin
+credentials available in this environment — is now closed: the real
+admin account confirmed `/admin/claim` presents and works correctly on
+all deployments, the same closing step step 38 needed for
+`/admin/erase-user-data`.
