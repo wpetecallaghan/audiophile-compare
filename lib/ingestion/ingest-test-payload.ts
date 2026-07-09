@@ -112,9 +112,30 @@ export function validateIngestPayload(
   return { valid: true, payload: p as IngestPayload }
 }
 
-// Falls back to "<artist> – <title>" when the caller doesn't supply one —
-// forum posts rarely have a ready-made test title the way the web
-// creation wizard's form field does.
+// Falls back to "<system name> · <artist> – <title>" when the caller
+// doesn't supply one (build-history.md step 40 Part B) — forum posts
+// rarely have a ready-made test title the way the web creation wizard's
+// form field does. The only real caller of this fallback is the forum-
+// ingestion route (`app/api/internal/ingest/route.ts`); the web wizard's
+// own route requires `title` directly and never reaches this branch, so
+// this only ever affects ingested tests.
+//
+// Prepending the system name distinguishes the many real cases where the
+// same track gets re-compared across different system changes over
+// months — plain "<artist> – <title>" alone made those indistinguishable
+// in any list/feed view. Deduplicates when snapshot_a/snapshot_b share
+// one system name (the expected case — extraction always sets both
+// snapshots' system_name to the same "<forum author>'s system" string),
+// joining both names with "/" instead of arbitrarily picking one on the
+// rare/theoretical path where they genuinely differ.
 export function resolveTestTitle(payload: IngestPayload): string {
-  return payload.title?.trim() || `${payload.track.artist} – ${payload.track.title}`
+  const explicit = payload.title?.trim()
+  if (explicit) return explicit
+
+  const trackLabel = `${payload.track.artist} – ${payload.track.title}`
+  const systemA = payload.snapshot_a.system_name
+  const systemB = payload.snapshot_b.system_name
+  const systemLabel = systemA === systemB ? systemA : `${systemA} / ${systemB}`
+
+  return `${systemLabel} · ${trackLabel}`
 }

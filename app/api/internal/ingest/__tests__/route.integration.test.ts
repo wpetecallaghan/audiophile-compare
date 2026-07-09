@@ -124,11 +124,16 @@ describe('POST /api/internal/ingest (integration)', () => {
 
     const { data: testRow } = await admin
       .from('tests')
-      .select('source_url')
+      .select('source_url, title')
       .eq('id', body.testId)
       .single()
 
     expect(testRow?.source_url).toBe('https://www.lejonklou.com/forum/viewtopic.php?f=2&t=3233#p187')
+    // build-history.md step 40 Part B: no explicit title in the payload,
+    // so resolveTestTitle's fallback runs — "system · artist – title",
+    // deduplicated since this fixture's snapshot_a/snapshot_b share one
+    // system name.
+    expect(testRow?.title).toBe(`${SYSTEM_NAME} · ${TRACK_ARTIST} – ${TRACK_TITLE}`)
   })
 
   it('is a no-op when re-run with the same source_ref', async () => {

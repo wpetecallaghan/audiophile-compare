@@ -18,7 +18,7 @@ test.beforeAll(async () => {
 })
 
 test.describe('Voting flow', () => {
-  test('before voting: tally is hidden but vote count is visible', async ({ page }) => {
+  test('before voting: tally is hidden but vote count and snapshot info are visible', async ({ page }) => {
     await page.goto(routes.test(fixture.test.id))
 
     // The vote count should be visible to all (public stat). Not sourced from
@@ -28,6 +28,17 @@ test.describe('Voting flow', () => {
 
     // Tally bars (percentages) should NOT be visible before the user votes
     await expect(page.getByText(/%/)).not.toBeVisible()
+
+    // System/snapshot info (build-history.md step 40 Part A) is neutral,
+    // non-spoiling information — it must already be visible before any
+    // reveal action, not gated behind isRevealed the way the mapping/tally
+    // above are.
+    await expect(
+      page.getByText(`${fixture.systemA.name} · ${fixture.snapshotA.label}`),
+    ).toBeVisible()
+    await expect(
+      page.getByText(`${fixture.systemB.name} · ${fixture.snapshotB.label}`),
+    ).toBeVisible()
   })
 
   test('cast a vote: select clip A for the first technique → Save votes', async ({ page }) => {

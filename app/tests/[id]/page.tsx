@@ -17,6 +17,7 @@ import type { RawVoteRow, TallyResult } from '@/lib/votes/compute-tally'
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
 import { Badge } from '@/components/ui/Badge'
+import { formatSnapshotLine, type SnapshotSummary } from '@/lib/tests/format-snapshot-line'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -36,7 +37,9 @@ export default async function TestDetailPage({ params }: Props) {
       creator_id,
       creator:users!creator_id(display_name, is_placeholder),
       track:tracks(artist, title, album, passage_note),
-      clips(id, label, source_url, provider, media_type, url_status)
+      clips(id, label, source_url, provider, media_type, url_status),
+      snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
+      snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name))
     `)
     .eq('id', id)
     .single()
@@ -140,6 +143,24 @@ export default async function TestDetailPage({ params }: Props) {
   const track  = Array.isArray(test.track)  ? test.track[0]  : test.track
   const creator = Array.isArray(test.creator) ? test.creator[0] : test.creator
 
+  // Same normalization, one level deeper for snapshot_a/snapshot_b's own
+  // nested system join — see lib/tests/format-snapshot-line.ts (step 40
+  // Part A), shared with the feed's identical "SystemName · label"
+  // presentation, shown unconditionally (never gated behind isRevealed —
+  // naming which two snapshots are compared doesn't disclose before/after
+  // identity or which one people preferred).
+  function normalizeSnapshot(raw: unknown): SnapshotSummary {
+    const snap = (Array.isArray(raw) ? raw[0] : raw) as
+      | { label: string; system: { name: string } | { name: string }[] | null }
+      | undefined
+    if (!snap) return null
+    const system = Array.isArray(snap.system) ? snap.system[0] : snap.system
+    return { label: snap.label, system: system ?? null }
+  }
+  const snapshotA = normalizeSnapshot(test.snapshot_a)
+  const snapshotB = normalizeSnapshot(test.snapshot_b)
+  const snapshotLine = formatSnapshotLine(snapshotA, snapshotB)
+
   return (
     <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
@@ -155,6 +176,9 @@ export default async function TestDetailPage({ params }: Props) {
         </p>
         {track?.passage_note && (
           <p className="text-sm text-gray-500 dark:text-gray-400 italic">{track.passage_note}</p>
+        )}
+        {snapshotLine && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">{snapshotLine}</p>
         )}
         <p className="text-xs text-gray-500 dark:text-gray-400">
           by {creator?.display_name ?? t('anonymous')} ·{' '}

@@ -1,6 +1,7 @@
 import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/Badge'
+import { formatSnapshotLine, type SnapshotSummary } from '@/lib/tests/format-snapshot-line'
 
 export type FeedTest = {
   id: string
@@ -10,8 +11,8 @@ export type FeedTest = {
   vote_count: number
   track: { artist: string; title: string } | null
   creator: { display_name: string | null; is_placeholder: boolean } | null
-  snapshot_a: { label: string; system: { name: string } | null } | null
-  snapshot_b: { label: string; system: { name: string } | null } | null
+  snapshot_a: SnapshotSummary
+  snapshot_b: SnapshotSummary
   has_dead_clip: boolean
 }
 
@@ -31,16 +32,7 @@ export default async function FeedCard({ test }: { test: FeedTest }) {
   const tCommon = await getTranslations('common')
   const badge = statusBadge(test.status, test.has_dead_clip, t)
 
-  const snapshotLine = [
-    test.snapshot_a
-      ? `${test.snapshot_a.system?.name ?? '?'} · ${test.snapshot_a.label}`
-      : null,
-    test.snapshot_b
-      ? `${test.snapshot_b.system?.name ?? '?'} · ${test.snapshot_b.label}`
-      : null,
-  ]
-    .filter(Boolean)
-    .join('  vs  ')
+  const snapshotLine = formatSnapshotLine(test.snapshot_a, test.snapshot_b)
 
   return (
     <li>

@@ -272,6 +272,16 @@ const ownerId = Array.isArray(sys) ? sys[0]?.owner_id : sys?.owner_id
 YouTube IFrame API types are declared in `types/youtube.d.ts` (extends the `Window` interface).
 `next-intl` message types are extended in `types/next-intl.d.ts` — unknown i18n keys are TypeScript errors.
 
+**`lib/tests/format-snapshot-line.ts`** (step 40 Part A) — the shared
+"`SystemName · label`  vs  `SystemName · label`" formatter, extracted so
+`components/feed/FeedCard.tsx` and `app/tests/[id]/page.tsx` don't each
+reimplement the same join/format logic. Each call site still does its own
+array-vs-object normalization (the pattern above) on the raw Supabase join
+before calling it — the helper itself just takes the already-normalized
+`SnapshotSummary` shape. Shown unconditionally on both pages, never gated
+behind reveal status: naming which two snapshots are being compared
+doesn't disclose before/after identity or which one people preferred.
+
 ---
 
 ## 9. Error boundaries
