@@ -1953,10 +1953,11 @@ change (no unit tests added, matching the plan). `npx tsc --noEmit` — no
 new errors (same pre-existing, unrelated `__tests__/supabase-*.test.ts`
 failures as every prior step). `npx playwright test
 e2e/tests/profile.spec.ts` — run against a local dev server, all 4 tests
-passing including the new non-admin assertion. Manual admin-session
-verification (the positive case) is still outstanding — same closing
-step steps 38/39 both needed a real admin session for, not something the
-assistant can do directly in this environment.
+passing including the new non-admin assertion. Merged to `Dev`,
+`Staging`, and `main` (`6cb757c`); the real admin account confirmed the
+positive case — both links visible and working on `/profile` — on all
+deployments, the one gap the assistant couldn't close directly (no real
+admin credentials in this environment), same as steps 38/39.
 
 ---
 
