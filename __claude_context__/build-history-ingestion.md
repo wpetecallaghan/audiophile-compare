@@ -2664,7 +2664,7 @@ an explicit, verified request naming exactly whose data to remove.
 
 ---
 
-## 🔧 39 — Claim flow (merge a placeholder into a real account) — built, migration not yet applied
+## ✅ 39 — Claim flow (merge a placeholder into a real account)
 
 **Reviewed and revised against step 38's actual, now-built
 implementation — per instruction, step 38 overrides this plan wherever
@@ -2916,15 +2916,26 @@ merge):**
   (`ConfirmButton` usage note), `testing.md` §7 and §11 (new integration
   test paragraph), `core.md` §6 (build status).
 
-**Not yet done:** the migration hasn't been applied to either
-environment — that's the user's own action (`supabase db push`), never
-the assistant's. Once applied to staging: run `npm run test:integration`
-for real, confirm `supabase migration list` shows it applied, and
-manually verify the admin route's 401/404 gate the same way step 38's
-was verified (curl or a saved E2E storageState cookie against a local
-dev server) — the authenticated-admin happy path itself can't be
-browser-verified from this environment (no real admin credentials
-available here), same limitation step 38 had, closed there by the user
-confirming the form presented correctly. Apply to production only after
-staging is independently re-verified, per the repo's migration
-convention.
+**Verified:** the user applied the migration to both environments
+(`supabase db push`, their own action, not the assistant's). Independently
+re-checked, not just taken on report — `supabase migration list` shows
+`20260709145657` applied on both `audiophile-staging`
+(`ihszzvrloncidegvpipa`) and `audiophile-prod` (`qbfflasfqjmvwdvaeaja`),
+checked directly by relinking the CLI to each project in turn (then
+relinking back to staging, the state it was found in). `npm run
+test:integration` run for real against staging: all 3 claim tests pass,
+plus the other two integration files unaffected (17/17 total). Typecheck
+and the full unit suite (38 files/440 tests) re-run clean, no
+regressions. The admin route's gate manually curl-verified for real
+against a local dev server: no session → 401 `{"error":
+"Unauthorised"}`; the saved E2E storageState cookie (an authenticated,
+non-admin session) → 404 `{"error": "Not found"}` — both match Rule 8
+exactly. The Vercel deploy itself — staging and production, not the migration,
+which is already applied to both databases — is still outstanding as of
+this note: the code (route/page/form) only exists on `main`/whatever
+branch this was built on locally, not yet live on either Vercel
+environment. The one gap the assistant still can't close directly once
+it is deployed — the authenticated-admin happy path itself, no real
+admin credentials available in this environment — is the same
+limitation step 38 had, closed there by the user confirming the form
+presented correctly; the same closing step remains for this one.
