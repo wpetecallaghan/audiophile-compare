@@ -2086,10 +2086,61 @@ network error doesn't stop the next candidate from still committing
 successfully) — `lib/ingestion/__tests__/commit.test.ts` is now 16 tests
 (was 10).
 
-Not yet re-run against real staging with the fix applied — that's the
-immediate next step, now that `audiophile-staging` is reachable with both
-`INGEST_SECRET_STAGING` and `COMMIT_BASE_URL_STAGING` populated in a local
-`.env.local` per the `docs/vercel-setup.md` section.
+Re-run against real staging with the fix applied: all 44 candidates
+committed successfully (`approved/` emptied, all 44 moved to
+`ingested/staging/`). Confirms the bypass-header fix was the actual root
+cause — see finding 8 below for what a subsequent manual review of that
+real committed data turned up.
+
+**Finding 8 — three real bugs and one real gap found by manually
+reviewing the 44 real committed tests on staging, not by any test or
+review pass:**
+1. Every imported test was inserted `status='open'`, never `'revealed'`,
+   regardless of vote count — `ingest_test` hardcoded the literal. Since
+   `tests.status === 'revealed'` is what actually gates the before/after
+   mapping and vote tally being visible (`app/tests/[id]/page.tsx:44`)
+   *and* what blocks new voting (`app/api/votes/route.ts:47-50`, 409
+   "Cannot vote on a revealed test"), every one of the 44 historical tests
+   was silently open to a live visitor casting a fresh vote on a
+   years-old forum clip — not just a display bug.
+2. `tests.created_at` always defaulted to `now()` — the real forum post
+   date already existed as `Candidate.created_at` locally but was never
+   included in `candidate.payload`, so it never reached the payload
+   `IngestPayload` had no field for in the first place.
+3. The public feed's apparent "wrong order" turned out not to be a
+   second bug: `app/page.tsx:37` already does
+   `.order('created_at', { ascending: false })` correctly. Once every
+   imported test's `created_at` was "now" (bug 2), all 44 shared
+   near-identical timestamps and sorted effectively at random relative to
+   each other — fixing bug 2 fixes this for free, confirmed by re-running
+   the full delete-and-recommit cycle described below rather than assumed.
+4. Pagination (`app/page.tsx`) never had First/Last links, only
+   Previous/Next — a real gap, not a regression, straightforward to add.
+   Not itself forum-ingestion-specific, but documented here since that's
+   where it was found; no automated test exists for it (no E2E fixture
+   with >20 seeded tests exists yet to exercise pagination at all).
+
+Fixed: a new migration
+(`20260709110700_ingest_test_reveal_and_date.sql`) makes `ingest_test`
+compute `status`/`revealed_at` from whether the payload's `votes` array is
+non-empty (revealed with `revealed_at = now()` if so, `'open'` otherwise —
+the real forum reveal date isn't separately tracked, only the
+test-defining post's own date is) and accept an optional `created_at`,
+falling back to `now()` exactly as before when absent (so a web-created
+test, which never sets it, is unaffected). `IngestPayload` gained an
+optional `created_at` field; `applyTestDefining` (`extract-post.ts`) now
+populates it from `candidate.created_at`, guarding against the empty
+string the `missing_timestamp` path can leave there (would otherwise fail
+`validateIngestPayload`'s new "must be a valid date string" check).
+`app/page.tsx` gained First/Last links (new `firstPage`/`lastPage` keys in
+`messages/en.json`, alongside the existing `previousPage`/`nextPage`).
+
+Decided (rather than assumed) to fix `ingest_test` once and
+delete-and-recommit the 44 existing tests, instead of also writing a
+separate retroactive `UPDATE` for the already-committed rows — one code
+fix covers both bugs 1 and 2 at once via a fresh commit, since deletion
+was needed anyway (see step 38 below, built ahead of its formal turn to
+make that recommit cycle possible).
 
 ---
 
@@ -2145,6 +2196,53 @@ undoing a bad production import. This needs to be written and reviewed
 *ahead of time* — composing a destructive query live, during an incident,
 against production, is exactly the kind of pressure that produces
 mistakes.
+
+**A first, narrower version was built ahead of this step's formal turn —
+`scripts/rollback-lejonklou.ts` / `lib/ingestion/rollback.ts` — to unblock
+finding 8 above's delete-and-recommit cycle on staging. Still ⬜, not ✅:
+it deliberately does not yet satisfy this plan's decision 3 safety
+conditions, so it is not yet safe to point at production once step 39
+(claim flow) exists.** What was actually built, and how it differs from
+the plan below:
+- **Scoped by local candidate file, not by a server-side `source_ref
+  like` query (decision 2).** `rollbackEnvironment` reads whichever
+  candidates currently sit in `ingested/staging/`(`--env staging`) or
+  `ingested/production/` (`--env production`) and deletes exactly the
+  tests matching those candidates' `source_ref`s — correct and
+  sufficient for "undo the batch this local repo just committed," which
+  is the actual immediate need, but it depends on the local
+  `scripts/output/candidates/` state matching the server, unlike the
+  plan's self-contained DB-side pattern match.
+- **No placeholder-ownership check (decision 3, first bullet) — the real
+  gap.** Nothing yet confirms a test's owner is still a placeholder
+  before deleting it. Harmless today (step 39/claim flow doesn't exist,
+  so nothing has ever been claimed), but this must be added before this
+  script is ever run with `--env production` after claiming exists, or a
+  rollback could delete a real claimed user's content.
+- **No track-still-referenced check (decision 3, second bullet) — by
+  design, not by omission.** Deliberately never deletes
+  `system_snapshots`/`systems`/`tracks` at all (they're safely shared/
+  reusable — a recommit resolves them again rather than duplicating), so
+  the cross-reference risk decision 3 describes doesn't arise for this
+  narrower scope.
+- **`--dry-run` implements decision 6** (lists matching candidates/test
+  ids without deleting or moving anything).
+- Decisions 4 (placeholders/`import_authors` left alone), 5 (naturally
+  time-boxed once decision 3's check above is added), and 7 (Supabase
+  backup/PITR — separate verification, not done here) are all still
+  exactly as planned, not yet acted on.
+
+**Verified:** `npm run test` includes 6 new
+`lib/ingestion/__tests__/rollback.test.ts` tests (empty-folder no-op, the
+full votes→clip_mapping→clips→tests deletion order with the candidate
+file moved back to `approved/`, the `production` env moving back to
+`ingested_staging` instead, `--dry-run` doing no deletes/moves, a
+mid-batch delete failure leaving the candidate file unmoved, and a
+"resolved zero tests" case still moving the local file back). CLI argv
+validation (no args, valid `--env` with no credentials set) manually
+exercised. Not yet run for real against staging's actual 44 committed
+tests — that's the immediate next step once finding 8's `ingest_test` fix
+above is deployed.
 
 **Decisions:**
 

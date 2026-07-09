@@ -16,7 +16,8 @@
     "test:e2e:debug": "playwright test --debug",
     "scrape:lejonklou": "tsx scripts/scrape-lejonklou.ts",
     "extract:lejonklou": "tsx scripts/extract-lejonklou.ts",
-    "commit:lejonklou": "tsx scripts/commit-lejonklou.ts"
+    "commit:lejonklou": "tsx scripts/commit-lejonklou.ts",
+    "rollback:lejonklou": "tsx scripts/rollback-lejonklou.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

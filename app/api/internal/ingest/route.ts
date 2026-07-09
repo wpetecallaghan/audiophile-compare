@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
       clip_b_media_type: clipB.media_type,
       before_is_a: payload.before_is_a,
       votes,
+      created_at: payload.created_at ?? null,
     },
   })
 

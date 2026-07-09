@@ -102,6 +102,25 @@ describe('extractPost', () => {
       expect(entry?.candidate.forum_labels).toEqual(['A', 'B'])
       expect(entry?.candidate.contributing_posts).toContain(post().post_url)
       expect(entry?.candidate.issues).toEqual([])
+      expect(entry?.candidate.payload.created_at).toBe('2024-01-01T00:00:00Z')
+    })
+
+    it('leaves payload.created_at unset (not an empty string) when the post has no resolvable timestamp', async () => {
+      mockClassification(
+        classification({
+          role: 'test_defining',
+          comparison_groups: [
+            { clips: [clip(YOUTUBE_A, 'A'), clip(YOUTUBE_B, 'B')], track_name_is_confident: false },
+          ],
+        }),
+      )
+
+      const index = await buildCandidateIndex(baseDir)
+      await extractPost(THREAD_REF, post({ posted_at: '' }), index, baseDir)
+
+      const sourceRef = `${THREAD_REF}:post-72033:pair-1`
+      const candidate = index.candidatesByRef.get(sourceRef)?.candidate
+      expect(candidate?.payload.created_at).toBeUndefined()
     })
 
     it('flags unidentified_track and uses a per-source_ref-unique placeholder when the track is not confident', async () => {

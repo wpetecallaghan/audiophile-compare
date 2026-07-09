@@ -142,28 +142,42 @@ export default async function HomePage({ searchParams }: Props) {
 
       {/* Pagination */}
       {(hasPrev || hasNext) && (
-        <div className="flex items-center justify-between pt-2">
-          {hasPrev ? (
-            <Link
-              href={`/?page=${page - 1}`}
-            >
-              {t('previousPage')}
-            </Link>
-          ) : (
-            <span />
-          )}
+        <div className="flex items-center justify-between pt-2 gap-2">
+          <div className="flex items-center gap-3">
+            {hasPrev && (
+              <Link href="/?page=1">
+                {t('firstPage')}
+              </Link>
+            )}
+            {hasPrev ? (
+              <Link
+                href={`/?page=${page - 1}`}
+              >
+                {t('previousPage')}
+              </Link>
+            ) : (
+              <span />
+            )}
+          </div>
           <span className="text-xs text-gray-500 dark:text-gray-400">
             {t('pageOf', { page, total: totalPages })}
           </span>
-          {hasNext ? (
-            <Link
-              href={`/?page=${page + 1}`}
-            >
-              {t('nextPage')}
-            </Link>
-          ) : (
-            <span />
-          )}
+          <div className="flex items-center gap-3">
+            {hasNext ? (
+              <Link
+                href={`/?page=${page + 1}`}
+              >
+                {t('nextPage')}
+              </Link>
+            ) : (
+              <span />
+            )}
+            {hasNext && (
+              <Link href={`/?page=${totalPages}`}>
+                {t('lastPage')}
+              </Link>
+            )}
+          </div>
         </div>
       )}
 

@@ -110,6 +110,21 @@ describe('validateIngestPayload', () => {
     expect(result).toEqual({ valid: false, error: 'before_is_a must be a boolean' })
   })
 
+  it('accepts a payload with a valid created_at and passes it through', () => {
+    const result = validateIngestPayload(validPayload({ created_at: '2023-06-15T10:00:00Z' }))
+    expect(result).toEqual({ valid: true, payload: validPayload({ created_at: '2023-06-15T10:00:00Z' }) })
+  })
+
+  it('accepts a payload with no created_at at all — optional, for web-created tests', () => {
+    const result = validateIngestPayload(validPayload())
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects an unparseable created_at', () => {
+    const result = validateIngestPayload(validPayload({ created_at: 'not a date' }))
+    expect(result).toEqual({ valid: false, error: 'created_at must be a valid date string' })
+  })
+
   it('rejects a vote missing voter.forum_username', () => {
     const result = validateIngestPayload(
       validPayload({

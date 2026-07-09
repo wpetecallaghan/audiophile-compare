@@ -190,6 +190,75 @@ describe('POST /api/internal/ingest (integration)', () => {
     expect(distinctOwners.size).toBe(2)
   })
 
+  it('sets status=revealed and revealed_at when the payload carries at least one vote', async () => {
+    const { body } = await callIngest(
+      payload({
+        source_ref: 'lejonklou-forum:e2e-integration-test:post-revealed',
+        votes: [{ voter: { forum_username: VOTER_1 }, chosen_label: 'A', technique_name: TECHNIQUE }],
+      }),
+    )
+    testIds.push(body.testId)
+
+    const { data: testRow } = await admin
+      .from('tests')
+      .select('status, revealed_at')
+      .eq('id', body.testId)
+      .single()
+
+    expect(testRow?.status).toBe('revealed')
+    expect(testRow?.revealed_at).not.toBeNull()
+  })
+
+  it('leaves status=open and revealed_at null when the payload has no votes', async () => {
+    const { body } = await callIngest(
+      payload({ source_ref: 'lejonklou-forum:e2e-integration-test:post-no-votes' }),
+    )
+    testIds.push(body.testId)
+
+    const { data: testRow } = await admin
+      .from('tests')
+      .select('status, revealed_at')
+      .eq('id', body.testId)
+      .single()
+
+    expect(testRow?.status).toBe('open')
+    expect(testRow?.revealed_at).toBeNull()
+  })
+
+  it('uses the payload created_at as the real test date instead of ingestion time', async () => {
+    const { body } = await callIngest(
+      payload({
+        source_ref: 'lejonklou-forum:e2e-integration-test:post-created-at',
+        created_at: '2023-06-15T10:00:00Z',
+      }),
+    )
+    testIds.push(body.testId)
+
+    const { data: testRow } = await admin
+      .from('tests')
+      .select('created_at')
+      .eq('id', body.testId)
+      .single()
+
+    expect(new Date(testRow!.created_at).toISOString()).toBe('2023-06-15T10:00:00.000Z')
+  })
+
+  it('defaults created_at to ingestion time when the payload omits it, same as before this change', async () => {
+    const before = Date.now()
+    const { body } = await callIngest(
+      payload({ source_ref: 'lejonklou-forum:e2e-integration-test:post-no-created-at' }),
+    )
+    testIds.push(body.testId)
+
+    const { data: testRow } = await admin
+      .from('tests')
+      .select('created_at')
+      .eq('id', body.testId)
+      .single()
+
+    expect(new Date(testRow!.created_at).getTime()).toBeGreaterThanOrEqual(before)
+  })
+
   it('rejects requests without a valid INGEST_SECRET', async () => {
     const request = new NextRequest('http://localhost/api/internal/ingest', {
       method: 'POST',

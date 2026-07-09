@@ -35,6 +35,12 @@ export type IngestPayload = {
   clip_b_url: string
   before_is_a: boolean
   votes?: IngestVote[]
+  // The real forum post date, when known (build-history-ingestion.md
+  // step 36 follow-up) — ingest_test falls back to now() when this is
+  // absent, which is the right default for a web-created test (there is
+  // no earlier "real" date to prefer) but was wrong for every imported
+  // test, which always has one.
+  created_at?: string
 }
 
 export type IngestValidationResult =
@@ -83,6 +89,9 @@ export function validateIngestPayload(
   }
   if (typeof p.before_is_a !== 'boolean') {
     return { valid: false, error: 'before_is_a must be a boolean' }
+  }
+  if (p.created_at !== undefined && Number.isNaN(Date.parse(p.created_at))) {
+    return { valid: false, error: 'created_at must be a valid date string' }
   }
 
   for (const [i, vote] of (p.votes ?? []).entries()) {

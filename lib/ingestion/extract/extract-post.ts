@@ -331,6 +331,10 @@ async function applyTestDefining(
       snapshot_b: { system_name: creatorSystemName, version_label: pair.clipB.description || 'Unlabeled state B' },
       clip_a_url: pair.clipA.url,
       clip_b_url: pair.clipB.url,
+      // The real forum post date — never the empty string the
+      // 'missing_timestamp' path leaves on candidate.created_at itself
+      // (that would fail validateIngestPayload's new date check).
+      created_at: candidate.created_at || undefined,
     }
     candidate.forum_labels = [pair.clipA.forum_label, pair.clipB.forum_label]
     addContributingPost(candidate, post.post_url)

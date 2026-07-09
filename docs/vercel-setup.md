@@ -206,6 +206,33 @@ wrong secret to the wrong environment silently (the request would just fail with
 
 ---
 
+## Forum ingestion: rollback-script env vars (local-script-only)
+
+`scripts/rollback-lejonklou.ts` (`build-history-ingestion.md` step 38, a first
+version built ahead of its formal turn) deletes committed test data directly
+from a Supabase project — unlike the commit script, this isn't a deployed HTTP
+call, so it needs direct database credentials, not a base URL. Same
+per-environment-name reasoning as above: a single ambient
+`NEXT_PUBLIC_SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` (what the deployed app
+itself uses) can only ever represent one environment.
+
+```
+SUPABASE_URL_STAGING=<the Preview-scope NEXT_PUBLIC_SUPABASE_URL value>
+SUPABASE_SERVICE_ROLE_KEY_STAGING=<the Preview-scope SUPABASE_SERVICE_ROLE_KEY value>
+SUPABASE_URL_PRODUCTION=<the Production-scope NEXT_PUBLIC_SUPABASE_URL value>
+SUPABASE_SERVICE_ROLE_KEY_PRODUCTION=<the Production-scope SUPABASE_SERVICE_ROLE_KEY value>
+```
+
+**Only add the `_PRODUCTION` pair once step 38's remaining safety conditions are
+actually built** (the placeholder-ownership check — see
+`build-history-ingestion.md` step 38's notes) — until then, `rollback-lejonklou.ts
+--env production` has no safeguard against deleting a real claimed user's
+content, since step 39 (claim flow) doesn't exist yet to even make that
+distinction meaningful. `--env staging` is safe today: nothing on staging has
+ever been claimed.
+
+---
+
 ## Ongoing workflow
 
 | Action | Result |
