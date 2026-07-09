@@ -357,6 +357,45 @@ rollback.ts` (an interim ingestion-pipeline-only tool, unrelated to this).
 explicitly revoke EXECUTE from `public`/`anon`/`authenticated` and grant
 only to `service_role`.
 
+### Claim function (step 39)
+
+A `security definer` Postgres function merging a placeholder identity
+(an imported forum author who hasn't joined the app) into a real,
+registered account — see `build-history-ingestion.md` step 39 for the
+full design. Called via `.rpc(...)` from `app/api/admin/claim/route.ts`,
+never directly from the client.
+
+- **`claim_placeholder(placeholder_user_id uuid, real_user_id uuid)
+  returns jsonb`** — reassigns all six FK references to
+  `public.users(id)`: `systems.owner_id`, `tests.creator_id`,
+  `tracks.created_by`, `comments.user_id`, and `votes.user_id` are
+  repointed from `placeholder_user_id` to `real_user_id` (the
+  placeholder's own authored content becomes the real user's);
+  `import_authors.user_id` is repointed too, but for a different
+  reason — that row *is* the provenance record being preserved, not
+  content being reassigned. A vote collision (the real user already
+  voted the same `(test_id, technique_id)` the placeholder did) is
+  resolved in the real user's favour: the placeholder's colliding vote
+  is deleted, not reassigned, rather than erroring the whole merge.
+  `import_authors` is repointed strictly *before* `public.users` is
+  deleted — `import_authors.user_id references public.users(id) on
+  delete cascade`, so deleting `public.users` first would cascade-delete
+  the very mapping this function exists to preserve. Returns
+  `{systems_reassigned, tests_reassigned, tracks_reassigned,
+  comments_reassigned, votes_reassigned, votes_dropped_collision,
+  import_authors_repointed}` (all `int`). Deliberately the mirror image
+  of `erase_user_account`: that function nulls/deletes a real user's
+  references because the account is going away; this one reassigns them
+  because the account is *merging* into another. The corresponding
+  `auth.users` row isn't touched by this function — `admin.auth.admin.
+  deleteUser(placeholder_user_id)` from application code handles that
+  afterward, after this function succeeds (an Admin SDK call, can't run
+  inside SQL).
+
+**Security-critical**, same discipline as the erasure functions: revokes
+EXECUTE from `public`/`anon`/`authenticated`, grants only to
+`service_role`.
+
 ### test_vote_count function (public vote count)
 
 A `security definer` Postgres function that returns the number of distinct

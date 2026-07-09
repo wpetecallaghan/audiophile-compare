@@ -574,7 +574,13 @@ Also used by `components/admin/EraseUserDataForm.tsx` (step 38) — there,
 `onConfirm` doesn't navigate on success (there's nothing to navigate to;
 the erased content/account is simply gone), it clears the preview state
 and shows an inline success `FormMessage` instead, same "return `{ error
-}` or nothing" contract either way.
+}` or nothing" contract either way. `components/admin/
+ClaimPlaceholderForm.tsx` (step 39) reuses the identical shape — two
+text inputs (placeholder/real user ID) instead of one, a preview fetch
+before the destructive call becomes available, then `ConfirmButton`
+gating the actual `claim_placeholder` call — copied directly from
+`EraseUserDataForm.tsx` rather than designed fresh, since a claim is
+equally hard to reverse.
 
 **A URL input with a Verify button and inline verified/dead message — use
 `<ClipInput />` (`components/clips/ClipInput.tsx`), not a hand-rolled copy:**

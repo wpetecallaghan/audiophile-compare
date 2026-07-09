@@ -2664,7 +2664,7 @@ an explicit, verified request naming exactly whose data to remove.
 
 ---
 
-## ⬜ 39 — Claim flow (merge a placeholder into a real account)
+## 🔧 39 — Claim flow (merge a placeholder into a real account) — built, migration not yet applied
 
 **Reviewed and revised against step 38's actual, now-built
 implementation — per instruction, step 38 overrides this plan wherever
@@ -2881,3 +2881,50 @@ gets verified or who triggers it — this step resolves both.
   used to verify its gate for real.
 - **E2E:** none — an admin-only backend operation behind a minimal form,
   not a public flow needing browser-driven coverage at this stage.
+
+**Built, exactly per the plan above, decision 9 adopted (preview before
+merge):**
+- `supabase/migrations/20260709145657_claim_placeholder.sql` —
+  `claim_placeholder(placeholder_user_id, real_user_id)`, five content FK
+  reassignments (`systems.owner_id`, `tests.creator_id`,
+  `tracks.created_by`, `comments.user_id`, `votes.user_id` with the
+  collision-drop-then-reassign two-step decision 5 requires), `import_authors`
+  repointed strictly before the `public.users` delete (the ordering
+  hazard decision 4 flagged, now a load-bearing code comment in the
+  migration itself, not just prose here), `revoke`/`grant execute ... to
+  service_role` lockdown matching `ingest_test`/`erase_user_*` exactly.
+- `app/api/admin/claim/route.ts` — Rule 8 gate, `preview` branch (five
+  read-only counts), real branch calling `claim_placeholder` then
+  `admin.auth.admin.deleteUser(placeholderUserId)` afterward, same
+  two-step order `erase-user-data/route.ts`'s `'full'` scope uses.
+- `app/admin/claim/page.tsx` + `components/admin/ClaimPlaceholderForm.tsx`
+  — same session+isAdminEmail gate as `erase-user-data`'s page;
+  `ClaimPlaceholderForm.tsx` copies `EraseUserDataForm.tsx`'s
+  preview-then-`ConfirmButton` shape directly (two text inputs instead
+  of one, no scope selector — a claim only ever has one shape).
+- `messages/en.json` — `admin.claim` namespace added alongside
+  `admin.eraseUserData`.
+- `app/api/admin/claim/__tests__/route.integration.test.ts` — 3 tests,
+  calling `claim_placeholder` directly via `.rpc(...)` per the corrected
+  precedent above: full reassignment (all five columns + `import_authors`
+  repoint + placeholder deletion + `admin.auth.admin.deleteUser()`
+  succeeding afterward), the vote-collision-drop case, and the
+  anon-key EXECUTE-lockdown rejection.
+- Docs updated: `audiophile-compare-schema.md` (new "Claim function (step
+  39)" section, mirroring "Data erasure functions (step 38)"'s format),
+  `api-conventions.md` Rule 8 (third caller), `components.md`
+  (`ConfirmButton` usage note), `testing.md` §7 and §11 (new integration
+  test paragraph), `core.md` §6 (build status).
+
+**Not yet done:** the migration hasn't been applied to either
+environment — that's the user's own action (`supabase db push`), never
+the assistant's. Once applied to staging: run `npm run test:integration`
+for real, confirm `supabase migration list` shows it applied, and
+manually verify the admin route's 401/404 gate the same way step 38's
+was verified (curl or a saved E2E storageState cookie against a local
+dev server) — the authenticated-admin happy path itself can't be
+browser-verified from this environment (no real admin credentials
+available here), same limitation step 38 had, closed there by the user
+confirming the form presented correctly. Apply to production only after
+staging is independently re-verified, per the repo's migration
+convention.

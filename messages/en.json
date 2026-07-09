@@ -305,6 +305,29 @@
       "cancelButton": "Cancel",
       "successMessage": "Erasure complete.",
       "networkError": "Something went wrong. Check the console and try again."
+    },
+    "claim": {
+      "heading": "Claim placeholder account",
+      "description": "Admin-only, human-verified claim flow. Merges an imported placeholder identity into a real, registered account. Confirm the claimant's identity (forum PM to the site owner's own forum account) before using this — this cannot be undone.",
+      "placeholderUserIdLabel": "Placeholder user ID",
+      "realUserIdLabel": "Real user ID",
+      "userIdPlaceholder": "uuid",
+      "previewButton": "Preview",
+      "previewing": "Loading…",
+      "previewHeading": "This will reassign:",
+      "previewSystems": "{count} system(s)",
+      "previewTests": "{count} test(s)",
+      "previewTracks": "{count} track(s)",
+      "previewComments": "{count} comment(s)",
+      "previewVotes": "{count} vote(s)",
+      "claimButton": "Claim",
+      "confirmHeading": "This cannot be undone",
+      "confirmWarning": "This merges the placeholder's content into the real account and permanently deletes the placeholder identity. There is no undo.",
+      "confirmButton": "Yes, claim",
+      "claiming": "Claiming…",
+      "cancelButton": "Cancel",
+      "successMessage": "Claim complete.",
+      "networkError": "Something went wrong. Check the console and try again."
     }
   },
   "about": {

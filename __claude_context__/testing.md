@@ -187,6 +187,12 @@ session-based, not header-based like `INGEST_SECRET`, so faking it
 without a browser isn't practical the same way; its unauthenticated paths
 were instead manually `curl`-verified once — see §11).
 
+A third was added in step 39
+(`app/api/admin/claim/__tests__/route.integration.test.ts`) — same
+corrected precedent as step 38's, calling `claim_placeholder` directly
+via `.rpc(...)`, its route's unauthenticated paths manually `curl`-
+verified separately (see §11).
+
 Other candidates for this tier, not yet added:
 - Protected route access patterns at the API boundary, for other routes
 - Form submission workflows end-to-end through API routes
@@ -308,3 +314,19 @@ Requires `supabase/migrations/20260709133200_data_erasure_requests.sql`
 to be applied first — applied to staging, confirmed via
 `supabase migration list` and 14/14 passing for real (production not
 yet — separate step).
+
+**Coverage** (`app/api/admin/claim/__tests__/route.integration.test.ts`,
+3 tests, step 39): calls `claim_placeholder` directly via `.rpc(...)`
+rather than importing the route handler (same reason as step 38's, §7) —
+reassigns all five content FK columns (systems, tests, tracks, comments,
+votes) from a disposable placeholder to a disposable real user, repoints
+(not deletes) `import_authors` to the real user, deletes the
+placeholder's `public.users` row, and confirms `admin.auth.admin.
+deleteUser()` still succeeds afterward against the now-orphaned auth
+identity; when the real user already voted the same `(test_id,
+technique_id)` the placeholder did, the placeholder's colliding vote is
+dropped and the real user's own vote survives untouched, rather than the
+merge erroring (decision 5); rejects an anon-key caller (EXECUTE
+lockdown). Requires this step's migration to be applied first (see
+build-history-ingestion.md step 39 for the exact filename and staging/
+production apply status once run).

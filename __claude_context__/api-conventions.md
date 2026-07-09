@@ -239,11 +239,14 @@ if (!isAdminEmail(user.email)) notFound()              // page — 404, not 403:
 // or: return NextResponse.json({ error: 'Not found' }, { status: 404 })     // route — this route exists to a non-admin
 ```
 
-Two real callers: `app/version/page.tsx` (read-only deployment info) and
+Three real callers: `app/version/page.tsx` (read-only deployment info),
 `app/admin/erase-user-data/page.tsx` / `app/api/admin/erase-user-data/
 route.ts` (step 38 — calls `erase_user_votes`/`erase_user_content`/
 `erase_user_account` via the admin client, then `admin.auth.admin.
-deleteUser()` for a full account erasure).
+deleteUser()` for a full account erasure), and `app/admin/claim/
+page.tsx` / `app/api/admin/claim/route.ts` (step 39 — calls
+`claim_placeholder` via the admin client, then `admin.auth.admin.
+deleteUser()` for the now-merged placeholder identity).
 
 ### Rule 7 — clip health rules (step 27)
 
