@@ -1585,34 +1585,55 @@ composite label back as a match target) and documented one accepted gap
 (`ambiguous_attribution` is defined but never actually triggers). Full
 plan: `build-history-ingestion.md`.
 
-### ⬜ 36 — Forum ingestion: commit (planned, not yet built)
+### ✅ 36 — Forum ingestion: commit
 
 Separate, simple script, parameterized by target environment — reads
 `approved/` for staging or `ingested/staging/` for production (never the
 other way around, enforcing "staging first" at the tooling level) and
 POSTs each candidate to `/api/internal/ingest`, moving successes into that
 environment's `ingested/` folder. The only step that touches a deployed
-environment; no LLM, no judgment calls. Full plan: `build-history-ingestion.md`.
+environment; no LLM, no judgment calls. Also where two real bugs were
+found and fixed by reviewing the first real commit on staging (test
+reveal status never set regardless of vote count; `created_at` always
+defaulted to ingestion time) — see `build-history-ingestion.md` step 36
+findings 8–9 for the full account, including a real process mistake
+(editing an already-applied migration file, which silently no-ops on
+`supabase db push`) worth reading for the general lesson. Full plan and
+verification: `build-history-ingestion.md`.
 
-### ⬜ 37 — Forum ingestion: run the import, staging then production (planned, not yet built)
+### ✅ 37 — Forum ingestion: run the import, staging then production
 
 The actual one-time deliverable — scrape, extract into candidates, review
 and approve them, commit for real against `audiophile-staging`, manually
 verify in the app, then commit the same, staging-verified set against
-`audiophile-prod`. No new code; exercises steps 30–36. Full plan:
+`audiophile-prod`. No new code; exercised steps 30–36. Confirmed for real,
+independently of the user's own report — 44 usable tests now live on
+production (`curl`'d the real production feed page directly and read the
+rendered content, not just the local candidate-repo folder counts):
+correct historical dates, varied Revealed/Blind status, real vote counts,
+and step 40's system-name-prefixed titles/snapshot lines all rendering
+correctly. The other 164 real candidates extracted from the thread ended
+up in `broken/` (dead/missing/unplayable clip links) — see
+`build-history-ingestion.md` step 35's clip-health work. Full plan and
+verification: `build-history-ingestion.md`.
+
+### ⬜ 38 — Data erasure requests (votes / content / full account) (planned, not yet built)
+
+Rescoped from an original "undo a bad production import" safety-net plan
+(superseded — its ownership-check design had a real gap: it never
+considered that a test's voters are separately claimable identities from
+the test's own creator) to what the real need turned out to be: admin-
+triggered, human-verified deletion for three support scenarios — an
+unmerged placeholder's votes only, an unmerged placeholder's tests and
+systems, or a registered user's full data (votes, systems, snapshots,
+tests). Two reusable `security definer` Postgres functions
+(`erase_user_votes`/`erase_user_content`), atomic by construction —
+deliberately learning from a real gap found in `rollback.ts` (see below),
+which does the equivalent deletion as 4 separate non-transactional calls.
+Not the same thing as `scripts/rollback-lejonklou.ts`/`lib/ingestion/
+rollback.ts` (built during step 36, an interim ingestion-pipeline-only
+tool, unrelated to this step, left unchanged). Full plan:
 `build-history-ingestion.md`.
-
-### ⬜ 38 — Import rollback (planned, not yet built)
-
-A documented, reviewed `source_ref`-scoped delete query — not a Supabase
-backup/PITR restore, which would also destroy any unrelated real user
-activity in the same window. Safety conditions are built into the query
-itself: never touches a system/test whose owner is no longer a placeholder
-(so it's automatically safe even after some content has been claimed), and
-never deletes a track still referenced by a surviving test. Placeholder
-accounts are left in place, not deleted — idempotent re-import reuses
-them. Dry-run first, matching the rest of this plan's philosophy. Full
-plan: `build-history-ingestion.md`.
 
 ### ⬜ 39 — Claim flow (planned, not yet built)
 

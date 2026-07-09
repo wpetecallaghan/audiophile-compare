@@ -149,10 +149,39 @@ E2E_TEST_USER_EMAIL=e2e-tests@example.com
 
 # Base URL for the running app during E2E runs
 E2E_BASE_URL=http://localhost:3000
+
+# Only if E2E_BASE_URL points at a Vercel-protected preview/staging URL
+VERCEL_AUTOMATION_BYPASS_SECRET=<protection bypass secret>
 ```
 
 See [end-to-end-testing.md](end-to-end-testing.md) for how to create the
 test user account in Supabase.
+
+### Forum ingestion scripts — local-script-only, optional
+
+Only needed if you're running the forum-ingestion pipeline
+(`scripts/scrape-lejonklou.ts`, `extract-lejonklou.ts`,
+`commit-lejonklou.ts`, `rollback-lejonklou.ts`) — not required for normal
+app development. Full detail, rationale, and where to find each value:
+[vercel-setup.md](vercel-setup.md).
+
+```bash
+# Extraction (Vercel AI Gateway)
+AI_GATEWAY_API_KEY=<your key>
+
+# Commit — two separate secrets, not one, so a single session can commit
+# to staging then production without editing .env.local in between
+INGEST_SECRET_STAGING=<staging INGEST_SECRET value>
+INGEST_SECRET_PRODUCTION=<production INGEST_SECRET value>
+COMMIT_BASE_URL_STAGING=https://staging.example.com
+COMMIT_BASE_URL_PRODUCTION=https://example.com
+
+# Rollback (interim ingestion-iteration tool — direct DB access)
+SUPABASE_URL_STAGING=<staging NEXT_PUBLIC_SUPABASE_URL value>
+SUPABASE_SERVICE_ROLE_KEY_STAGING=<staging SUPABASE_SERVICE_ROLE_KEY value>
+SUPABASE_URL_PRODUCTION=<production NEXT_PUBLIC_SUPABASE_URL value>
+SUPABASE_SERVICE_ROLE_KEY_PRODUCTION=<production SUPABASE_SERVICE_ROLE_KEY value>
+```
 
 ### Vercel — production and preview environments
 
@@ -166,6 +195,7 @@ Environment Variables**:
 | `SUPABASE_SERVICE_ROLE_KEY` | Production → production service role key; Preview → staging service role key |
 | `CRON_SECRET` | Both |
 | `ADMIN_EMAILS` | Both — comma-separated list of addresses allowed to view `/version` |
+| `INGEST_SECRET` | Both — protects `POST /api/internal/ingest`; a different value per scope, read locally as `INGEST_SECRET_STAGING`/`INGEST_SECRET_PRODUCTION` above |
 
 See [vercel-setup.md](vercel-setup.md) for step-by-step Vercel configuration.
 

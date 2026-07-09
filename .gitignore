@@ -44,6 +44,7 @@ playwright/.auth/
 playwright-report/
 test-results/
 .env*
+!.env.local.example
 
 # forum ingestion pipeline — scraped/candidate working data, not source
 scripts/output/

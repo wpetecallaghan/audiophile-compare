@@ -2203,7 +2203,7 @@ running the version with `source_url` missing.
 
 ---
 
-## ⬜ 37 — Run the import: staging, then production
+## ✅ 37 — Run the import: staging, then production
 
 **The gap this closes:** everything above is infrastructure; this step is
 the actual, one-time deliverable the user asked for — Lejonklou playground
@@ -2246,62 +2246,257 @@ safety net that sits alongside this step, not a dependency of it.
 **Tests:** none new — this step *exercises* steps 30–36, it doesn't add
 code. Verification is the manual review described above.
 
+**Verified:** run for real by the user — every usable candidate committed
+to both `audiophile-staging` and `audiophile-prod`. Confirmed
+independently, not just taken on report: `curl`'d the real production
+feed (`https://audiophile-compare.uk/`) and read the rendered HTML
+directly. 20 distinct `/tests/<id>` links on page 1 (`PAGE_SIZE=20`,
+`app/page.tsx`); real content spot-checked in the rendered text —
+`"markiteight's system · REM – Sweetness Follows"` (step 40 Part B's
+title format), a matching `"markiteight's system · ... vs
+markiteight's system · ..."` snapshot line (step 40 Part A), varied real
+historical dates (`5/18/2026`, `3/15/2026`, `10/22/2025`, …, not a single
+ingestion-time cluster — confirms step 36 finding 8/9's `created_at` fix
+reached production), varied `Revealed`/`Blind` status badges (confirms
+the `revealed_at`/`status` fix), and real non-zero vote counts. Local
+candidate-repo state corroborates: `ingested/production/` holds all 44
+usable candidates, every other open-pipeline folder
+(`pending`/`needs_review`/`ready`/`approved`/`ingested/staging`) is empty,
+and `broken/` holds the other 164 real candidates extracted from the
+thread whose clip links were genuinely dead, missing, or unplayable (step
+35's clip-health work) — 44 + 164 = 208, matching the earlier
+`backfill-payload-created-at.ts` run's total, so every real candidate
+this pipeline ever produced is accounted for in exactly one terminal
+state. `git log`/`git status` also confirm every code change from steps
+36 and 40 (the reveal/date/source_url fixes, the rollback tooling, the
+snapshot-line and title-format UI work) was committed and deployed before
+this run — the rendered production content above wouldn't show any of
+step 40's formatting otherwise.
+
 ---
 
-## ⬜ 38 — Import rollback
+## ⬜ 38 — Data erasure requests (votes / content / full account)
+
+**This step's scope has changed from its original plan — read this first.**
+The original plan below this notice (kept for its still-relevant
+schema/atomicity reasoning) was "undo a bad production import," a
+developer-facing safety net. The real, concrete need turned out to be
+different: **support requests from real people asking for their data to
+be removed**, a user-rights concern (effectively "right to erasure"),
+not an ingestion-pipeline bug-recovery tool. This replaces step 38's
+scope entirely.
+
+**`scripts/rollback-lejonklou.ts` / `lib/ingestion/rollback.ts` (built
+during step 36 findings 8–9) is *not* this step, was never renamed to
+match it, and is left exactly as-is.** It's an interim, ingestion-
+pipeline-only tool — undoing this local repo's own most recent
+commit-to-an-environment, scoped to whatever candidate files currently
+sit in `ingested/staging/`/`ingested/production/`, for the
+extraction/recommit iteration loop only (see step 36 findings 8–9 for why
+it was needed). It does not attempt, and was never intended, to satisfy
+a general "remove this person's data" request — it has no concept of
+"this specific user," only "whatever this local repo just committed."
+`docs/vercel-setup.md` and `api-conventions.md` previously described it
+as "step 38, a first version" — both corrected alongside this rewrite to
+stop implying a connection that no longer holds.
+
+**The gap this closes:** three real support scenarios, distinct from
+anything the ingestion pipeline itself needs to handle:
+1. An ingested (forum-sourced placeholder), unmerged, never-logged-in
+   user contacts the site owner asking for their **votes** to be
+   removed — as if they had never voted at all.
+2. An ingested, unmerged, never-logged-in user contacts the site owner
+   asking for their **tests (and the systems those tests used)** to be
+   removed — as if that content had never been imported.
+3. A **registered** (real, non-placeholder) user asks for their data to
+   be deleted — votes, systems, snapshots, and tests, all of it.
+
+All three explicitly override existing rules that assume vote/test
+permanence — most concretely, `DELETE /api/tests/[id]`'s existing 409
+"This test has votes and can no longer be deleted" (`app/api/tests/[id]/
+route.ts:100-105`). **That route is unchanged by this step** — normal
+self-service deletion still refuses to touch a voted-on test. This step
+adds a separate, admin-only, human-verified path that can, deliberately
+more privileged than anything a signed-in user can do to their own data
+through the ordinary UI.
+
+**Decisions:**
+
+1. **Two generic, reusable `security definer` Postgres functions, not
+   three scenario-specific ones.** The actual deletion mechanics are
+   identical regardless of whose content it is — only *who's allowed to
+   request it, and how that gets verified* differs between "an unmerged
+   placeholder" and "a registered user erasing their own data." Splitting
+   by mechanics (what gets deleted) rather than by requester type keeps
+   each function small, auditable, and shared:
+   - `erase_user_votes(target_user_id uuid) returns jsonb` — deletes
+     every row in `votes` where `user_id = target_user_id`, wherever
+     cast, across any test. Returns `{votes_deleted: n}`.
+   - `erase_user_content(target_user_id uuid) returns jsonb` — deletes
+     every test this user created and every system they own, fully:
+     `votes` (by *anyone*, on those specific tests — the test is going
+     away entirely, not being edited) → `clip_mapping` → `clips` →
+     `tests` → `system_snapshots` → `systems`, in that order (the same
+     FK-safe order `testing.md` §5 already documents for E2E teardown,
+     and that `rollback.ts` already reuses independently). Returns
+     `{tests_deleted: n, systems_deleted: n, votes_deleted: n}`.
+
+2. **Deleting a user's own systems alongside their tests is always safe
+   — verified as a real schema invariant, not assumed.** Checked both
+   real code paths that can create a `tests` row: `ingest_test`
+   (`supabase/migrations/20260707150400_ingest_test_function.sql:72-74`)
+   always matches/creates `snapshot_a`/`snapshot_b`'s systems scoped to
+   `owner_id = v_owner_id` (that same test's creator); the web wizard's
+   own route (`app/api/tests/route.ts:64-82`) explicitly rejects a
+   `snapshot_a_id`/`snapshot_b_id` that doesn't belong to a system owned
+   by the caller before ever creating the test. So *no test in this
+   schema can ever reference another user's system* — once a user's own
+   tests are gone, deleting their systems (and cascading snapshots)
+   can't orphan or affect anyone else's data. This is a cleaner
+   guarantee than the original plan's "never delete a track still
+   referenced by a surviving test" concern (below), which applied to
+   tracks specifically because tracks *are* globally shared — systems
+   never are.
+
+3. **Tracks are never deleted, by either function — same reasoning as
+   `rollback.ts`'s own decision, now confirmed to still apply.** Tracks
+   are matched globally by `(artist, title)`, `created_by` is
+   provenance, not ownership (`supabase/migrations/
+   20260625094142_initial_schema.sql:30-38` has no RLS/ownership
+   constraint tying a track to its creator the way systems/tests have).
+   A track one user's import/creation produced could legitimately be
+   referenced by a completely unrelated person's test. Neither erasure
+   request in scope here (case 2's "tests and systems," case 3's "votes,
+   systems, snapshots and tests") lists tracks either — consistent with
+   what was actually asked for, not just consistent with precedent.
+
+4. **Case → function mapping, one-to-one with the three real scenarios:**
+   - Case 1 (votes only): `erase_user_votes(placeholder_id)`.
+   - Case 2 (tests + systems): `erase_user_content(placeholder_id)`.
+   - Case 3 (everything): both functions, same `real_user_id`, one after
+     the other (each is independently atomic — see decision 6 — so
+     there's no need for a third combined function; a failure between
+     the two calls just means a safe, idempotent retry of the second).
+
+5. **Placeholder accounts and `import_authors` mappings are never
+   deleted by either function — deliberately different from `claim_
+   placeholder` (step 39), which *does* delete the placeholder identity.**
+   Erasure removes *content*, not identity — the placeholder row itself
+   carries no exposed content once its votes/tests/systems are gone, and
+   leaving it in place means a later re-scrape of the same forum thread
+   still resolves it via the existing `(source, external_username)`
+   mapping instead of creating a duplicate (same reasoning `rollback.ts`
+   and the original plan both already established). If a placeholder's
+   erased content is ever re-ingested, it simply reappears as a fresh
+   import against the same still-existing identity — expected, not a bug.
+
+6. **Atomicity via real Postgres functions, not client-side multi-call
+   deletes — deliberately learning from a real gap found reviewing
+   `rollback.ts`.** That script's `rollbackEnvironment` does 4 separate,
+   non-transactional REST calls; a failure partway through leaves a
+   batch of tests in a partially-deleted state until a safe-but-manual
+   retry completes it. `ingest_test` and the planned `claim_placeholder`
+   both avoid this by being single `security definer` functions — this
+   step follows the same pattern, especially since it's *more*
+   consequential (irreversibly destructive) than either.
+
+7. **Admin-triggered, not self-service — mirrors step 39's precedent
+   exactly for cases 1–2, extended for case 3.** Reuses the existing
+   `isAdminEmail`/`ADMIN_EMAILS` gate. Verification differs by requester:
+   - Cases 1–2 (unmerged placeholder): the same forum-PM-to-the-site-
+     owner's-own-account verification step 39 decision 1 already
+     designed — no new verification mechanism needed, this is the exact
+     population step 39 already built identity-proofing for.
+   - Case 3 (registered user): the requester already has a real,
+     verified email on their account (`auth.users.email`) — the admin
+     confirms the request arrived from that same address before acting.
+     No new UI for the *user* to self-serve this; proportionate to
+     expected volume, matching step 39's own reasoning for staying
+     admin-only rather than building a self-service flow.
+
+   **Flagged assumption, not silently decided — confirm before build:**
+   the requirement lists exactly "votes, systems, snapshots and tests"
+   for case 3, not "their account." This plan takes that literally —
+   `erase_user_votes`/`erase_user_content` never touch `auth.users`/
+   `public.users`, so the account itself survives, empty, still able to
+   sign in afterward. If the real intent is closer to full account
+   deletion (mirroring `claim_placeholder`'s `admin.auth.admin.
+   deleteUser()` precedent), that's a third, distinct operation this
+   plan doesn't currently include — worth confirming which is wanted
+   before this step is built, not assumed either way.
+
+8. **Preview before destroy, matching this whole project's "preview
+   before a destructive action" discipline** (`rollback.ts`'s own
+   `--dry-run`, step 34's validation, step 36's staging-before-
+   production rehearsal). Before calling either function for real, the
+   admin route does a plain read (via the admin client, no function
+   needed — it's just a count, not a privileged write) showing exactly
+   how many votes/tests/systems match the target user, so the admin
+   confirms the blast radius before the irreversible call.
+
+9. **EXECUTE lockdown, same discipline as `ingest_test`/the planned
+   `claim_placeholder`.** Both functions bypass RLS by necessity
+   (deleting another user's rows is not something any normal session
+   should ever do) — explicit `revoke ... from public/anon/authenticated`
+   plus `grant execute ... to service_role` in the migration, re-verified
+   directly against staging with the anon key after applying, not
+   assumed safe by pattern-matching the earlier migrations.
+
+10. **Supabase backup/PITR availability — still an open, unverified
+    loose end from the original plan, not resolved by this rewrite.**
+    Genuinely destructive functions existing at all raises the stakes of
+    confirming whether `audiophile-prod`/`audiophile-staging` have any
+    point-in-time-recovery safety net. Worth checking before this step
+    is actually built, not blocking the plan itself.
+
+**Files to update (once built):**
+- New migration — `erase_user_votes`/`erase_user_content`, plus
+  `revoke`/`grant` matching `ingest_test`/`claim_placeholder`'s pattern.
+- `app/api/admin/erase-user-data/route.ts` (new) — `isAdminEmail`-gated;
+  accepts a target user id and a scope (`votes` | `content` | `both`);
+  does the preview read (decision 8), then calls the function(s).
+- `app/admin/erase-user-data/page.tsx` (new) — minimal form: user
+  identifier, scope selection, preview counts, confirm.
+- `docs/audiophile-compare-app-specification.md` / schema docs — the two
+  new functions, and an explicit note that `DELETE /api/tests/[id]`'s
+  "can't delete a voted-on test" rule has an admin-only, human-verified
+  exception now, so a future reader doesn't take that rule as absolute.
+- `api-conventions.md` — new admin route, mirroring how step 39's
+  `/api/admin/claim` is documented once built.
+- `testing.md` §5 — already done ahead of the build (the cross-reference
+  noting `rollback.ts` and, once built, these two functions both reuse
+  its FK-safe order), since it cost nothing to fix while writing this
+  plan rather than waiting.
+- `core.md`, `testing.md` §4/§7 — per the usual pattern, once built.
+
+**Tests (planned):**
+- **Integration** (mirroring `route.integration.test.ts`'s real-staging
+  pattern, since this is SQL-backed logic no unit test can meaningfully
+  cover): `erase_user_votes` deletes exactly the target user's votes on
+  a test, leaving a *different* user's vote on that same test untouched;
+  `erase_user_content` deletes a user's test(s) and system(s) fully,
+  including votes cast on those tests *by other users* (a real, load-
+  bearing case — construct a fixture where a second placeholder or the
+  real E2E test user has voted on the erased user's test, and confirm
+  that vote is gone too, not just the target's own rows); confirms a
+  track referenced by the erased content survives if any other test
+  still references it (or simply: confirm tracks are never touched, per
+  decision 3); confirms `import_authors`/the placeholder's own
+  `auth.users`/`public.users` rows survive erasure (decision 5); EXECUTE
+  lockdown confirmed directly against staging with the anon key.
+- **E2E:** none — an admin-only backend operation behind a minimal form,
+  same reasoning step 39 gives for skipping E2E on `/admin/claim`.
+
+---
+
+<details>
+<summary>Original plan (superseded by the above — kept for its still-relevant reasoning, not as current guidance)</summary>
 
 **The gap this closes:** no documented, reviewed mechanism exists for
 undoing a bad production import. This needs to be written and reviewed
 *ahead of time* — composing a destructive query live, during an incident,
 against production, is exactly the kind of pressure that produces
 mistakes.
-
-**A first, narrower version was built ahead of this step's formal turn —
-`scripts/rollback-lejonklou.ts` / `lib/ingestion/rollback.ts` — to unblock
-finding 8 above's delete-and-recommit cycle on staging. Still ⬜, not ✅:
-it deliberately does not yet satisfy this plan's decision 3 safety
-conditions, so it is not yet safe to point at production once step 39
-(claim flow) exists.** What was actually built, and how it differs from
-the plan below:
-- **Scoped by local candidate file, not by a server-side `source_ref
-  like` query (decision 2).** `rollbackEnvironment` reads whichever
-  candidates currently sit in `ingested/staging/`(`--env staging`) or
-  `ingested/production/` (`--env production`) and deletes exactly the
-  tests matching those candidates' `source_ref`s — correct and
-  sufficient for "undo the batch this local repo just committed," which
-  is the actual immediate need, but it depends on the local
-  `scripts/output/candidates/` state matching the server, unlike the
-  plan's self-contained DB-side pattern match.
-- **No placeholder-ownership check (decision 3, first bullet) — the real
-  gap.** Nothing yet confirms a test's owner is still a placeholder
-  before deleting it. Harmless today (step 39/claim flow doesn't exist,
-  so nothing has ever been claimed), but this must be added before this
-  script is ever run with `--env production` after claiming exists, or a
-  rollback could delete a real claimed user's content.
-- **No track-still-referenced check (decision 3, second bullet) — by
-  design, not by omission.** Deliberately never deletes
-  `system_snapshots`/`systems`/`tracks` at all (they're safely shared/
-  reusable — a recommit resolves them again rather than duplicating), so
-  the cross-reference risk decision 3 describes doesn't arise for this
-  narrower scope.
-- **`--dry-run` implements decision 6** (lists matching candidates/test
-  ids without deleting or moving anything).
-- Decisions 4 (placeholders/`import_authors` left alone), 5 (naturally
-  time-boxed once decision 3's check above is added), and 7 (Supabase
-  backup/PITR — separate verification, not done here) are all still
-  exactly as planned, not yet acted on.
-
-**Verified:** `npm run test` includes 6 new
-`lib/ingestion/__tests__/rollback.test.ts` tests (empty-folder no-op, the
-full votes→clip_mapping→clips→tests deletion order with the candidate
-file moved back to `approved/`, the `production` env moving back to
-`ingested_staging` instead, `--dry-run` doing no deletes/moves, a
-mid-batch delete failure leaving the candidate file unmoved, and a
-"resolved zero tests" case still moving the local file back). CLI argv
-validation (no args, valid `--env` with no credentials set) manually
-exercised. Not yet run for real against staging's actual 44 committed
-tests — that's the immediate next step once finding 8's `ingest_test` fix
-above is deployed.
 
 **Decisions:**
 
@@ -2365,18 +2560,20 @@ above is deployed.
    import, but not relied on as the primary undo path here, given decision
    1's collateral-damage concern.
 
-**Files to update:**
-- A new, committed, reviewed artifact holding the query — exact location
-  TBD at build time (e.g. `docs/import-rollback.md` or a `scripts/`-
-  adjacent SQL file), not something composed ad hoc against production.
-- `testing.md` §5 — cross-reference noting its FK-safe deletion order is
-  reused here, beyond just E2E teardown.
-- This step, plus a cross-reference from step 37 (added above).
+**Why this was superseded:** decision 3's ownership check only ever
+covers a test/system's own `creator_id`/`owner_id` — it never considers
+that a test's *voters* are separate placeholder identities (step 31
+decision 3), each independently claimable via `claim_placeholder`. A
+real, non-hypothetical sequence: a forum member claims their *voter*
+identity while the *test creator's* identity (a different forum member)
+stays unclaimed; this query's check passes (the test's own owner is
+still a placeholder) and deletes the test anyway — cascading away the
+now-real, claimed user's own vote in the process. The rewrite above
+sidesteps this entirely: it's not a general safety net that has to
+reason about partial-claim states at all, just a targeted response to
+an explicit, verified request naming exactly whose data to remove.
 
-**Tests:** none — this is a documented, reviewed query, not application
-code. "Testing" here means dry-running it against staging's real,
-disposable post-step-37 data to confirm it identifies exactly the imported
-rows and nothing else, before it's ever needed for real.
+</details>
 
 ---
 

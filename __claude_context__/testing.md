@@ -142,6 +142,11 @@ identity itself is never deleted, same as the real test user account.
 ```
 votes → clip_mapping → clips → tests → system_snapshots → systems → tracks
 ```
+Reused beyond just E2E teardown: `lib/ingestion/rollback.ts` (votes →
+clip_mapping → clips → tests, stopping there — see its own file for why)
+and, once built, step 38's `erase_user_content` (the full order above,
+minus tracks — see `build-history-ingestion.md` step 38's plan for why
+tracks are never deleted by either).
 
 ---
 
