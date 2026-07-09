@@ -1838,7 +1838,7 @@ review pass:**
 
 ---
 
-## ⬜ 36 — Commit
+## ✅ 36 — Commit
 
 **The gap this closes:** approved candidates need to actually reach the
 app. This is the only step in the whole pipeline that makes a real HTTP
@@ -1851,7 +1851,11 @@ judgment calls, nothing to review.
 1. **A single script, parameterized by target environment, reading a
    different source folder per environment — enforcing "staging first" at
    the tooling level, not just as a documented convention.** `scripts/
-   commit-lejonklou.ts <base-url> --env staging|production`:
+   commit-lejonklou.ts <base-url> --env staging|production`, using
+   `CandidateStatusValue.APPROVED`/`.INGESTED_STAGING`/
+   `.INGESTED_PRODUCTION` (never a raw `'approved'`/`'ingested_staging'`/
+   `'ingested_production'` string literal, matching step 35's constants
+   refactor):
    - `--env staging` reads every file in `approved/`, POSTs each to
      `<base-url>/api/internal/ingest`, and moves successes to
      `ingested/staging/`.
@@ -1869,55 +1873,150 @@ judgment calls, nothing to review.
      can't reach production via this script no matter what).
    - On success, `--env production` moves the file to
      `ingested/production/` — the terminal state.
+
+   **A real gap, found by checking against `candidate.ts` rather than
+   assumed:** `approved` is a flat top-level folder, but
+   `ingested_staging`/`ingested_production` map to the *nested*
+   `ingested/staging`/`ingested/production` folders (`STATUS_FOLDERS` in
+   `lib/ingestion/extract/candidate.ts`) — and that mapping is private,
+   never exported. `readAllCandidates` only ever reads every folder
+   together, never one status in isolation, so there is currently no way
+   for a new script to correctly list "every file in `ingested/staging/`"
+   without either duplicating the nested-path knowledge (risking exactly
+   the mismatch `recheck-clip-health.ts` avoided only because its three
+   folders — `pending`/`needs_review`/`ready` — all happen to be flat) or
+   a small `candidate.ts` addition. **Resolved as part of decision 4
+   below**, not deferred to build time.
 2. **A non-2xx response leaves the file in its current source folder**
    (`approved/` for a staging attempt, `ingested/staging/` for a
-   production attempt), with the error recorded (e.g. appended to the
-   candidate's `issues`), so it's retried on the next run rather than
-   silently lost.
+   production attempt) via `writeCandidate` (content changes, status
+   doesn't — never `moveCandidate`, and never `saveCandidate`, which
+   isn't part of this walk). The real route's error body is a free-text
+   message (`{ error: string }` — see `app/api/internal/ingest/
+   route.ts:60,110`), not one of a fixed set of codes, so per step 35
+   decision 1's typed-issues/free-text-notes split it belongs in `notes`,
+   not `issues` — `issues` stays reserved for the enum `IssueCode` union.
+   Retried on the next run rather than silently lost.
 3. **Idempotent by construction, independent of this script's own
    bookkeeping.** Even if `commit-lejonklou.ts` is run twice for the same
    candidate and environment, `ingest_test`'s `source_ref` uniqueness
-   means a repeat POST just returns `already_imported: true` rather than
-   duplicating — moving the file is a convenience, not the safety
+   means a repeat POST just returns `alreadyImported: true` in the JSON
+   response (confirmed against the real route and `api-conventions.md`'s
+   documented contract — `already_imported` is only the internal Postgres
+   RPC field name, not what the HTTP response actually carries) rather
+   than duplicating — moving the file is a convenience, not the safety
    mechanism.
-4. **No new library code beyond the CLI script itself** — it's a thin
-   loop (list the environment's source folder → POST each → move to that
-   environment's destination folder on success), fully testable with a
-   mocked `fetch` and a temp fixture directory.
+4. **A small new `lib/ingestion/commit.ts`, not "no new library code" —
+   matching the pattern every other step already established** (`extract-
+   post.ts`/`extract-lejonklou.ts`, `create-placeholder-author.ts`/the
+   route that calls it): real logic lives in `lib/`, `scripts/*.ts` stays
+   a thin argv-parsing wrapper. None of the five existing pipeline scripts
+   (`scrape-lejonklou.ts`, `extract-lejonklou.ts`,
+   `resolve-candidate-track.ts`, `default-before-is-a.ts`,
+   `recheck-clip-health.ts`) has its own test file — all tested logic
+   lives in `lib/`, and there's no reason for this step to be the first
+   exception. `lib/ingestion/commit.ts` exports:
+   - `listCandidatesInStatus(baseDir, status)` — a new, single-status
+     reader added to `candidate.ts` alongside the existing
+     `readAllCandidates` (which reads every folder together and is wrong
+     for this use), correctly resolving the nested `ingested/staging`/
+     `ingested/production` paths since it shares `filePathFor`'s
+     already-correct resolution instead of a second, independent
+     implementation of it — this is what actually closes decision 1's
+     gap above.
+   - `commitCandidate(baseUrl, secret, candidate)` — POSTs one candidate
+     to `/api/internal/ingest` and returns the parsed `{ testId,
+     alreadyImported }` or `{ error }` shape.
+   - `commitEnvironment(baseDir, baseUrl, secret, env)` — the per-
+     environment loop: source/destination status pair, calls the two
+     functions above, calls `writeCandidate`/`moveCandidate` for the
+     success/failure paths per decision 2.
+   `scripts/commit-lejonklou.ts` becomes argv parsing plus one call to
+   `commitEnvironment`.
 5. **Target base URL and `--env` are both required CLI arguments, no
    defaults.** `tsx scripts/commit-lejonklou.ts <base-url> --env staging`.
    Defaulting either would risk an accidental run against the wrong
-   environment or the wrong source folder. `INGEST_SECRET` stays an env
+   environment or the wrong source folder. The ingest secret stays an env
    var, not a CLI arg — a secret shouldn't appear in shell history or `ps`
-   output.
-6. **No new dependencies — reuses exactly what steps 33/33 already
-   established.** `tsx` as the runtime (already added in step 33); the
-   built-in global `fetch` for the POST (no HTTP client library); Node's
-   built-in `fs/promises` for listing a folder and `rename()`-ing a file
-   into its destination on success (a same-filesystem rename is atomic —
-   no separate copy-then-delete needed); `process.loadEnvFile()` to read
-   `.env.local` for `INGEST_SECRET`, the same pattern already used by
-   `playwright.config.ts` and `vitest.integration.config.ts`.
+   output (see decision 6 for which env var).
+6. **Two separate local env vars, one per environment — not a single
+   ambient `INGEST_SECRET`.** `docs/vercel-setup.md` (Production-scope and
+   Preview-scope tables) confirms staging and production are provisioned
+   with *different* `INGEST_SECRET` values on Vercel; `.env.local` can
+   only hold one value per key name, and step 37 explicitly runs staging
+   then production as one continuous session — a single `INGEST_SECRET`
+   name would force editing `.env.local` between the two commands, which
+   is exactly the accidental-wrong-environment risk decision 5 exists to
+   remove. `commit-lejonklou.ts` reads `INGEST_SECRET_STAGING` or
+   `INGEST_SECRET_PRODUCTION` based on `--env` (both can be populated in
+   `.env.local` at once); `docs/vercel-setup.md`'s local-dev guidance
+   needs a line added for these two names once this step is built (see
+   "Files to update").
+7. **No new dependencies beyond what steps 33 and 35 already
+   established.** `tsx` as the runtime (step 33); the built-in global
+   `fetch` for the POST (no HTTP client library); Node's built-in
+   `fs/promises`, via the new `listCandidatesInStatus`, for listing a
+   folder and `rename()`-ing a file into its destination on success (a
+   same-filesystem rename is atomic — no separate copy-then-delete
+   needed); `process.loadEnvFile()` to read `.env.local` for the two
+   secret vars, the same pattern already used by `extract-lejonklou.ts`
+   (step 35), `playwright.config.ts`, and `vitest.integration.config.ts`.
 
 **Files to update:**
-- `scripts/commit-lejonklou.ts` (new).
+- `lib/ingestion/extract/candidate.ts` — new exported
+  `listCandidatesInStatus(baseDir, status)` (decision 4).
+- `lib/ingestion/commit.ts` (new) — decision 4's `commitCandidate`/
+  `commitEnvironment`.
+- `scripts/commit-lejonklou.ts` (new) — thin CLI wrapper.
 - `package.json` — new `commit:lejonklou` script.
+- `docs/vercel-setup.md` — add `INGEST_SECRET_STAGING`/
+  `INGEST_SECRET_PRODUCTION` local-dev guidance (decision 6); the existing
+  per-environment Vercel-dashboard `INGEST_SECRET` provisioning (Production/
+  Preview scope tables) is unaffected — this only concerns how the two
+  values reach a local `.env.local` for this script's own use.
+- `api-conventions.md` — the existing "Forum ingestion pipeline" section
+  (documents the route/idempotency/security contract already) gains a
+  line noting `commit-lejonklou.ts` as the route's only caller and the
+  staging-then-production folder-chaining safety design.
 - `core.md` / `testing.md` — per the usual pattern, once built.
 
 **Tests:**
-- **Unit:** given a fixture directory tree with files spread across
-  `approved/`, `ingested/staging/`, and other folders: `--env staging`
-  only POSTs files from `approved/` and moves successes to
-  `ingested/staging/`, ignoring anything already in `ingested/staging/`;
-  `--env production` only POSTs files from `ingested/staging/` (confirms
-  it never touches `approved/`, even when `approved/` still has entries)
-  and moves successes to `ingested/production/`; a non-2xx response
-  leaves the file in its source folder with the error recorded rather
-  than silently dropping it. `fetch` is mocked — no real network call, no
-  live Supabase/Vercel dependency in this test — and the fixture
-  directory is a temp folder, not the real `scripts/output/` path.
+- **Unit (`lib/ingestion/__tests__/commit.test.ts`):** given a fixture
+  directory tree (temp folder, not the real `scripts/output/` path) with
+  files spread across `approved/`, `ingested/staging/` (confirming the
+  nested path resolves correctly — decision 1's gap), and other folders:
+  `commitEnvironment(..., 'staging')` only reads files from `approved/`
+  and moves successes to `ingested/staging/`, ignoring anything already
+  there; `commitEnvironment(..., 'production')` only reads files from
+  `ingested/staging/` (confirms it never touches `approved/`, even when
+  `approved/` still has entries) and moves successes to
+  `ingested/production/`; a non-2xx response leaves the file in its
+  source folder via `writeCandidate`, with the error appended to `notes`
+  (never `issues`) rather than silently dropped; a response with
+  `alreadyImported: true` is still treated as success and still moves the
+  file (decision 3 — idempotent, not an error). `fetch` is mocked — no
+  real network call, no live Supabase/Vercel dependency.
+  `listCandidatesInStatus` itself gets covered alongside `candidate.ts`'s
+  other status-folder tests in `candidate.test.ts`, same file as
+  `readAllCandidates`'s existing coverage.
 - **E2E / integration:** none beyond what step 31 already has for the
-  ingest route itself.
+  ingest route itself. `scripts/commit-lejonklou.ts` itself stays
+  untested directly, matching every other CLI script in this pipeline —
+  its only job is argv parsing plus one call into `lib/ingestion/
+  commit.ts`.
+
+**Verified:** `npm run test` — 36 files / 418 tests, all passing (13 new:
+10 in the new `lib/ingestion/__tests__/commit.test.ts`, 3 more in
+`candidate.test.ts` for `listCandidatesInStatus`). `npx tsc --noEmit` — no
+new errors (same pre-existing, unrelated `__tests__/supabase-*.test.ts`
+failures as every prior step). `scripts/commit-lejonklou.ts`'s own argv
+validation manually exercised (no args, an invalid `--env` value, and a
+valid invocation with no secret set) — all three fail with the intended
+message and a non-zero exit code, confirmed by real invocation, not just
+reading the code. Not yet run against a real deployed environment — that's
+step 37's job, once `audiophile-staging`/`audiophile-prod` actually have
+`INGEST_SECRET_STAGING`/`INGEST_SECRET_PRODUCTION` populated in a local
+`.env.local` per the new `docs/vercel-setup.md` section.
 
 ---
 

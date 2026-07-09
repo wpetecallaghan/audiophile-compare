@@ -10,6 +10,7 @@ import {
   deleteCandidate,
   moveCandidate,
   readAllCandidates,
+  listCandidatesInStatus,
   type Candidate,
 } from '../candidate'
 
@@ -167,5 +168,27 @@ describe('candidate file storage', () => {
 
   it('returns an empty array when no candidates exist at all', async () => {
     await expect(readAllCandidates(baseDir)).resolves.toEqual([])
+  })
+
+  it('listCandidatesInStatus reads only the requested status, ignoring every other folder', async () => {
+    const c = candidate('t:post-1:pair-1')
+    await writeCandidate(baseDir, 'approved', c)
+    await writeCandidate(baseDir, 'ready', candidate('t:post-2:pair-1'))
+
+    await expect(listCandidatesInStatus(baseDir, 'approved')).resolves.toEqual([c])
+  })
+
+  it('listCandidatesInStatus resolves the nested ingested/staging and ingested/production paths correctly', async () => {
+    const staging = candidate('t:post-1:pair-1')
+    const production = candidate('t:post-2:pair-1')
+    await writeCandidate(baseDir, 'ingested_staging', staging)
+    await writeCandidate(baseDir, 'ingested_production', production)
+
+    await expect(listCandidatesInStatus(baseDir, 'ingested_staging')).resolves.toEqual([staging])
+    await expect(listCandidatesInStatus(baseDir, 'ingested_production')).resolves.toEqual([production])
+  })
+
+  it('listCandidatesInStatus returns an empty array for a status with no folder on disk yet', async () => {
+    await expect(listCandidatesInStatus(baseDir, 'broken')).resolves.toEqual([])
   })
 })

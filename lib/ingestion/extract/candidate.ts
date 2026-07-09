@@ -208,6 +208,36 @@ export async function moveCandidate(
   await rm(filePathFor(baseDir, from, sourceRef))
 }
 
+// Reads every candidate currently sitting in exactly one status folder —
+// unlike readAllCandidates below (which reads every folder together),
+// this is what a caller needs when it must only ever touch one status at
+// a time (step 36's commit script: reading `approved/` must never
+// accidentally also see `ingested/staging/`'s contents). Resolves the
+// nested `ingested/staging`/`ingested/production` paths correctly via the
+// same `STATUS_FOLDERS` mapping `filePathFor` already uses internally — a
+// caller never needs its own copy of which statuses are flat vs nested.
+export async function listCandidatesInStatus(
+  baseDir: string,
+  status: CandidateStatus,
+): Promise<Candidate[]> {
+  const dir = join(baseDir, STATUS_FOLDERS[status])
+  let entries: string[]
+  try {
+    entries = await readdir(dir)
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
+    throw err
+  }
+
+  const candidates: Candidate[] = []
+  for (const entry of entries) {
+    if (!entry.endsWith('.json')) continue
+    const candidate = await readCandidateFile(join(dir, entry))
+    if (candidate) candidates.push(candidate)
+  }
+  return candidates
+}
+
 // Reads every candidate currently on disk, across all status
 // folders — the basis for decision 10's shared index (open-candidate
 // matching, drawn only from pending/needs_review/ready) and decision 16's
@@ -220,19 +250,8 @@ export async function readAllCandidates(
   const results: Array<{ status: CandidateStatus; candidate: Candidate }> = []
 
   for (const status of CANDIDATE_STATUSES) {
-    const dir = join(baseDir, STATUS_FOLDERS[status])
-    let entries: string[]
-    try {
-      entries = await readdir(dir)
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') continue
-      throw err
-    }
-
-    for (const entry of entries) {
-      if (!entry.endsWith('.json')) continue
-      const candidate = await readCandidateFile(join(dir, entry))
-      if (candidate) results.push({ status, candidate })
+    for (const candidate of await listCandidatesInStatus(baseDir, status)) {
+      results.push({ status, candidate })
     }
   }
 

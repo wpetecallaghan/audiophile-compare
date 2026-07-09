@@ -165,6 +165,32 @@ already sitting there.
 
 ---
 
+## Forum ingestion: `INGEST_SECRET_STAGING` / `INGEST_SECRET_PRODUCTION` (local-script-only)
+
+The commit step of the forum ingestion pipeline (`scripts/commit-lejonklou.ts`,
+`build-history-ingestion.md` step 36) POSTs approved candidates to a *deployed*
+environment's `POST /api/internal/ingest` — first staging, then production
+(`build-history-ingestion.md` step 37). Both environments already have their own
+`INGEST_SECRET` value from Step 3 above, scoped separately in the Vercel
+dashboard (Production vs. Preview) — but a single local `.env.local` can only
+hold one value per key name, and this script needs the *right* secret for
+whichever environment `--env` targets, in the same session, without editing
+`.env.local` in between the two runs.
+
+Add both values to `.env.local` under their own names (not the bare
+`INGEST_SECRET` name Step 3's dashboard scopes use):
+```
+INGEST_SECRET_STAGING=<the Preview-scope INGEST_SECRET value>
+INGEST_SECRET_PRODUCTION=<the Production-scope INGEST_SECRET value>
+```
+
+`commit-lejonklou.ts` reads `INGEST_SECRET_STAGING` when run with `--env staging`
+and `INGEST_SECRET_PRODUCTION` when run with `--env production` — never a single
+ambient `INGEST_SECRET`, so an accidental copy-paste can't send the wrong secret
+to the wrong environment silently (the request would just fail with 403 instead).
+
+---
+
 ## Ongoing workflow
 
 | Action | Result |
