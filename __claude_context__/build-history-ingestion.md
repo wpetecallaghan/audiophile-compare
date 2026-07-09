@@ -2016,7 +2016,7 @@ judgment calls, nothing to review.
   its only job is argv parsing plus one call into `lib/ingestion/
   commit.ts`.
 
-**Verified:** `npm run test` — 36 files / 418 tests, all passing (13 new:
+**Verified:** `npm run test` — 36 files / 424 tests, all passing (19 new:
 10 in the new `lib/ingestion/__tests__/commit.test.ts`, 3 more in
 `candidate.test.ts` for `listCandidatesInStatus`). `npx tsc --noEmit` — no
 new errors (same pre-existing, unrelated `__tests__/supabase-*.test.ts`
@@ -2047,13 +2047,49 @@ filtering the already-computed values afterward — re-verified against the
 same six orderings, including the originally-broken
 positional-before-`--env` case.
 
-Not yet run against a real deployed environment — that's step 37's job,
-once `audiophile-staging`/`audiophile-prod` actually have
-`INGEST_SECRET_STAGING`/`INGEST_SECRET_PRODUCTION` and
-`COMMIT_BASE_URL_STAGING`/`COMMIT_BASE_URL_PRODUCTION` populated in a
-local `.env.local` per the `docs/vercel-setup.md` section (now done:
-`https://staging.audiophile-compare.uk` and
-`https://audiophile-compare.uk`).
+**A real bug found on the first actual run against real staging — every
+one of 44 candidates failed with the useless message "commit failed —
+[object Object]".** Root cause: `staging.audiophile-compare.uk` sits
+behind Vercel Deployment Protection (SSO), the same protection
+`playwright.config.ts`/`e2e/helpers/auth.ts` already work around for the
+E2E suite via an `x-vercel-protection-bypass` header — but
+`commitCandidate`'s `fetch` call never sent it. Every request was
+intercepted by Vercel's protection layer before ever reaching
+`/api/internal/ingest`, and Vercel's own challenge response has a truthy
+but non-string `error` field, which the original `body.error ?? ...`
+logic passed straight through into a template literal, silently
+stringifying to `"[object Object]"` instead of anything actionable.
+Three fixes together, not just the one-line header:
+1. `commitCandidate` now sends `x-vercel-protection-bypass:
+   ${VERCEL_AUTOMATION_BYPASS_SECRET}` whenever that env var is set
+   (already present in `.env.local` for E2E) — the actual fix for this
+   failure.
+2. A new `extractErrorMessage` helper never trusts `body.error` is a
+   string just because the field exists — stringifies a non-string error
+   value instead of silently producing `"[object Object]"` again the next
+   time something unexpected returns a differently-shaped error body.
+3. `commitCandidate` no longer lets `response.json()` (or `fetch` itself)
+   throw uncaught — wrapped in try/catch, returning `{ error }` like any
+   other failure mode. The original version didn't do this, which meant
+   the *entire batch* of 44 candidates would have aborted after the
+   first one if the protection response hadn't happened to be valid
+   JSON — found by inspection while fixing (1)/(2), not by another real
+   failure, but a real robustness gap regardless: one candidate's bad
+   response should never take down every other candidate's chance to
+   commit.
+
+Six new tests cover all three (non-string error stringified, not
+`"[object Object]"`; bypass header sent only when the env var is set;
+`fetch` rejection and a JSON-parse failure both become `{ error }` results
+without throwing; a `commitEnvironment`-level test confirms one candidate's
+network error doesn't stop the next candidate from still committing
+successfully) — `lib/ingestion/__tests__/commit.test.ts` is now 16 tests
+(was 10).
+
+Not yet re-run against real staging with the fix applied — that's the
+immediate next step, now that `audiophile-staging` is reachable with both
+`INGEST_SECRET_STAGING` and `COMMIT_BASE_URL_STAGING` populated in a local
+`.env.local` per the `docs/vercel-setup.md` section.
 
 ---
 

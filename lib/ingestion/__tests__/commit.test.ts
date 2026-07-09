@@ -27,13 +27,17 @@ function jsonResponse(body: unknown, status: number): Response {
 
 describe('commitCandidate', () => {
   const originalFetch = global.fetch
+  const originalBypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
 
   beforeEach(() => {
     global.fetch = vi.fn()
+    delete process.env.VERCEL_AUTOMATION_BYPASS_SECRET
   })
 
   afterEach(() => {
     global.fetch = originalFetch
+    if (originalBypassSecret === undefined) delete process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+    else process.env.VERCEL_AUTOMATION_BYPASS_SECRET = originalBypassSecret
   })
 
   it('POSTs the candidate payload with the ingest secret header', async () => {
@@ -90,6 +94,66 @@ describe('commitCandidate', () => {
     await expect(commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))).resolves.toEqual({
       error: 'HTTP 500',
     })
+  })
+
+  it('stringifies a non-string error field rather than returning the useless "[object Object]" — found for real against a Vercel-protected staging URL', async () => {
+    vi.mocked(global.fetch).mockResolvedValue(
+      jsonResponse({ error: { code: 'NOT_AUTHENTICATED', message: 'Deployment protected' } }, 401),
+    )
+
+    const result = await commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))
+    expect(result).toEqual({
+      error: expect.stringContaining('NOT_AUTHENTICATED'),
+    })
+    expect('error' in result && result.error).not.toBe('[object Object]')
+  })
+
+  it('never sends the protection-bypass header when VERCEL_AUTOMATION_BYPASS_SECRET is unset', async () => {
+    vi.mocked(global.fetch).mockResolvedValue(
+      jsonResponse({ testId: 'test-1', alreadyImported: false }, 201),
+    )
+
+    await commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))
+
+    const [, init] = vi.mocked(global.fetch).mock.calls[0]
+    expect((init?.headers as Record<string, string>)['x-vercel-protection-bypass']).toBeUndefined()
+  })
+
+  it('sends the Vercel protection-bypass header when VERCEL_AUTOMATION_BYPASS_SECRET is set — same header the E2E suite already uses for a protected staging URL', async () => {
+    process.env.VERCEL_AUTOMATION_BYPASS_SECRET = 'bypass-secret'
+    vi.mocked(global.fetch).mockResolvedValue(
+      jsonResponse({ testId: 'test-1', alreadyImported: false }, 201),
+    )
+
+    await commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      `${BASE_URL}/api/internal/ingest`,
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'x-vercel-protection-bypass': 'bypass-secret' }),
+      }),
+    )
+  })
+
+  it('returns an error result instead of throwing when fetch itself rejects (network error)', async () => {
+    vi.mocked(global.fetch).mockRejectedValue(new Error('fetch failed'))
+
+    await expect(commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))).resolves.toEqual({
+      error: 'fetch failed',
+    })
+  })
+
+  it('returns an error result instead of throwing when the response body is not valid JSON', async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => {
+        throw new SyntaxError('Unexpected token < in JSON')
+      },
+    } as unknown as Response)
+
+    const result = await commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))
+    expect('error' in result && typeof result.error).toBe('string')
   })
 })
 
@@ -176,5 +240,23 @@ describe('commitEnvironment', () => {
       failed: 0,
     })
     expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('a network error on one candidate does not abort the rest of the batch', async () => {
+    await writeCandidate(baseDir, 'approved', candidate('t:post-1:pair-1'))
+    await writeCandidate(baseDir, 'approved', candidate('t:post-2:pair-1'))
+    vi.mocked(global.fetch)
+      .mockRejectedValueOnce(new Error('fetch failed'))
+      .mockResolvedValueOnce(jsonResponse({ testId: 'test-2', alreadyImported: false }, 201))
+
+    const result = await commitEnvironment(baseDir, BASE_URL, SECRET, 'staging')
+
+    expect(result).toEqual({ committed: 1, failed: 1 })
+    await expect(findExistingCandidate(baseDir, 't:post-1:pair-1')).resolves.toMatchObject({
+      status: 'approved',
+    })
+    await expect(findExistingCandidate(baseDir, 't:post-2:pair-1')).resolves.toMatchObject({
+      status: 'ingested_staging',
+    })
   })
 })

@@ -27,6 +27,24 @@ const ENVIRONMENT_FOLDERS: Record<CommitEnv, { from: CandidateStatus; to: Candid
 
 export type CommitResult = { testId: string; alreadyImported: boolean } | { error: string }
 
+// Extracts a human-readable message from a non-2xx response body. The
+// real route always returns `{ error: string }` (app/api/internal/
+// ingest/route.ts), but a request that never actually reaches it —
+// intercepted upstream by Vercel Deployment Protection on a protected
+// preview/staging domain, for example — can return a differently-shaped
+// JSON error instead (found for real: staging returned a truthy but
+// non-string `error` field, which without this check silently rendered
+// as the useless literal string "[object Object]"). Never trust `error`
+// is a string just because the field exists.
+function extractErrorMessage(body: unknown, status: number): string {
+  if (body && typeof body === 'object' && 'error' in body) {
+    const error = (body as { error: unknown }).error
+    if (typeof error === 'string' && error) return error
+    if (error) return JSON.stringify(error)
+  }
+  return `HTTP ${status}`
+}
+
 // POSTs one candidate's payload to the real route. `alreadyImported` on a
 // 2xx response is decision 3's idempotency signal, not an error — a
 // repeat commit of the same source_ref is expected and still counts as
@@ -35,27 +53,47 @@ export type CommitResult = { testId: string; alreadyImported: boolean } | { erro
 // contract: the JSON response is camelCase `alreadyImported`, distinct
 // from the `already_imported` field name the underlying Postgres RPC
 // uses internally.
+//
+// Never throws — a network error, a non-JSON response body, or any other
+// unexpected failure becomes a `{ error }` result like any other failure
+// mode, so a single bad candidate can't abort commitEnvironment's whole
+// batch loop (found necessary for real: an earlier version let
+// `response.json()` throw uncaught, which would have stopped processing
+// every remaining candidate the moment one candidate's response was
+// malformed).
 export async function commitCandidate(
   baseUrl: string,
   secret: string,
   candidate: Candidate,
 ): Promise<CommitResult> {
-  const response = await fetch(`${baseUrl}/api/internal/ingest`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-ingest-secret': secret,
-    },
-    body: JSON.stringify(candidate.payload),
-  })
+  try {
+    // Deployment-protected domains (e.g. a Vercel Preview/staging URL
+    // with SSO protection enabled) reject any request with no bypass
+    // credential before it ever reaches the app's own routes — same
+    // header playwright.config.ts / e2e/helpers/auth.ts already send for
+    // the E2E suite against the same kind of protected URL.
+    const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+    const response = await fetch(`${baseUrl}/api/internal/ingest`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-ingest-secret': secret,
+        ...(bypassSecret ? { 'x-vercel-protection-bypass': bypassSecret } : {}),
+      },
+      body: JSON.stringify(candidate.payload),
+    })
 
-  const body = (await response.json()) as { testId?: string; alreadyImported?: boolean; error?: string }
+    const body: unknown = await response.json()
 
-  if (!response.ok) {
-    return { error: body.error ?? `HTTP ${response.status}` }
+    if (!response.ok) {
+      return { error: extractErrorMessage(body, response.status) }
+    }
+
+    const { testId, alreadyImported } = body as { testId?: string; alreadyImported?: boolean }
+    return { testId: testId!, alreadyImported: alreadyImported ?? false }
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) }
   }
-
-  return { testId: body.testId!, alreadyImported: body.alreadyImported ?? false }
 }
 
 // The per-environment loop: list the environment's source folder (never
