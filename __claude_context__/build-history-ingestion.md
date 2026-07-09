@@ -1851,7 +1851,8 @@ judgment calls, nothing to review.
 1. **A single script, parameterized by target environment, reading a
    different source folder per environment — enforcing "staging first" at
    the tooling level, not just as a documented convention.** `scripts/
-   commit-lejonklou.ts <base-url> --env staging|production`, using
+   commit-lejonklou.ts --env staging|production` (base URL resolved per
+   decisions 5/6 below), using
    `CandidateStatusValue.APPROVED`/`.INGESTED_STAGING`/
    `.INGESTED_PRODUCTION` (never a raw `'approved'`/`'ingested_staging'`/
    `'ingested_production'` string literal, matching step 35's constants
@@ -1933,25 +1934,35 @@ judgment calls, nothing to review.
      success/failure paths per decision 2.
    `scripts/commit-lejonklou.ts` becomes argv parsing plus one call to
    `commitEnvironment`.
-5. **Target base URL and `--env` are both required CLI arguments, no
-   defaults.** `tsx scripts/commit-lejonklou.ts <base-url> --env staging`.
-   Defaulting either would risk an accidental run against the wrong
-   environment or the wrong source folder. The ingest secret stays an env
-   var, not a CLI arg — a secret shouldn't appear in shell history or `ps`
-   output (see decision 6 for which env var).
-6. **Two separate local env vars, one per environment — not a single
-   ambient `INGEST_SECRET`.** `docs/vercel-setup.md` (Production-scope and
+5. **`--env` is a required CLI argument with no default — the one choice
+   that must never be implicit.** `tsx scripts/commit-lejonklou.ts --env
+   staging`. Defaulting it would risk an accidental run against the wrong
+   environment. The base URL and the ingest secret are *not* CLI
+   arguments — a secret shouldn't appear in shell history or `ps` output,
+   and (revised after the initial build — see decision 6) retyping the
+   right URL by hand every run is itself an error opportunity a per-
+   environment env var removes. `--base-url <url>` remains available as
+   an explicit one-off override (e.g. a specific preview deployment)
+   without touching `.env.local`, but there's no bare positional URL
+   argument — only a named flag, so it can never be confused with the
+   optional trailing `candidates-dir` positional argument regardless of
+   argument order.
+6. **Two separate local env vars per concern, one per environment — never
+   a single ambient value.** `docs/vercel-setup.md` (Production-scope and
    Preview-scope tables) confirms staging and production are provisioned
    with *different* `INGEST_SECRET` values on Vercel; `.env.local` can
    only hold one value per key name, and step 37 explicitly runs staging
    then production as one continuous session — a single `INGEST_SECRET`
    name would force editing `.env.local` between the two commands, which
    is exactly the accidental-wrong-environment risk decision 5 exists to
-   remove. `commit-lejonklou.ts` reads `INGEST_SECRET_STAGING` or
-   `INGEST_SECRET_PRODUCTION` based on `--env` (both can be populated in
-   `.env.local` at once); `docs/vercel-setup.md`'s local-dev guidance
-   needs a line added for these two names once this step is built (see
-   "Files to update").
+   remove. `commit-lejonklou.ts` reads `INGEST_SECRET_STAGING`/
+   `INGEST_SECRET_PRODUCTION` and, the same way, `COMMIT_BASE_URL_STAGING`/
+   `COMMIT_BASE_URL_PRODUCTION` (added after the initial build, once real
+   staging/production URLs — `https://staging.audiophile-compare.uk` and
+   `https://audiophile-compare.uk` — existed to put somewhere), based on
+   `--env` (all four can be populated in `.env.local` at once).
+   `docs/vercel-setup.md`'s local-dev guidance has a section for all four
+   names.
 7. **No new dependencies beyond what steps 33 and 35 already
    established.** `tsx` as the runtime (step 33); the built-in global
    `fetch` for the POST (no HTTP client library); Node's built-in
@@ -2013,10 +2024,36 @@ failures as every prior step). `scripts/commit-lejonklou.ts`'s own argv
 validation manually exercised (no args, an invalid `--env` value, and a
 valid invocation with no secret set) — all three fail with the intended
 message and a non-zero exit code, confirmed by real invocation, not just
-reading the code. Not yet run against a real deployed environment — that's
-step 37's job, once `audiophile-staging`/`audiophile-prod` actually have
-`INGEST_SECRET_STAGING`/`INGEST_SECRET_PRODUCTION` populated in a local
-`.env.local` per the new `docs/vercel-setup.md` section.
+reading the code.
+
+**A real bug found only by exercising `parseArgs` directly, after the
+initial build, once `--base-url` and the two `COMMIT_BASE_URL_*` env vars
+were added (decisions 5/6):** the first version computed each flag's
+"consumed" argv indices as `[envIndex, envIndex + 1, baseUrlIndex,
+baseUrlIndex + 1]`, filtering out only genuinely negative values before
+building the exclusion set. That looks right but isn't: when `--base-url`
+is absent, `baseUrlIndex` is `-1`, and `-1 + 1 = 0` — a value that passes
+an `>= 0` filter exactly as validly as a real index 0 does. The practical
+effect: any time the `candidates-dir` positional argument happened to sit
+at index 0 (i.e. *before* `--env` on the command line, e.g. `tsx
+commit-lejonklou.ts my-dir --env staging`), it was silently swallowed and
+the default `scripts/output/candidates` was used instead — no error, no
+warning, just a quietly wrong directory. Caught by directly testing
+`parseArgs` against six real argument orderings, not by reading the code
+or by the type checker (both index values are legitimately `number`).
+Fixed by gating each flag's pair of indices on that flag's own found-ness
+(`envIndex >= 0`/`baseUrlIndex >= 0`) before ever computing `+ 1`, not by
+filtering the already-computed values afterward — re-verified against the
+same six orderings, including the originally-broken
+positional-before-`--env` case.
+
+Not yet run against a real deployed environment — that's step 37's job,
+once `audiophile-staging`/`audiophile-prod` actually have
+`INGEST_SECRET_STAGING`/`INGEST_SECRET_PRODUCTION` and
+`COMMIT_BASE_URL_STAGING`/`COMMIT_BASE_URL_PRODUCTION` populated in a
+local `.env.local` per the `docs/vercel-setup.md` section (now done:
+`https://staging.audiophile-compare.uk` and
+`https://audiophile-compare.uk`).
 
 ---
 

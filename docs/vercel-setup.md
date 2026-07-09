@@ -165,29 +165,44 @@ already sitting there.
 
 ---
 
-## Forum ingestion: `INGEST_SECRET_STAGING` / `INGEST_SECRET_PRODUCTION` (local-script-only)
+## Forum ingestion: commit-script env vars (local-script-only)
 
 The commit step of the forum ingestion pipeline (`scripts/commit-lejonklou.ts`,
 `build-history-ingestion.md` step 36) POSTs approved candidates to a *deployed*
 environment's `POST /api/internal/ingest` — first staging, then production
-(`build-history-ingestion.md` step 37). Both environments already have their own
-`INGEST_SECRET` value from Step 3 above, scoped separately in the Vercel
-dashboard (Production vs. Preview) — but a single local `.env.local` can only
-hold one value per key name, and this script needs the *right* secret for
-whichever environment `--env` targets, in the same session, without editing
-`.env.local` in between the two runs.
+(`build-history-ingestion.md` step 37). It needs two things per environment: the
+ingest secret and the deployed base URL. Both are read from `.env.local` under
+per-environment names — never a single ambient value — so the same session can
+commit to staging then production without editing `.env.local` in between.
 
-Add both values to `.env.local` under their own names (not the bare
-`INGEST_SECRET` name Step 3's dashboard scopes use):
+### `INGEST_SECRET_STAGING` / `INGEST_SECRET_PRODUCTION`
+
+Both environments already have their own `INGEST_SECRET` value from Step 3
+above, scoped separately in the Vercel dashboard (Production vs. Preview) — but
+a single local `.env.local` can only hold one value per key name.
+
+Add both values under their own names (not the bare `INGEST_SECRET` name Step
+3's dashboard scopes use):
 ```
 INGEST_SECRET_STAGING=<the Preview-scope INGEST_SECRET value>
 INGEST_SECRET_PRODUCTION=<the Production-scope INGEST_SECRET value>
 ```
 
-`commit-lejonklou.ts` reads `INGEST_SECRET_STAGING` when run with `--env staging`
-and `INGEST_SECRET_PRODUCTION` when run with `--env production` — never a single
-ambient `INGEST_SECRET`, so an accidental copy-paste can't send the wrong secret
-to the wrong environment silently (the request would just fail with 403 instead).
+### `COMMIT_BASE_URL_STAGING` / `COMMIT_BASE_URL_PRODUCTION`
+
+The deployed URL for each environment, e.g.:
+```
+COMMIT_BASE_URL_STAGING=https://staging.audiophile-compare.uk
+COMMIT_BASE_URL_PRODUCTION=https://audiophile-compare.uk
+```
+Overridable per-invocation with `--base-url <url>` if you ever need to target a
+one-off URL (e.g. a specific preview deployment) without touching `.env.local`.
+
+`commit-lejonklou.ts` reads the `_STAGING` pair when run with `--env staging` and
+the `_PRODUCTION` pair when run with `--env production` — `--env` itself always
+stays a required, no-default flag, so an accidental copy-paste can't send the
+wrong secret to the wrong environment silently (the request would just fail with
+403 instead), and there's never an implicit "which environment" to get wrong.
 
 ---
 
