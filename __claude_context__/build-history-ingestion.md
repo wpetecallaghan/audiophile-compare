@@ -2147,19 +2147,31 @@ bug on the first attempt, for two different real reasons, both found by
 the same human re-reviewing the recommitted data:**
 
 1. **A self-inflicted regression: `source_url` disappeared from the test
-   detail page entirely.** Finding 8's migration was written by copying
-   the function body straight from `20260707150400_ingest_test_function.sql`
-   — the *original* `ingest_test`, not realizing a later migration,
+   detail page entirely — and the first attempt at fixing it broke `db
+   push` too.** Finding 8's migration
+   (`20260709110700_ingest_test_reveal_and_date.sql`) was written by
+   copying the function body straight from
+   `20260707150400_ingest_test_function.sql` — the *original*
+   `ingest_test`, not realizing a later migration,
    `20260707173905_tests_source_url.sql` (step 32), had already layered
    `source_url` support on top of it. `create or replace function`
    replaces the whole body, so finding 8's migration silently deleted
-   `source_url` handling the moment it was applied — a real regression
-   introduced by not checking for later migrations before treating an
-   early one as "the current version." Fixed by re-adding `v_source_url`
-   and the `source_url` column back into the same migration, alongside
-   the two intentional fixes — checked this time by diffing against
-   `20260707173905_tests_source_url.sql` directly rather than assuming
-   the first file read was current.
+   `source_url` handling the moment it was applied. First fix attempt
+   edited `20260709110700` in place to add `v_source_url`/`source_url`
+   back — which did nothing on the next `supabase db push`, since that
+   migration's version was already recorded as applied on staging
+   (confirmed via `supabase migration list`: `20260709110700` shown as
+   both `local` and `remote`) — `db push` only applies versions the
+   remote doesn't already have, it never diffs or re-runs one it thinks
+   already succeeded, so a local-only content edit after the fact is
+   invisible to it. Actually fixed by reverting `20260709110700` back to
+   exactly what was really applied (so the file matches staging's real
+   history) and adding a new migration,
+   `20260709114200_ingest_test_restore_source_url.sql`, with the
+   corrected function body — the general lesson, not just this one
+   instance: **never edit a migration file once its version might already
+   be applied anywhere; always add a new one, and check with `supabase
+   migration list` first if genuinely unsure.**
 2. **The `created_at` fix genuinely worked in the code, but had nothing
    real to work with yet.** All 44 real candidate JSON files on disk were
    extracted *before* today's `extract-post.ts` change that populates
@@ -2180,10 +2192,14 @@ the same human re-reviewing the recommitted data:**
    208 candidates repo-wide, all 44 of the currently-`ingested/staging`
    ones among them.
 
-Both required a second rollback-and-recommit cycle to actually reach
+Both require a second rollback-and-recommit cycle to actually reach
 staging — the code and data fixes above only take effect on the *next*
 commit, not retroactively on rows already written under the old
-(regressed or under-populated) behavior.
+(regressed or under-populated) behavior. Applying
+`20260709114200_ingest_test_restore_source_url.sql` (via `supabase db
+push`, which will now pick it up as a genuinely new, unapplied version)
+is a prerequisite for that recommit — without it, staging is still
+running the version with `source_url` missing.
 
 ---
 
