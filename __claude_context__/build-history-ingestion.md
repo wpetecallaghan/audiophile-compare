@@ -2561,12 +2561,14 @@ just taken on report:**
   already confirmed. Four of the gate's states now confirmed for real:
   unauthenticated page, unauthenticated route, authenticated-non-admin
   page, authenticated-non-admin route.
-- **Still not verified: the actual authenticated-admin happy path** —
-  the permanent E2E test-user account isn't in `ADMIN_EMAILS`, and the
-  real admin account's credentials aren't available in this environment.
-  Said so explicitly rather than claiming full UI verification; worth a
-  manual pass by whoever holds the real admin session before relying on
-  this for a real request.
+- **The actual authenticated-admin happy path — now verified too, by the
+  user directly** (the one gap the assistant explicitly couldn't close
+  itself, lacking real admin credentials in this environment): confirmed
+  the form at `/admin/erase-user-data` presents correctly when signed in
+  with the real admin account. All five gate states now confirmed for
+  real: unauthenticated page, unauthenticated route,
+  authenticated-non-admin page, authenticated-non-admin route,
+  authenticated-admin page.
 - **Staging only — production has not had this migration applied.**
   Consistent with this project's "staging first" convention; a separate,
   deliberate step whenever this is actually needed for a real request,
@@ -2664,6 +2666,24 @@ an explicit, verified request naming exactly whose data to remove.
 
 ## ⬜ 39 — Claim flow (merge a placeholder into a real account)
 
+**Reviewed and revised against step 38's actual, now-built
+implementation — per instruction, step 38 overrides this plan wherever
+they conflict.** This plan was originally written before step 38
+existed. Three real conflicts/gaps found and fixed: decision 4's FK
+reassignment list was missing a column (`comments.user_id`) step 38's
+own exhaustive schema check turned up; decision 4's explicitly-flagged
+open question (does deleting `auth.users` cascade to `public.users`?)
+is now answered — no, confirmed by building and testing
+`erase_user_account`; and the function/application-code split plus the
+`import_authors`-before-`public.users` deletion order are now stated
+precisely, matching `erase_user_account`'s proven shape, instead of
+being implicit/unverified. Decision 7 now cites `api-conventions.md`
+Rule 8 (written *for* this situation, during step 38) instead of an
+informal echo of `/version`'s gate. Decision 8 (the provenance-UI
+contact link) turned out to already be built. Decision 9 (preview
+before merge) is new — a recommendation carried over from step 38's UX
+pattern, not a hard requirement. See each decision below for specifics.
+
 **The gap this closes:** step 32's provenance UI makes placeholder-owned
 content discoverable and, via its addendum below, contactable — but
 nothing exists to actually perform a claim once a real forum member gets
@@ -2702,22 +2722,56 @@ gets verified or who triggers it — this step resolves both.
    normally first; the merge target is an ordinary, already-existing
    `public.users` row, nothing claim-specific about it.
 
-4. **The merge is a `security definer` Postgres function,
-   `claim_placeholder(placeholder_user_id uuid, real_user_id uuid)`,
-   called via the admin/service-role client — mirroring `ingest_test`'s
-   design (step 31), not hand-rolled ordered updates from a route.** One
-   transaction: reassign `systems.owner_id`, `tests.creator_id`,
-   `tracks.created_by`, `votes.user_id` from the placeholder to the real
-   user; **repoint, not delete,** the `import_authors` row (per step 30's
-   original design — "this account is forum's `BassHead99`" stays a
-   permanent, now-accurate fact); then delete the placeholder's
-   `auth.users` row via `admin.auth.admin.deleteUser()` (mirroring the
-   Admin SDK precedent `create-placeholder-author.ts` established for
-   creation). **To verify at build time, not assume:** whether
-   `public.users` needs an explicit companion delete or already cascades
-   from the `auth.users` delete — step 30 only added insert/update
-   triggers (`handle_new_user`, `handle_user_email_updated`), no delete
-   trigger, so this needs checking.
+4. **Revised — step 38 overrides this decision's original shape in three
+   concrete ways, all settled by what was actually built and proven, not
+   assumed.** The merge is a `security definer` Postgres function,
+   `claim_placeholder(placeholder_user_id uuid, real_user_id uuid) returns
+   jsonb`, called via the admin/service-role client — mirroring
+   `ingest_test`'s design (step 31) *and* step 38's `erase_user_*`
+   functions, not hand-rolled ordered updates from a route.
+
+   - **Reassignment list corrected to five columns, not four.** Step 38
+     checked every FK to `public.users(id)` exhaustively (not just the
+     ones its own three scenarios happened to mention) and found six:
+     `systems.owner_id`, `tracks.created_by`, `tests.creator_id`,
+     `votes.user_id`, `comments.user_id`, `import_authors.user_id`. This
+     decision's original list — `systems.owner_id`, `tests.creator_id`,
+     `tracks.created_by`, `votes.user_id` — missed `comments.user_id`
+     entirely (the fifth of six; `import_authors` is the sixth, handled
+     separately below). For a genuine claim, a comment is this person's
+     own authored content and should be *reassigned*, exactly like a
+     vote — `update comments set user_id = real_user_id where user_id =
+     placeholder_user_id`, alongside the other four reassignments.
+   - **The previously-open question is now closed, confirmed by step
+     38, not just re-asked here.** "Whether `public.users` needs an
+     explicit companion delete or already cascades from the `auth.users`
+     delete" — confirmed no: `public.users.id` is a bare `uuid primary
+     key` with no FK relationship to `auth.users` at all (checked
+     directly, not assumed, while building `erase_user_account`).
+     `claim_placeholder` must include its own explicit
+     `delete from public.users where id = placeholder_user_id` as part
+     of the same atomic function — there is no cascade to rely on.
+   - **Function/application-code boundary, now proven by
+     `erase_user_account`'s exact working shape, not guessed.** The SQL
+     function does everything transactional: the five reassignments,
+     repointing (not deleting) `import_authors`, then deleting
+     `public.users`. `admin.auth.admin.deleteUser(placeholder_user_id)`
+     is a *separate*, subsequent call from application code (the route)
+     — an Admin SDK call can't run inside a SQL function (same
+     constraint `create-placeholder-author.ts` and `erase_user_account`
+     already work within), and it runs *after* the SQL function
+     succeeds, mirroring `erase_user_account`'s proven order exactly.
+   - **A real sequencing hazard, invisible until step 38 proved the
+     mechanism — worth stating explicitly, not left implicit in prose
+     order.** `import_authors.user_id references public.users(id) on
+     delete cascade`. If `public.users` were deleted *before*
+     `import_authors` is repointed, the cascade would fire and delete
+     the very mapping this decision exists to preserve — silently
+     defeating step 30's "permanent, accurate record" design instead of
+     erroring loudly. `claim_placeholder` must repoint `import_authors`
+     strictly before deleting `public.users`, every time, not as an
+     incidental consequence of write order but as a load-bearing
+     constraint worth a code comment in the migration itself.
 
 5. **Vote-collision handling: the real user's own vote wins.** `votes` has
    `UNIQUE (test_id, user_id, technique_id)` — if the real user already
@@ -2740,41 +2794,90 @@ gets verified or who triggers it — this step resolves both.
    new rows — higher blast radius than `ingest_test`.
 
 7. **The admin route is gated by session + `isAdminEmail`, then uses the
-   admin client — not `INGEST_SECRET`.** Unlike the ingest route (a
-   server-to-server call with no user session), this is a human,
-   browser-driven action from the site owner's own logged-in session.
-   `app/api/admin/claim/route.ts` checks `isAdminEmail(user.email)` first
-   (mirroring `/version`'s gate), then calls `createAdminClient()` to
-   invoke `claim_placeholder` — "authenticated app-layer check, then
-   service-role client underneath" is the same shape the cron route
-   already uses, just with a session check instead of a cron secret.
+   admin client — not `INGEST_SECRET`. Revised: follow the now-documented
+   `api-conventions.md` Rule 8 exactly, not an informal echo of
+   `/version`'s gate.** Rule 8 ("admin-gated routes/pages") was written
+   *for* this exact situation while building step 38 — it gives the
+   precise response shapes to match: `401 {"error": "Unauthorised"}` for
+   no session, `404` (not `403`) for an authenticated non-admin, on both
+   the page (`notFound()`/`redirect()`) and the route
+   (`NextResponse.json`). `app/api/admin/claim/route.ts` checks
+   `isAdminEmail(user.email)` first, then calls `createAdminClient()` to
+   invoke `claim_placeholder` — same shape `app/api/admin/
+   erase-user-data/route.ts` already established as the second real
+   caller of Rule 8, not just the cron route's secret-based analogy.
 
-8. **Step 32's provenance UI gets a small addendum, not a redesign: a
-   contact link next to the existing badge/link.** Something like "Think
-   this is yours? [contact email]" alongside the "View original post"
-   link, so a real forum member who recognizes their own content actually
-   has a way to start a claim — otherwise step 32 shows provenance with no
-   next step for the person it's about. Additive to already-written (not
-   yet built) step 32; doesn't reopen its core design.
+8. **Already done — not this step's work.** Step 32's provenance UI
+   addendum (a contact link next to the existing badge, "Think this is
+   yours? Contact ... to claim it.") is already implemented: `messages/
+   en.json`'s `common.claimContact`, wired into `app/tests/[id]/
+   page.tsx`, documented in `build-history.md` step 32. Confirmed by
+   checking the real files, not assumed from the plan text alone.
+   Nothing for this step to build here.
+
+9. **Recommended addition, not a hard requirement — preview before
+   merge, matching step 38's now-established UX pattern.** Step 38
+   decision 8 added a read-only preview (real counts) before its
+   irreversible action, specifically because an admin acting on a
+   destructive/hard-to-reverse operation benefits from seeing the blast
+   radius first. A claim is equally hard to reverse (there's no
+   "un-merge" once `public.users`/`auth.users` for the placeholder are
+   gone) — worth the admin route/page showing how many
+   systems/tests/votes/comments/tracks will be reassigned before the
+   admin confirms, mirroring `EraseUserDataForm`'s two-step
+   preview-then-`ConfirmButton` flow directly. Flagged as a
+   recommendation to adopt for consistency, not a decision this rewrite
+   forces — worth confirming before build, same as any other open
+   decision in this plan.
 
 **Files to update:**
 - New migration — `claim_placeholder(placeholder_user_id uuid, real_user_id
-  uuid) returns void`, plus `revoke`/`grant` matching `ingest_test`'s
-  pattern.
-- `app/api/admin/claim/route.ts` (new).
+  uuid) returns jsonb` (five reassignments + `import_authors` repoint +
+  `public.users` delete, in that order — decision 4), plus `revoke`/
+  `grant` matching `ingest_test`/`erase_user_*`'s pattern.
+- `app/api/admin/claim/route.ts` (new) — Rule 8-shaped gate (decision 7);
+  calls `claim_placeholder` then `admin.auth.admin.deleteUser()`
+  afterward, same two-step order `erase-user-data/route.ts`'s `'full'`
+  scope already established.
 - `app/admin/claim/page.tsx` (new) — a minimal form (placeholder
-  identifier, real user identifier), gated by `isAdminEmail`.
-- `build-history.md` step 32 — addendum noting the contact link (see
-  decision 8).
-- `api-conventions.md`, `audiophile-compare-schema.md`, `components.md`,
-  `testing.md`, `core.md` — per the usual pattern, once built.
+  identifier, real user identifier), gated by `isAdminEmail`; consider
+  reusing `EraseUserDataForm.tsx`'s preview-then-`ConfirmButton` shape
+  if decision 9's recommendation is adopted.
+- ~~`build-history.md` step 32 — addendum noting the contact link~~ —
+  already done (decision 8), nothing to do here.
+- `audiophile-compare-schema.md` — new function section immediately
+  after "Data erasure functions (step 38)" (same format: what it does,
+  security-critical EXECUTE note), following that section's own
+  established precedent rather than inventing new formatting.
+- `api-conventions.md` — Rule 8 gains a third caller
+  (`app/api/admin/claim/route.ts`), not a new rule; Rule 6's "not
+  absolute" note could mention this alongside step 38's exception if it
+  reads naturally once built.
+- `components.md`, `testing.md`, `core.md` — per the usual pattern, once
+  built; `testing.md` §7's step 38 paragraph is the template for how to
+  describe this step's own integration test file once it exists.
 
 **Tests:**
-- **Unit/integration** (mirroring step 31's `route.integration.test.ts`
-  pattern): `claim_placeholder` correctly reassigns all four FK columns;
-  repoints (not deletes) `import_authors`; deletes the placeholder's
-  auth/public rows; correctly skips a colliding vote rather than erroring
-  the whole merge. EXECUTE lockdown confirmed directly against staging
-  with the anon key, same as step 31.
+- **Integration — corrected precedent: mirror step 38's actual working
+  pattern, not step 31's.** Step 31's `route.integration.test.ts` fakes
+  its route's auth by setting `process.env.INGEST_SECRET` directly,
+  which only works because that route's auth is header-based. This
+  route's auth is session-based, the same as `erase-user-data/route.ts`
+  — call `claim_placeholder` directly via `.rpc(...)`, not by importing
+  and calling the route handler. Cases: reassigns all *five* FK columns
+  (systems/tests/tracks/votes/comments — decision 4's corrected list);
+  repoints (not deletes) `import_authors`, confirmed still pointing at
+  the *real* user afterward; deletes the placeholder's `public.users`
+  row and confirms `admin.auth.admin.deleteUser()` still succeeds
+  afterward against the now-orphaned auth identity (exact same
+  assertion shape as `erase_user_account`'s own test); correctly skips
+  a colliding vote (`UNIQUE (test_id, user_id, technique_id)`) rather
+  than erroring the whole merge; EXECUTE lockdown confirmed directly
+  against staging with an anon-key client, same as step 38.
+- **Manual, not automated** (same reasoning step 38's own "Verified"
+  section used): the route's own auth gate (401/404) — `curl` it
+  directly, or reuse a saved E2E storageState cookie against a local dev
+  server for a real authenticated-non-admin check, same trick step 38
+  used to verify its gate for real.
 - **E2E:** none — an admin-only backend operation behind a minimal form,
   not a public flow needing browser-driven coverage at this stage.

@@ -1641,9 +1641,11 @@ route + minimal form built (`app/api/admin/erase-user-data/`,
 not yet — separate, deliberate step per this project's "staging first"
 convention); 14/14 integration tests passing for real, including EXECUTE
 lockdown against an anon key. Admin gate re-verified with a real
-authenticated-but-non-admin session (404), not just anonymous requests —
-the actual authenticated-*admin* happy path is still unverified, no real
-admin credentials available in this environment. Not the same thing as
+authenticated-but-non-admin session (404), not just anonymous requests,
+and the real admin account confirmed the form itself presents correctly
+at `/admin/erase-user-data` — the one gap the assistant couldn't close
+directly (no real admin credentials in this environment) closed by the
+user instead. Not the same thing as
 `scripts/rollback-lejonklou.ts`/`lib/ingestion/rollback.ts` (built during
 step 36, an interim ingestion-pipeline-only tool, unrelated to this step,
 left unchanged). Full plan: `build-history-ingestion.md`.
