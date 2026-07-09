@@ -2142,6 +2142,49 @@ fix covers both bugs 1 and 2 at once via a fresh commit, since deletion
 was needed anyway (see step 38 below, built ahead of its formal turn to
 make that recommit cycle possible).
 
+**Finding 9 — the delete-and-recommit cycle above still didn't fix either
+bug on the first attempt, for two different real reasons, both found by
+the same human re-reviewing the recommitted data:**
+
+1. **A self-inflicted regression: `source_url` disappeared from the test
+   detail page entirely.** Finding 8's migration was written by copying
+   the function body straight from `20260707150400_ingest_test_function.sql`
+   — the *original* `ingest_test`, not realizing a later migration,
+   `20260707173905_tests_source_url.sql` (step 32), had already layered
+   `source_url` support on top of it. `create or replace function`
+   replaces the whole body, so finding 8's migration silently deleted
+   `source_url` handling the moment it was applied — a real regression
+   introduced by not checking for later migrations before treating an
+   early one as "the current version." Fixed by re-adding `v_source_url`
+   and the `source_url` column back into the same migration, alongside
+   the two intentional fixes — checked this time by diffing against
+   `20260707173905_tests_source_url.sql` directly rather than assuming
+   the first file read was current.
+2. **The `created_at` fix genuinely worked in the code, but had nothing
+   real to work with yet.** All 44 real candidate JSON files on disk were
+   extracted *before* today's `extract-post.ts` change that populates
+   `payload.created_at` — that fix only affects a candidate built by a
+   *future* extraction run, not files already sitting in
+   `ingested/staging/` from a run months ago. So every one of the 44
+   recommitted payloads still had no `created_at` at all, and
+   `ingest_test` correctly (and silently) fell back to `now()` exactly as
+   designed — not a bug in the fix itself, but a real gap in what
+   "fixing extraction" actually covers. Confirmed directly (not assumed):
+   `0 of 44` `ingested/staging/*.json` files had `payload.created_at`
+   before a fix, checked with a one-off script rather than by inspecting
+   the files by hand. Fixed with a new one-off
+   `scripts/backfill-payload-created-at.ts`, setting
+   `payload.created_at = created_at` (the field extraction has *always*
+   populated, just never plumbed into `payload`) for any candidate
+   missing it, across every status folder — run for real, backfilling
+   208 candidates repo-wide, all 44 of the currently-`ingested/staging`
+   ones among them.
+
+Both required a second rollback-and-recommit cycle to actually reach
+staging — the code and data fixes above only take effect on the *next*
+commit, not retroactively on rows already written under the old
+(regressed or under-populated) behavior.
+
 ---
 
 ## ⬜ 37 — Run the import: staging, then production

@@ -21,6 +21,18 @@
 --    accepts an optional created_at in the payload, falling back to
 --    now() when absent (unchanged behavior for web-created tests, which
 --    never set it).
+--
+-- IMPORTANT — regression this migration itself introduced and then fixed
+-- before ever shipping: the first version of this file was written by
+-- copying the *original* ingest_test body from
+-- 20260707150400_ingest_test_function.sql, missing that
+-- 20260707173905_tests_source_url.sql (step 32) had already layered
+-- source_url support on top of it. Since create-or-replace fully replaces
+-- the function, that first version would have silently dropped
+-- tests.source_url from every future import (the "view original post"
+-- link disappearing) — caught by a human reviewing real output on
+-- staging, not by anything automated. v_source_url and the source_url
+-- column are restored below alongside the two real fixes above.
 
 create or replace function public.ingest_test(payload jsonb)
 returns jsonb
@@ -30,6 +42,7 @@ set search_path = public
 as $$
 declare
   v_source_ref   text        := payload->>'source_ref';
+  v_source_url   text        := payload->>'source_url';
   v_owner_id     uuid        := (payload->>'owner_id')::uuid;
   v_title        text        := payload->>'title';
   v_track        jsonb       := payload->'track';
@@ -140,14 +153,15 @@ begin
 
   -- Test row. status/revealed_at reflect whether this import already
   -- carries votes (see header comment); created_at is the real forum
-  -- post date when the caller supplies one, now() otherwise.
-  insert into public.tests (creator_id, track_id, snapshot_a_id, snapshot_b_id, title, status, revealed_at, created_at, source_ref)
-  values (v_owner_id, v_track_id, v_snapshot_a_id, v_snapshot_b_id, v_title, v_status, v_revealed_at, v_created_at, v_source_ref)
+  -- post date when the caller supplies one, now() otherwise; source_url
+  -- (step 32) powers the "view original post" link.
+  insert into public.tests (creator_id, track_id, snapshot_a_id, snapshot_b_id, title, status, revealed_at, created_at, source_ref, source_url)
+  values (v_owner_id, v_track_id, v_snapshot_a_id, v_snapshot_b_id, v_title, v_status, v_revealed_at, v_created_at, v_source_ref, v_source_url)
   returning id into v_test_id;
 
   -- Clips — provider/media_type are pre-computed by the caller
   -- (lib/clips/detect-provider.ts); reachability was already verified by
-  -- the scraper (step 32), not re-checked here (decision 7).
+  -- the scraper (step 33), not re-checked here (step 31 decision 7).
   insert into public.clips (test_id, label, source_url, provider, media_type, url_status)
   values (v_test_id, 'A', payload->>'clip_a_url', payload->>'clip_a_provider', payload->>'clip_a_media_type', 'ok')
   returning id into v_clip_a_id;
