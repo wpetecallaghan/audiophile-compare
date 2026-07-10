@@ -1,7 +1,7 @@
 ---
 name: audiophile-compare-build-history-index
 description: >
-  Index of all build steps (1-42) for the Audiophile Compare app. Each step
+  Index of all build steps for the Audiophile Compare app. Each step
   has its own file with full implementation notes and rationale. Load only
   the specific step file(s) relevant to your task, not this whole directory.
 ---
