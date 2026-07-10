@@ -19,8 +19,8 @@ export default async function TrackDetailPage({ params }: Props) {
     .select(`
       id, artist, title, album, passage_note,
       tests(
-        id, title, status, created_at,
-        creator:users!creator_id(display_name, is_placeholder),
+        id, title, status, created_at, source_url, source_ref,
+        creator:users!creator_id(display_name),
         clips(url_status)
       )
     `)
@@ -37,9 +37,11 @@ export default async function TrackDetailPage({ params }: Props) {
     title: string
     status: string
     created_at: string
+    source_url: string | null
+    source_ref: string | null
     creator:
-      | { display_name: string | null; is_placeholder: boolean }
-      | { display_name: string | null; is_placeholder: boolean }[]
+      | { display_name: string | null }
+      | { display_name: string | null }[]
     clips: { url_status: string }[]
   }
 
@@ -91,6 +93,11 @@ export default async function TrackDetailPage({ params }: Props) {
               const creator = Array.isArray(test.creator)
                 ? test.creator[0]
                 : test.creator
+              // "Was this test ever imported" (step 47) — survives a
+              // claim, unlike creator.is_placeholder. See
+              // app/tests/[id]/page.tsx's identical check for why both
+              // columns are OR'd together.
+              const isImported = !!(test.source_url || test.source_ref)
               const hasDeadClip = test.clips.some(c => c.url_status === 'dead')
               const badge = hasDeadClip
                 ? { status: 'broken' as const, text: t('statusBroken') }
@@ -109,7 +116,7 @@ export default async function TrackDetailPage({ params }: Props) {
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         by {creator?.display_name ?? t('anonymous')} ·{' '}
                         {new Date(test.created_at).toLocaleDateString()}
-                        {creator?.is_placeholder && (
+                        {isImported && (
                           <>
                             {' · '}
                             <Badge status="imported" className="align-middle">

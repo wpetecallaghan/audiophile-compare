@@ -473,26 +473,39 @@ and system detail (`app/systems/[id]/page.tsx`) all check "does any of
 this test's clips have `url_status = 'dead'`" before falling back to the
 normal status logic.
 
-**`imported` (step 32, purple)** — shown next to a test/system's owner
-byline whenever that owner `is_placeholder` (forum-ingested content, not
-yet claimed by a real user — see `audiophile-compare-schema.md`'s
-"Placeholder authors" section). Independent of, and can appear alongside,
-the win/loss/blind/revealed/broken status badge — it describes the
-*owner*, not the test's outcome. Wired into four places:
-`FeedCard.tsx`, `app/tests/[id]/page.tsx`, the per-test rows in
-`app/tracks/[id]/page.tsx`, and (net new — this page previously showed no
-owner information at all) `app/systems/[id]/page.tsx`. Each extends its
-existing `creator`/`owner` join with `is_placeholder`. The test detail page
-additionally shows two links, each gated independently (step 44 — they used
-to share one `is_placeholder` condition, which incorrectly hid the first
-link once a test was claimed): "view original post" (`tests.source_url`,
-whenever present — an external link using `Link` `variant="inline"` with
-`target="_blank" rel="noopener noreferrer"`; `Link` already wraps
-`next/link`, which renders a plain anchor for an absolute URL) survives a
-claim (step 39) unchanged, since `claim_placeholder` reassigns
-`creator_id` but never touches `source_url`; a static claim-contact string
-(`common.claimContact`) stays gated on `is_placeholder` alone, since once
-claimed there's no placeholder identity left to contact about. The feed
+**`imported` (step 32, purple)** — an asymmetric badge, gated differently
+depending on what it's describing (step 47 introduced the asymmetry,
+worth stating explicitly so a future reader doesn't "fix" it into one
+rule):
+
+- **On a *test*** (`FeedCard.tsx`, `app/tests/[id]/page.tsx`, the
+  per-test rows in `app/tracks/[id]/page.tsx`) — gated on `isImported =
+  !!(test.source_url || test.source_ref)`, **not** the current creator's
+  `is_placeholder`. Both columns are set only by the ingestion pipeline,
+  never the web wizard, and never reassigned/cleared by
+  `claim_placeholder` — so the badge now survives a claim, unlike before
+  step 47. OR'd rather than either column alone: `source_url` is
+  documented as null for any import predating that column, and the E2E
+  fixture for an unclaimed placeholder-owned test (`seedPlaceholderOwnedTest`)
+  never sets `source_ref`.
+- **On a *system*** (`app/systems/[id]/page.tsx`) — still gated on the
+  owner's live `is_placeholder`, unchanged. There's no equivalent
+  "this system was originally created under a placeholder identity"
+  persistent signal without new schema, and nothing has asked for one.
+
+Independent of, and can appear alongside, the win/loss/blind/revealed/broken
+status badge — it describes the *owner or provenance*, not the test's
+outcome. The test detail page additionally shows two links, each gated
+independently (step 44 — they used to share one `is_placeholder`
+condition, which incorrectly hid the first link once a test was claimed):
+"view original post" (`tests.source_url`, whenever present — an external
+link using `Link` `variant="inline"` with `target="_blank"
+rel="noopener noreferrer"`; `Link` already wraps `next/link`, which
+renders a plain anchor for an absolute URL) survives a claim (step 39)
+unchanged, since `claim_placeholder` reassigns `creator_id` but never
+touches `source_url`; a static claim-contact string (`common.claimContact`)
+stays gated on `is_placeholder` alone, since once claimed there's no
+placeholder identity left to contact about. The feed
 card and track's per-test rows show the badge only, not the links — those
 rows are already whole-card `<Link>`s to the test's own detail page, so a
 nested link isn't valid HTML there; the full detail lives one click away.

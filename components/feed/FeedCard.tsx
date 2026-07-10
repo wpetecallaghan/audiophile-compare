@@ -10,9 +10,10 @@ export type FeedTest = {
   created_at: string
   vote_count: number
   track: { artist: string; title: string } | null
-  creator: { display_name: string | null; is_placeholder: boolean } | null
+  creator: { display_name: string | null } | null
   snapshot_a: SnapshotSummary
   snapshot_b: SnapshotSummary
+  is_imported: boolean
   has_dead_clip: boolean
 }
 
@@ -61,7 +62,7 @@ export default async function FeedCard({ test }: { test: FeedTest }) {
               </span>
               {' · '}
               {test.vote_count} {test.vote_count === 1 ? 'vote' : 'votes'}
-              {test.creator?.is_placeholder && (
+              {test.is_imported && (
                 <>
                   {' · '}
                   <Badge status="imported" className="align-middle">

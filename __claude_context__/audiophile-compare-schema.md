@@ -556,6 +556,18 @@ opposite default visibility for two different populations of tests, and
 nothing else in the schema distinguishes "imported provenance link" from
 "creator's own discussion link" except an inference from `is_placeholder`.
 
+**`source_url` (with `source_ref`) also now backs the "Imported" badge
+itself (step 47), not just the provenance link.** `isImported =
+!!(source_url || source_ref)` — deliberately *not* the current creator's
+`is_placeholder`, which flips to `false` the moment a real user claims the
+content. Both columns are set only at ingestion and never
+reassigned/cleared by `claim_placeholder`, so this survives a claim by
+construction — see `components.md`'s `imported` badge section for the
+full per-surface breakdown (tests vs. the still-`is_placeholder`-gated
+systems badge). OR'd rather than either column alone: `source_url` is
+null for any import predating that column; `source_ref` is null for the
+`seedPlaceholderOwnedTest` E2E fixture.
+
 ### Cross-check tests
 A cross-check test reuses `source_url` values from existing clips on different
 tests. No new recordings needed. The creator selects two snapshots and two

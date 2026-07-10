@@ -60,11 +60,16 @@ test.describe('Import provenance', () => {
     await expect(page.getByRole(ROLE.link, { name: m.common.viewOriginalPost })).not.toBeVisible()
   })
 
-  test('claimed test (build step 44): still shows the original-post link, but not the badge or claim contact', async ({ page }) => {
+  test('claimed test (build step 47): still shows the original-post link and the imported badge, but not the claim contact', async ({ page }) => {
     const fixture = await seedClaimedTest(`provenance-claimed-${Date.now()}`)
     await page.goto(routes.test(fixture.test.id))
 
-    await expect(page.getByText(m.common.importedBadge)).not.toBeVisible()
+    // Step 47 reverses step 44's original call here — the badge now
+    // survives a claim too (gated on source_url/source_ref, which
+    // seedClaimedTest sets, rather than the claimed test's now-real,
+    // non-placeholder creator). Claim contact still correctly stays
+    // hidden — there's no placeholder identity left to contact about.
+    await expect(page.getByText(m.common.importedBadge)).toBeVisible()
     await expect(page.getByText(m.common.claimContact)).not.toBeVisible()
 
     const originalPostLink = page.getByRole(ROLE.link, { name: m.common.viewOriginalPost })

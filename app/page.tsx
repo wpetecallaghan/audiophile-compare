@@ -25,9 +25,9 @@ export default async function HomePage({ searchParams }: Props) {
     .from('tests')
     .select(
       `
-        id, title, status, created_at,
+        id, title, status, created_at, source_url, source_ref,
         creator_id,
-        creator:users!creator_id(display_name, is_placeholder),
+        creator:users!creator_id(display_name),
         track:tracks(artist, title),
         snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
         snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name)),
@@ -43,10 +43,12 @@ export default async function HomePage({ searchParams }: Props) {
     title: string
     status: string
     created_at: string
+    source_url: string | null
+    source_ref: string | null
     creator_id: string
     creator:
-      | { display_name: string | null; is_placeholder: boolean }
-      | { display_name: string | null; is_placeholder: boolean }[]
+      | { display_name: string | null }
+      | { display_name: string | null }[]
       | null
     track: { artist: string; title: string } | { artist: string; title: string }[] | null
     snapshot_a: { label: string; system: { name: string } | { name: string }[] | null } | { label: string; system: { name: string } | { name: string }[] | null }[] | null
@@ -86,6 +88,12 @@ export default async function HomePage({ searchParams }: Props) {
     // rows in app/systems/[id]/page.tsx are.
     const canSeeSystemInfo = t.status === 'revealed' || t.creator_id === user?.id
 
+    // "Was this test ever imported" (step 47) — survives a claim, unlike
+    // creator?.is_placeholder, which flips to false the moment a real user
+    // claims the content. See app/tests/[id]/page.tsx's identical check
+    // for why both columns are OR'd together.
+    const isImported = !!(t.source_url || t.source_ref)
+
     return {
       id:         t.id,
       title:      t.title,
@@ -96,6 +104,7 @@ export default async function HomePage({ searchParams }: Props) {
       track:      track   ?? null,
       snapshot_a: canSeeSystemInfo && rawA ? { label: rawA.label, system: sysA ?? null } : null,
       snapshot_b: canSeeSystemInfo && rawB ? { label: rawB.label, system: sysB ?? null } : null,
+      is_imported: isImported,
       has_dead_clip: t.clips.some(c => c.url_status === 'dead'),
     }
   })

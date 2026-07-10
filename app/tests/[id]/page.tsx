@@ -35,7 +35,7 @@ export default async function TestDetailPage({ params }: Props) {
   const { data: test, error } = await supabase
     .from('tests')
     .select(`
-      id, title, status, revealed_at, created_at, source_url, forum_link,
+      id, title, status, revealed_at, created_at, source_url, source_ref, forum_link,
       creator_id,
       creator:users!creator_id(display_name, is_placeholder),
       track:tracks(artist, title, album, passage_note),
@@ -53,6 +53,16 @@ export default async function TestDetailPage({ params }: Props) {
   const isCreator  = user?.id === test.creator_id
   const isRevealed = test.status === 'revealed'
   const canSeeSystemInfo = isRevealed || isCreator
+
+  // "Was this test ever imported" — step 47. Independent of the current
+  // creator's is_placeholder status (which flips to false once claimed):
+  // both source_url and source_ref are set only by the ingestion pipeline,
+  // never the web wizard, and neither is ever reassigned/cleared by
+  // claim_placeholder — so this survives a claim by construction. OR'd
+  // rather than either alone: source_url is documented as null for any
+  // import predating that column, and the E2E fixture for an unclaimed
+  // placeholder-owned test never sets source_ref.
+  const isImported = !!(test.source_url || test.source_ref)
 
   // clip_mapping: only fetch if entitled
   let mapping: { before_clip_id: string; after_clip_id: string } | null = null
@@ -210,7 +220,7 @@ export default async function TestDetailPage({ params }: Props) {
           by {creator?.display_name ?? t('anonymous')} ·{' '}
           {new Date(test.created_at).toLocaleDateString()} ·{' '}
           {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
-          {creator?.is_placeholder && (
+          {isImported && (
             <>
               {' · '}
               <Badge status="imported" className="align-middle">
