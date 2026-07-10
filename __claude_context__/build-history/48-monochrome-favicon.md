@@ -29,6 +29,22 @@ preserves the illustration's shading so it stays recognizable at
 to an unrecognizable blob, and there was no image tool in the project
 suited to tuning that well anyway.
 
+**Real bug hit and fixed: `sips --matchTo` a grayscale ICC profile
+produces PNG color type 0 (single-channel grayscale, no alpha), and
+Turbopack's strict ICO decoder rejects that — `/` returned a 500 with
+`Format error decoding Ico: The PNG is not in RGBA format!` the moment
+the first hand-built `.ico` landed, because Next dev processes
+`app/favicon.ico` through its image pipeline (unlike a plain static
+`.ico` request, which served the same broken file with a 200 — the
+static route doesn't decode it, so that check alone was a false
+positive). The Windows ICO convention requires embedded PNGs to be
+32bpp RGBA (color type 6) regardless of visual content. Fixed by
+round-tripping each grayscale PNG through an uncompressed 24-bit BMP
+(sips can export BMP; BMP has no filter/compression to reverse-engineer,
+unlike PNG) and hand-encoding a proper 8-bit RGBA PNG from the raw BGR
+pixel data (opaque alpha=255 throughout) before assembling the `.ico` —
+still throwaway scratchpad scripts, still no new dependency.
+
 **Deployment note:** there is no per-environment "Vercel favicon"
 setting — this is just a static file in the app source, so it goes live
 on whichever branch it's deployed from (per `docs/vercel-setup.md`:
