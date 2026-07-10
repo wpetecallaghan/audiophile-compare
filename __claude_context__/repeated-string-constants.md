@@ -1,17 +1,40 @@
 ---
 name: audiophile-compare-repeated-string-constants
 description: >
-  Coding convention: extract any string literal used more than once into a
-  named constant, scoped to where it's actually reused. Load this when
-  writing or reviewing code (app or test) that repeats a literal string.
+  Coding convention: extract any string or numeric literal used more than
+  once for the same reason into a named constant, scoped to where it's
+  actually reused. Load this when writing or reviewing code (app or test)
+  that repeats a literal.
 ---
 
-# Repeated string literals → named constants
+# Repeated literals → named constants
 
-When a string literal appears more than once, define it as a named constant
-instead of repeating the literal. This applies to any repeated string —
-business/copy text, ARIA roles passed to Playwright's `getByRole('button', ...)`,
-config keys, CSS class fragments, anything.
+When a string **or number** literal appears more than once *for the same
+reason*, define it as a named constant instead of repeating the literal.
+For strings this applies to anything — business/copy text, ARIA roles
+passed to Playwright's `getByRole('button', ...)`, config keys, CSS class
+fragments. For numbers it applies to the same class of thing: timeouts,
+page sizes, retry counts, thresholds — any magic number whose meaning
+isn't obvious from the digit alone.
+
+## Numbers need one extra check strings don't: same reason, not same digits
+
+Two occurrences of `500` can be completely unrelated — an HTTP `5xx`
+classification threshold and a route's own `{ status: 500 }` response are
+both "500" but mean different things and change independently. Extracting
+a shared constant across coincidentally-equal, semantically-unrelated
+numbers is a correctness/readability regression, not an improvement — it
+implies a connection that doesn't exist. Only extract when the *same
+value is repeated because it's the same value* (e.g. one page size used in
+both the query `.range()` call and the "next page" check), not because two
+unrelated numbers happen to match.
+
+Structural numbers — `0`/`1`/`-1` in loop bounds, array indices, ordinary
+arithmetic — aren't "magic numbers" in the sense this rule cares about;
+don't extract those just because the digit recurs. And a single
+well-named default parameter (e.g. `timeoutMs = 5000`) already documents
+itself via its name — it doesn't also need a separate top-level constant
+duplicating the same value for no second call site.
 
 ## Scope the constant to its reuse
 
@@ -23,9 +46,21 @@ config keys, CSS class fragments, anything.
 
 ## Don't over-apply
 
-Only extract on actual repetition — a string used once stays inline. Extracting
+Only extract on actual repetition — a literal used once stays inline. Extracting
 "in case it repeats later" is premature abstraction, which conflicts with this
 project's general no-speculative-abstraction stance (see root `CLAUDE.md`).
+This caveat matters more for numbers than strings, since coincidentally-equal
+numbers are far more common than coincidentally-equal strings.
+
+## Audit the whole change, not just the file that got flagged
+
+When you (or a reviewer) spot a repeated literal in one file, check every
+other file touched in the same change for the same pattern before calling
+it done — don't fix only the file that got pointed out. This has recurred
+across a single turn before: a fix landed in one file while a sibling file
+written in the same change still had the identical repeated literal,
+requiring a second correction. Treat one flagged instance as a signal to
+re-scan the full diff, not a ticket scoped to one file.
 
 ## Related existing convention
 

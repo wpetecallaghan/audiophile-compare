@@ -25,7 +25,7 @@ Blind A/B comparison app for hi-fi audio systems. Next.js 16+ App Router, Supaba
 | Build history / orientation | `build-history/index.md`, then the specific step file |
 | Forum ingestion pipeline (scraper, extraction, commit, rollback, erasure) | `build-history-ingestion/index.md`, then the specific step file |
 | Deferred features (ingestion, storage, mobile) | `deferred-features.md` |
-| Writing or reviewing code (app or test) that repeats a string literal | `repeated-string-constants.md` |
+| Writing or reviewing code (app or test) that repeats a string or numeric literal | `repeated-string-constants.md` |
 
 ## Key invariants (apply to every task)
 

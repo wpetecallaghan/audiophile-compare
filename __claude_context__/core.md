@@ -199,7 +199,7 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 | Writing or modifying tests | `testing.md` |
 | Writing queries, migrations, or RLS policies | `audiophile-compare-schema.md` |
 | Any task touching the data model | `audiophile-compare-schema.md` |
-| Writing or reviewing code (app or test) that repeats a string literal | `repeated-string-constants.md` |
+| Writing or reviewing code (app or test) that repeats a string or numeric literal | `repeated-string-constants.md` |
 | Build history / orientation on any step | `build-history/index.md`, then load only the specific step file(s) you need |
 | Forum ingestion pipeline work (steps 30, 31, 33+) | `build-history-ingestion/index.md`, then the specific step file(s) (detailed plan) + `deferred-features.md` (original architecture rationale) |
 | Import provenance UI (step 32) | `build-history/32-import-provenance-ui.md` directly — UI work, not pipeline infrastructure, so it isn't in `build-history-ingestion/` |

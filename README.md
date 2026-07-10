@@ -60,7 +60,7 @@ Read `entry.md` first, then the file for your task:
 | [__claude_context__/build-history/](__claude_context__/build-history/index.md) | Build step log, one file per step — core app steps with implementation notes |
 | [__claude_context__/build-history-ingestion/](__claude_context__/build-history-ingestion/index.md) | Build step log, one file per step — forum ingestion pipeline: scraper, extraction, commit, rollback, data erasure |
 | [__claude_context__/deferred-features.md](__claude_context__/deferred-features.md) | Deferred feature notes: agentic ingestion pipeline, owned blob storage, mobile app |
-| [__claude_context__/repeated-string-constants.md](__claude_context__/repeated-string-constants.md) | Convention: extract repeated string literals into scoped named constants |
+| [__claude_context__/repeated-string-constants.md](__claude_context__/repeated-string-constants.md) | Convention: extract repeated string or numeric literals into scoped named constants |
 
 See [docs/skills-vs-context.md](docs/skills-vs-context.md) for why this project
 uses a `CLAUDE.md`-routed context directory instead of Claude Code's built-in
