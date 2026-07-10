@@ -91,6 +91,7 @@ export async function seedTest(
   title: string,
   creatorId?: string,
   sourceUrl?: string,
+  forumLink?: string,
 ): Promise<SeededTest> {
   const admin = createAdminClient()
   const resolvedCreatorId = creatorId ?? await getTestUserId()
@@ -104,6 +105,7 @@ export async function seedTest(
       title: `${E2E_PREFIX} ${title}`,
       status: 'open',
       source_url: sourceUrl ?? null,
+      forum_link: forumLink ?? null,
     })
     .select('id, title')
     .single()

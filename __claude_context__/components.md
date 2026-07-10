@@ -249,6 +249,27 @@ differently-scoped "Save"-prefixed buttons exist on one page (Playwright's
 default name matching is substring-based) — `TechniquePreferencesForm` uses
 its own `techniquesSaveButton`/`techniquesSaving` keys instead.
 
+### `EditForumLinkButton` — creator-only field edit, deliberately outside the reveal/vote-gated creator-controls block (step 46)
+
+Mirrors `ReplaceClipUrlButton.tsx`'s open/toggle/`router.refresh()` shape
+(a plain button that expands into an inline `Callout` with the field plus
+Save/Cancel), but simpler — a bare URL `TextInput`, no verify-then-persist
+flow, since `tests.forum_link` is only ever displayed, never played back
+like a clip URL. **Rendered outside** `app/tests/[id]/page.tsx`'s existing
+`isCreator && (!isRevealed || voteCount === 0)` creator-controls block —
+that block disappears once a test is revealed *and* has votes, which
+would contradict this field's own requirement (editable any time,
+regardless of reveal or vote status). Gated on `isCreator` alone.
+
+Applied the `TechniquePreferencesForm` lesson above proactively: its own
+i18n keys (`tests.forumLink.saveButton` = "Save forum link", not a reused
+generic "Save") from the start, since `ReplaceClipUrlButton`'s own
+`tests.replaceClip.saveButton` = "Save" *can* legitimately be open on
+screen at the same time (both render independently for the creator, one
+inside the creator-controls block, this one outside it) — reusing "Save"
+again would have risked the identical Playwright substring-match
+ambiguity, not just a hypothetical one.
+
 ---
 
 ## 7. Mobile responsiveness — required defensive patterns

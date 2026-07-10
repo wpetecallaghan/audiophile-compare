@@ -20,6 +20,7 @@ import {
 // Two stable YouTube URLs used for clip verification
 const CLIP_URL_A = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 const CLIP_URL_B = 'https://www.youtube.com/watch?v=9bZkp7q19f0'
+const FORUM_LINK_URL = 'https://forum.example.com/thread/e2e-wizard-test'
 
 let track: SeededTrack
 let snapshotA: SeededSnapshot
@@ -97,9 +98,18 @@ test.describe('Test creation wizard', () => {
     await titleInput.clear()
     await titleInput.fill(`${E2E_PREFIX} ${currentTitle}`)
 
+    // Optional forum discussion link (build step 46) — a genuinely new,
+    // separate field from clip URLs (also type="url", but there are only
+    // two of those, already selected by position above)
+    await page.getByLabel(m.tests.publishStep.forumLinkLabel).fill(FORUM_LINK_URL)
+
     await page.getByRole(ROLE.button, { name: m.tests.publishStep.publishButton }).click()
 
     // Should land on the test detail page
     await expect(page).toHaveURL(/\/tests\/[a-f0-9-]{36}$/, { timeout: 15_000 })
+
+    // The creator sees their own forum link immediately — fresh,
+    // unrevealed, un-voted test, proving no reveal/vote gating on this path
+    await expect(page.getByRole(ROLE.link, { name: m.tests.forumLink.label })).toBeVisible()
   })
 })

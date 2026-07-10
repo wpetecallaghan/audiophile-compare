@@ -17,9 +17,10 @@ type Props = {
 
 export default function StepPublish({ draft, onBack }: Props) {
   const t = useTranslations('tests.publishStep')
-  const [title, setTitle]     = useState(draft.title)
-  const [error, setError]     = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [title, setTitle]         = useState(draft.title)
+  const [forumLink, setForumLink] = useState('')
+  const [error, setError]         = useState<string | null>(null)
+  const [loading, setLoading]     = useState(false)
   // useRouter gives access to Next.js client-side navigation
   const router = useRouter()
 
@@ -51,6 +52,7 @@ export default function StepPublish({ draft, onBack }: Props) {
           embed_id:      draft.clipBVerified!.embed_id,
         },
         before_is_a: draft.beforeIsA,
+        forum_link: forumLink.trim() || null,
       }),
     })
 
@@ -108,6 +110,19 @@ export default function StepPublish({ draft, onBack }: Props) {
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder={t('titlePlaceholder')}
+        />
+      </div>
+
+      <div>
+        <FieldLabel htmlFor="forum-link">
+          {t('forumLinkLabel')}
+        </FieldLabel>
+        <TextInput
+          id="forum-link"
+          type="url"
+          value={forumLink}
+          onChange={e => setForumLink(e.target.value)}
+          placeholder={t('forumLinkPlaceholder')}
         />
       </div>
 

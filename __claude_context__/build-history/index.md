@@ -60,3 +60,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 43 | Hide system/component identity on blind tests | [43-hide-blind-test-system-info.md](43-hide-blind-test-system-info.md) |
 | 44 | Keep the "view original post" link after a claim | [44-preserve-original-post-link-after-claim.md](44-preserve-original-post-link-after-claim.md) |
 | 45 | Per-user listening technique preferences | [45-per-user-technique-preferences.md](45-per-user-technique-preferences.md) |
+| 46 | Optional, editable forum discussion link | [46-forum-discussion-link.md](46-forum-discussion-link.md) |

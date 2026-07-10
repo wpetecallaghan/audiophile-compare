@@ -210,6 +210,17 @@ against `user_technique_preferences`, both covered by one
 RPC needed, since (unlike `ingest_test`/`claim_placeholder`/
 `erase_user_*`) this route only ever touches the caller's own rows.
 
+**A policy's own name can be misleading — check the actual SQL (step
+46):** `"tests: creator update (reveal only)"` sounds column-restricted,
+but its definition is just `for update using (creator_id = auth.uid())`
+— no `with check`, no column-level grant. Postgres RLS has no per-column
+enforcement mechanism at all; the `(reveal only)` in the name is
+descriptive of what happened to use the policy first, not an enforced
+constraint. This meant `PATCH /api/tests/[id]`'s new `forum_link` column
+(step 46) needed zero RLS changes — the creator could already update any
+column on their own row. Don't assume a policy is narrower than its own
+`using`/`with check` clauses without reading them.
+
 ### Rule 6 — delete rules (step 26)
 
 - `DELETE /api/tests/[id]` — creator only; 409 if the test has any vote.
@@ -297,6 +308,20 @@ only once revealed since the title is fixed once at ingest time. See
 `components.md §8` for the three different implementation mechanisms
 across the three affected pages, and
 `build-history/43-hide-blind-test-system-info.md` for the full design.
+
+**A second field gated by the same `canSeeSystemInfo` boolean, added in
+step 46: `tests.forum_link`** — a creator-supplied link to a forum thread
+discussing the test, hidden from non-creators until revealed. Reuses
+`isRevealed || isCreator` directly rather than a second, separately-computed
+boolean, since the rule is identical. **Not to be confused with
+`tests.source_url`** (a different column, different purpose, deliberately
+shown *unconditionally* — see `audiophile-compare-schema.md`'s
+`` `forum_link` vs `source_url` `` note for the full distinction and why
+they aren't the same field). Editable any time via `PATCH
+/api/tests/[id]`, creator-only, no reveal or vote-count gating — unlike
+`PATCH /api/clips/[id]`'s `voteCount === 0` restriction, a forum link is
+pure metadata, not what's being tested, so editing it after votes or
+after reveal doesn't retroactively misrepresent anything a listener heard.
 
 ---
 

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isValidForumLink } from '@/lib/tests/validate-forum-link'
 
 type ClipInput = {
   source_url: string
@@ -18,6 +19,7 @@ type CreateTestBody = {
   clip_a: ClipInput        // the clip labelled 'A' in the blind test
   clip_b: ClipInput        // the clip labelled 'B' in the blind test
   before_is_a: boolean     // true = clip A is the 'before' system; false = clip B is
+  forum_link?: string | null  // optional — link to a forum thread discussing this test (step 46)
 }
 
 export async function POST(request: NextRequest) {
@@ -43,6 +45,7 @@ export async function POST(request: NextRequest) {
     clip_a,
     clip_b,
     before_is_a,
+    forum_link,
   } = body as CreateTestBody
 
   // Validate required fields
@@ -56,6 +59,14 @@ export async function POST(request: NextRequest) {
   if (!clip_a?.source_url || !clip_b?.source_url) {
     return NextResponse.json(
       { error: 'clip_a and clip_b are required' },
+      { status: 400 }
+    )
+  }
+
+  const trimmedForumLink = forum_link?.trim() || null
+  if (trimmedForumLink && !isValidForumLink(trimmedForumLink)) {
+    return NextResponse.json(
+      { error: 'forum_link must be a valid http(s) URL' },
       { status: 400 }
     )
   }
@@ -94,6 +105,7 @@ export async function POST(request: NextRequest) {
       snapshot_b_id,
       title:         title.trim(),
       status:        'open',
+      forum_link:    trimmedForumLink,
     })
     .select('id')
     .single()

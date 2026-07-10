@@ -169,6 +169,24 @@ and, once built, step 38's `erase_user_content` (the full order above,
 minus tracks — see `build-history-ingestion/38-data-erasure-requests.md` for why
 tracks are never deleted by either).
 
+**Verifying a reveal actually succeeded — a two-part check, not one
+(hit twice, steps 43 and 46):** `ConfirmButton.tsx`'s confirm panel
+replaces the original button (e.g. `m.tests.reveal.button`, "Reveal
+before/after") the moment it's clicked, *before* the async action it
+guards has resolved either way. So `await expect(revealButton).not.toBeVisible()`
+alone only proves the confirm panel opened — not that the underlying
+`POST /api/tests/[id]/reveal` call actually succeeded. Step 43 already
+established the fix (wait for the button gone **and** for
+`m.tests.revealedStatus` text to appear — a signal that only shows up
+once the page has re-rendered with genuinely `isRevealed: true` server
+data); step 46 copy-pasted only the first half into a new test and hit
+the exact same false-positive class of bug again, confirmed via a raw
+REST query showing `status: 'open'` in the database at the moment the
+weaker assertion had already passed. **Always use both assertions
+together** when a test's later steps depend on a reveal having really
+completed — see `e2e/tests/voting.spec.ts`'s `'creator can reveal the
+test'` test for the canonical two-line pattern.
+
 ---
 
 ## 6. E2E coverage
@@ -178,8 +196,8 @@ tracks are never deleted by either).
 | `public-feed.spec.ts` | Feed loads; unauthenticated header; test card structure; `/systems` → login redirect with redirectTo; `/about` loads without a redirect; `/profile` → login redirect; `/tracks` → login redirect; anonymous visitor can play clips on a test detail page and sees a "Sign in to vote" prompt instead of the vote form; `/register` shows the Google sign-up option alongside the email form |
 | `auth.spec.ts` | Authenticated nav links (Tests / Systems / Tracks / Profile); redirectTo preserved through login flow |
 | `systems.spec.ts` | Create system; edit name and description; add snapshot; edit snapshot label; systems list shows test user's systems |
-| `test-creation.spec.ts` | Track search; full wizard (select track → snapshots → verify clips → publish) |
-| `voting.spec.ts` | Tally hidden before voting; vote count visible; system/snapshot info visible to the test's creator before reveal but hidden from a non-creator (`canSeeSystemInfo`, step 43); cast vote; update existing vote; creator can reveal; system/snapshot info visible to a non-creator too once revealed; narrowed technique preferences filter the vote form, and a technique already voted on for a specific test stays offered there even after being disabled elsewhere (step 45) |
+| `test-creation.spec.ts` | Track search; full wizard (select track → snapshots → verify clips → publish), including an optional forum discussion link visible to the creator immediately on the fresh, unrevealed, un-voted test (step 46) |
+| `voting.spec.ts` | Tally hidden before voting; vote count visible; system/snapshot info visible to the test's creator before reveal but hidden from a non-creator (`canSeeSystemInfo`, step 43); cast vote; update existing vote; creator can reveal; system/snapshot info visible to a non-creator too once revealed; narrowed technique preferences filter the vote form, and a technique already voted on for a specific test stays offered there even after being disabled elsewhere (step 45); a creator-added forum link is hidden from a non-creator until reveal and stays editable after reveal and after a vote exists (step 46) |
 | `delete.spec.ts` | Creator deletes a zero-vote test (redirects home); Delete hidden once a vote exists; owner deletes an unreferenced snapshot; Delete hidden when a test references the snapshot; owner deletes a snapshot-less system (redirects to systems list); Delete hidden when the system has a snapshot |
 | `clip-health.spec.ts` | Dead clip shows a warning and player still renders; vote form replaced with an explanatory message; creator replaces a dead clip's URL, clearing the warning; "Broken" badge shown on the track and system detail pages; unsupported-playback clip shows a bare link in blind view with no "could not be identified" message; once revealed, its Before/After label in the mapping badge links directly to it with no separate link below |
 | `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared; non-admin user does not see the Admin section (step 41); every active technique checked by default, saving a narrowed selection persists across a reload, Save disabled once the last technique is unchecked (step 45) |

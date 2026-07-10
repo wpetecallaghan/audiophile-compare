@@ -1,0 +1,19 @@
+-- Step 46: an optional, creator-editable link to a forum thread discussing
+-- a test (distinct from tests.source_url, which holds the URL of the
+-- original forum post a test was *imported from* — see
+-- build-history/32-import-provenance-ui.md — and is shown unconditionally,
+-- never reveal-gated, so a real forum author can recognize and claim their
+-- own still-blind imported content). forum_link is the opposite: hidden
+-- from non-creators until the test is revealed (canSeeSystemInfo, step 43),
+-- always visible/editable by the creator regardless of reveal or vote
+-- status. Deliberately a separate column rather than reusing source_url —
+-- the two need different visibility rules for two different populations of
+-- tests, and nothing else in the schema distinguishes "imported provenance
+-- link" from "creator's own discussion link".
+--
+-- No RLS change needed — the existing "tests: creator update (reveal only)"
+-- policy (`for update using (creator_id = auth.uid())`, no `with check`,
+-- no column-level restriction) already permits a creator to update any
+-- column on their own row; its "(reveal only)" name is descriptive of what
+-- happened to use it first, not an enforced constraint.
+alter table public.tests add column forum_link text;

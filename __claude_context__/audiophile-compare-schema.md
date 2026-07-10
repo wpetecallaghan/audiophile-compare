@@ -108,6 +108,13 @@ tests (
                                 -- original post" link (step 32) — NULL for
                                 -- web-UI-created tests and for imports that
                                 -- predate this column
+  forum_link     text,          -- step 46: an OPTIONAL, creator-supplied link
+                                -- to a forum thread discussing this test —
+                                -- distinct from source_url above (import
+                                -- provenance, unconditional display). Hidden
+                                -- from non-creators until revealed
+                                -- (canSeeSystemInfo); creator can set/edit it
+                                -- any time, regardless of reveal or vote status
   CONSTRAINT tests_status_check CHECK (status IN ('open', 'revealed'))
 )
 
@@ -525,6 +532,29 @@ the per-user case, closes) a pre-existing gap in `is_active`: a globally
 deactivated technique's past votes persist untouched in the DB/tally but
 silently disappear from the editable form, with no equivalent "still show
 it on this test" fix — left as-is, out of scope for step 45.
+
+### `forum_link` vs `source_url` (step 46) — do not conflate
+
+`tests` has two forum-URL columns with deliberately different rules —
+easy to merge by mistake since they look similar:
+
+- **`source_url`** — set once, only by the forum-*ingestion* pipeline
+  (never by the web UI), pointing at the original forum post a test was
+  scraped from. Shown **unconditionally**, never reveal-gated (see
+  `build-history/32-import-provenance-ui.md` and
+  `44-preserve-original-post-link-after-claim.md`) — specifically so a
+  real forum author can recognize and claim their own still-blind
+  imported content.
+- **`forum_link`** — optional, set by a web-UI creator at test creation
+  or edited any time after (`PATCH /api/tests/[id]`, creator-only, no
+  reveal or vote-count gating). Shown only when `canSeeSystemInfo`
+  (`isRevealed || isCreator`) — hidden from other listeners until the
+  test is revealed, the opposite default from `source_url`.
+
+Reusing one column for both was considered and rejected — the two need
+opposite default visibility for two different populations of tests, and
+nothing else in the schema distinguishes "imported provenance link" from
+"creator's own discussion link" except an inference from `is_placeholder`.
 
 ### Cross-check tests
 A cross-check test reuses `source_url` values from existing clips on different

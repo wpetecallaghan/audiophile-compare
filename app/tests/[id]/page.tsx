@@ -6,6 +6,7 @@ import ABPlayer from '@/components/media/ABPlayer'
 import RevealButton from '@/components/tests/RevealButton'
 import DeleteTestButton from '@/components/tests/DeleteTestButton'
 import ReplaceClipUrlButton from '@/components/tests/ReplaceClipUrlButton'
+import EditForumLinkButton from '@/components/tests/EditForumLinkButton'
 import MappingBadge from '@/components/tests/MappingBadge'
 import VoteForm from '@/components/tests/VoteForm'
 import TallyDisplay from '@/components/tests/TallyDisplay'
@@ -29,11 +30,12 @@ export default async function TestDetailPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   const t = await getTranslations('tests')
   const tCommon = await getTranslations('common')
+  const tForumLink = await getTranslations('tests.forumLink')
 
   const { data: test, error } = await supabase
     .from('tests')
     .select(`
-      id, title, status, revealed_at, created_at, source_url,
+      id, title, status, revealed_at, created_at, source_url, forum_link,
       creator_id,
       creator:users!creator_id(display_name, is_placeholder),
       track:tracks(artist, title, album, passage_note),
@@ -235,6 +237,26 @@ export default async function TestDetailPage({ params }: Props) {
             )}
             {creator?.is_placeholder && <span>{tCommon('claimContact')}</span>}
           </p>
+        )}
+        {/* Creator-supplied forum discussion link (step 46) — distinct from
+            source_url above: hidden from non-creators until revealed
+            (canSeeSystemInfo), always visible to the creator regardless of
+            reveal status. Never touched by ReplaceClipUrlButton's
+            voteCount === 0 gating — pure metadata, not what's being tested. */}
+        {canSeeSystemInfo && test.forum_link && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            <Link
+              href={test.forum_link}
+              variant="inline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {tForumLink('label')}
+            </Link>
+          </p>
+        )}
+        {isCreator && (
+          <EditForumLinkButton testId={test.id} currentLink={test.forum_link} />
         )}
       </div>
 

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { isValidForumLink } from '@/lib/tests/validate-forum-link'
 
 export async function GET(
   request: NextRequest,
@@ -114,4 +115,66 @@ export async function DELETE(
   }
 
   return NextResponse.json({ ok: true })
+}
+
+// PATCH /api/tests/[id] — creator only. Scoped to forum_link only, not a
+// general-purpose test-patch endpoint — no other field has an edit need
+// yet (step 46). Deliberately no reveal or vote-count gating, unlike
+// PATCH /api/clips/[id]'s voteCount === 0 restriction — a forum link is
+// pure metadata about the discussion, not about what's being tested, so
+// editing it after votes or after reveal doesn't retroactively
+// misrepresent anything a listener heard.
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+  }
+
+  // Verify ownership — return 404 to avoid leaking test existence, same
+  // pattern as DELETE above.
+  const { data: test } = await supabase
+    .from('tests')
+    .select('id, creator_id')
+    .eq('id', id)
+    .single()
+
+  if (!test || test.creator_id !== user.id) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  const { forum_link } = body as { forum_link?: string | null }
+  const trimmedForumLink = forum_link?.trim() || null
+
+  if (trimmedForumLink && !isValidForumLink(trimmedForumLink)) {
+    return NextResponse.json(
+      { error: 'forum_link must be a valid http(s) URL' },
+      { status: 400 }
+    )
+  }
+
+  const { data: updated, error } = await supabase
+    .from('tests')
+    .update({ forum_link: trimmedForumLink })
+    .eq('id', id)
+    .select('forum_link')
+    .single()
+
+  if (error || !updated) {
+    return NextResponse.json({ error: 'Failed to update forum link' }, { status: 500 })
+  }
+
+  return NextResponse.json({ forum_link: updated.forum_link })
 }

@@ -163,6 +163,8 @@
     "publishStep": {
       "heading": "Publish",
       "titlePlaceholder": "e.g. 'Naim vs Rega — same source, different amps'",
+      "forumLinkLabel": "Forum discussion link",
+      "forumLinkPlaceholder": "https://forum.example.com/thread/... (optional)",
       "publishButton": "Publish test",
       "publishing": "Publishing…",
       "trackBadge": "Track"
@@ -186,6 +188,16 @@
       "saveButton": "Save",
       "saving": "Saving…",
       "cancelButton": "Cancel"
+    },
+    "forumLink": {
+      "label": "Forum discussion",
+      "addButton": "+ Add forum link",
+      "editButton": "Edit forum link",
+      "placeholder": "https://forum.example.com/thread/...",
+      "saveButton": "Save forum link",
+      "saving": "Saving…",
+      "cancelButton": "Cancel",
+      "invalidUrlError": "Enter a valid http(s) URL"
     },
     "reveal": {
       "button": "Reveal before/after",

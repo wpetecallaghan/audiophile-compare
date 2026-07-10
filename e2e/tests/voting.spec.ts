@@ -17,6 +17,8 @@ import {
 import { ROLE } from '../helpers/constants'
 import m from '../../messages/en.json'
 
+const FORUM_LINK_URL = 'https://forum.example.com/thread/e2e-voting-test'
+
 let fixture: SeedTestFixture
 
 test.beforeAll(async () => {
@@ -193,5 +195,75 @@ test.describe('Technique preferences applied to voting (build step 45)', () => {
     await expect(voteForm.getByText('Tune Method')).toBeVisible()
     await expect(voteForm.getByText('PRaT')).toBeVisible()
     await expect(voteForm.getByText('Tonal / Frequency balance')).not.toBeVisible()
+  })
+})
+
+test.describe('Forum discussion link (build step 46)', () => {
+  let linkFixture: SeedTestFixture
+
+  test.beforeAll(async () => {
+    linkFixture = await seedCompleteTest(`forum-link-${Date.now()}`)
+  })
+
+  test('creator can add a forum link on a blind test; a non-creator cannot see it until revealed', async ({ page, browser }) => {
+    await page.goto(routes.test(linkFixture.test.id))
+
+    await page.getByRole(ROLE.button, { name: m.tests.forumLink.addButton }).click()
+    await page.getByLabel(m.tests.forumLink.label).fill(FORUM_LINK_URL)
+    await page.getByRole(ROLE.button, { name: m.tests.forumLink.saveButton }).click()
+
+    const creatorLink = page.getByRole(ROLE.link, { name: m.tests.forumLink.label })
+    await expect(creatorLink).toBeVisible({ timeout: 5_000 })
+    await expect(creatorLink).toHaveAttribute('href', FORUM_LINK_URL)
+
+    // Non-creator, same blind test: hidden entirely (canSeeSystemInfo gate,
+    // the same rule step 43 established) — same logged-out-proxy pattern
+    // used throughout this file.
+    const context = await browser.newContext({ storageState: undefined })
+    const nonCreatorPage = await context.newPage()
+    await nonCreatorPage.goto(routes.test(linkFixture.test.id))
+    await expect(nonCreatorPage.getByRole(ROLE.link, { name: m.tests.forumLink.label })).not.toBeVisible()
+    await context.close()
+  })
+
+  test('cast a vote, then reveal the test', async ({ page }) => {
+    await page.goto(routes.test(linkFixture.test.id))
+
+    const radioA = page.locator(`input[type="radio"][value="${linkFixture.clipA.id}"]`).first()
+    await radioA.check()
+    await page.getByRole(ROLE.button, { name: m.tests.vote.saveButton }).click()
+    await expect(page.getByText(/%/).first()).toBeVisible({ timeout: 5_000 })
+
+    // Both assertions needed, not just the button disappearing — see the
+    // 'creator can reveal the test' test above for why: the confirm panel
+    // replaces the original button as soon as it's clicked, regardless of
+    // whether the subsequent async reveal call actually succeeds, so that
+    // alone isn't a reliable success signal.
+    const revealButton = page.getByRole(ROLE.button, { name: m.tests.reveal.button })
+    await revealButton.click()
+    await page.getByRole(ROLE.button, { name: m.tests.reveal.confirmButton }).click()
+    await expect(revealButton).not.toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText(m.tests.revealedStatus).first()).toBeVisible()
+  })
+
+  test('non-creator can see the forum link once revealed', async ({ browser }) => {
+    const context = await browser.newContext({ storageState: undefined })
+    const page = await context.newPage()
+    await page.goto(routes.test(linkFixture.test.id))
+    await expect(page.getByRole(ROLE.link, { name: m.tests.forumLink.label })).toBeVisible()
+    await context.close()
+  })
+
+  test('creator can still edit the forum link after reveal and after a vote exists', async ({ page }) => {
+    const updatedUrl = 'https://forum.example.com/thread/e2e-updated'
+    await page.goto(routes.test(linkFixture.test.id))
+
+    await page.getByRole(ROLE.button, { name: m.tests.forumLink.editButton }).click()
+    await page.getByLabel(m.tests.forumLink.label).fill(updatedUrl)
+    await page.getByRole(ROLE.button, { name: m.tests.forumLink.saveButton }).click()
+
+    const link = page.getByRole(ROLE.link, { name: m.tests.forumLink.label })
+    await expect(link).toBeVisible({ timeout: 5_000 })
+    await expect(link).toHaveAttribute('href', updatedUrl)
   })
 })
