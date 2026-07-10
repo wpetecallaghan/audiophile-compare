@@ -5,6 +5,7 @@ import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/Badge'
 import { Heading } from '@/components/ui/Heading'
+import { getRequestLocale } from '@/lib/dates/get-request-locale'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -31,6 +32,7 @@ export default async function TrackDetailPage({ params }: Props) {
 
   const t = await getTranslations('tracks')
   const tCommon = await getTranslations('common')
+  const locale = await getRequestLocale()
 
   type TestRow = {
     id: string
@@ -115,7 +117,7 @@ export default async function TrackDetailPage({ params }: Props) {
                       <p className="text-sm font-medium truncate">{test.title}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
                         by {creator?.display_name ?? t('anonymous')} ·{' '}
-                        {new Date(test.created_at).toLocaleDateString()}
+                        {new Date(test.created_at).toLocaleDateString(locale)}
                         {isImported && (
                           <>
                             {' · '}

@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge'
 import { buttonVariants } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
 import { getTranslations } from 'next-intl/server'
+import { getRequestLocale } from '@/lib/dates/get-request-locale'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -34,6 +35,7 @@ export default async function SystemDetailPage({ params }: Props) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const tCommon = await getTranslations('common')
+  const locale = await getRequestLocale()
 
   // Fetch system with all its snapshots
   const { data: system, error } = await supabase
@@ -250,6 +252,7 @@ export default async function SystemDetailPage({ params }: Props) {
                 draws={snapshot.draws}
                 testCount={snapshot.tests.length}
                 isOwner={isOwner}
+                locale={locale}
               >
                 {snapshot.tests.length === 0 ? (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -278,7 +281,7 @@ export default async function SystemDetailPage({ params }: Props) {
                                 </p>
                               )}
                               <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {new Date(test.created_at).toLocaleDateString()}
+                                {new Date(test.created_at).toLocaleDateString(locale)}
                               </p>
                             </div>
                             <Badge status={badge.status} className="ml-4 shrink-0">

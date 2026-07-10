@@ -113,6 +113,19 @@ export async function seedTest(
   return data as SeededTest
 }
 
+// Forces a deterministic created_at on an already-seeded test — used by
+// date-formatting.spec.ts (build step 49), which needs a fixed, unambiguous
+// day (> 12) to tell dd/mm/yyyy apart from mm/dd/yyyy regardless of what day
+// the suite happens to run.
+export async function setTestCreatedAt(testId: string, isoDate: string): Promise<void> {
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('tests')
+    .update({ created_at: isoDate })
+    .eq('id', testId)
+  if (error) throw new Error(`setTestCreatedAt: ${error.message}`)
+}
+
 export async function seedClipMapping(
   testId: string,
   beforeClipId: string,

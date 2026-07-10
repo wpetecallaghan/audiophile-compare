@@ -52,19 +52,34 @@ export default async function Page({
 
 ---
 
-## 3. Hydration warnings
+## 3. Dates — format using the visiting browser's locale (build step 49)
 
-`'use client'` components are SSR'd on the server then hydrated in the browser.
-Methods that produce locale- or timezone-dependent output (e.g. `toLocaleDateString()`)
-can produce different strings in Node.js vs the browser, causing React hydration warnings.
-Suppress on the element:
+Every rendered date (`created_at` etc.) uses `date.toLocaleDateString(locale)`,
+where `locale` comes from `lib/dates/get-request-locale.ts` — it reads the
+`Accept-Language` request header (via `next/headers`, Server-Component-only)
+and returns the visitor's preferred locale, e.g. `'en-GB'` → `25/03/2024`,
+`'en-US'` → `3/25/2024`. Falls back to `undefined` (today's implicit runtime
+default) if the header is missing or malformed — `parseAcceptLanguage`
+(`lib/dates/parse-accept-language.ts`) validates the tag via `Intl` first,
+since the header is client-controlled input and a bad BCP 47 tag throws.
 
-```tsx
-{/* suppressHydrationWarning: toLocaleDateString() may differ between Node.js and browser */}
-<p className="text-xs text-gray-500 dark:text-gray-400" suppressHydrationWarning>
-  {new Date(createdAt).toLocaleDateString()}
-</p>
-```
+**Standalone pages** (`app/tests/[id]/page.tsx`, `app/tracks/[id]/page.tsx`,
+`app/systems/page.tsx`, `app/systems/[id]/page.tsx`) call `await
+getRequestLocale()` directly. **Reusable render components** (`FeedCard`,
+`SnapshotSection`) take an optional `locale?: string` prop instead — their
+parent page resolves it once and passes it down, rather than each row/instance
+re-resolving the same per-request header.
+
+This is also *why* `SnapshotSection` (a `'use client'` component) no longer
+needs `suppressHydrationWarning` on its date: before this, the bare
+`toLocaleDateString()` genuinely differed between the server's SSR pass
+(Node's locale) and the client's hydration pass (the browser's locale) — a
+real mismatch, band-aided rather than fixed. Passing `locale` as a prop
+resolved from `Accept-Language` makes the value identical on both passes
+(it's baked into the same SSR payload used for hydration), so the mismatch
+is gone, not just silenced. If you add a new locale-dependent client
+component, prefer threading `locale` down as a prop the same way — reaching
+for `suppressHydrationWarning` again is treating the symptom.
 
 ---
 

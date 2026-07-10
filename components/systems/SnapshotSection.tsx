@@ -42,6 +42,7 @@ type Props = {
   draws: number
   testCount: number
   isOwner: boolean
+  locale?: string
   children: ReactNode
 }
 
@@ -67,6 +68,7 @@ export default function SnapshotSection({
   draws,
   testCount,
   isOwner,
+  locale,
   children,
 }: Props) {
   const router = useRouter()
@@ -298,10 +300,8 @@ export default function SnapshotSection({
             {snapshot.notes && (
               <p className="text-xs text-gray-500 dark:text-gray-400">{snapshot.notes}</p>
             )}
-            {/* suppressHydrationWarning: toLocaleDateString() can differ between
-                Node.js (server SSR) and the browser; the mismatch is cosmetic. */}
-            <p className="text-xs text-gray-500 dark:text-gray-400" suppressHydrationWarning>
-              {new Date(snapshot.created_at).toLocaleDateString()}
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {new Date(snapshot.created_at).toLocaleDateString(locale)}
             </p>
           </div>
 

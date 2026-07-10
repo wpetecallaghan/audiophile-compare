@@ -44,6 +44,7 @@ function renderSection(
     draws?: number
     testCount?: number
     isOwner?: boolean
+    locale?: string
   } = {},
 ) {
   const {
@@ -53,6 +54,7 @@ function renderSection(
     draws = 0,
     testCount = 0,
     isOwner = true,
+    locale,
   } = opts
 
   render(
@@ -64,6 +66,7 @@ function renderSection(
       draws={draws}
       testCount={testCount}
       isOwner={isOwner}
+      locale={locale}
     >
       <p>Test history</p>
     </SnapshotSection>,
@@ -107,6 +110,11 @@ describe('SnapshotSection', () => {
     it('does not show the component list when components is null', () => {
       renderSection({ snapshot: SNAPSHOT_BARE })
       expect(screen.queryByText(/Akurate DS/)).not.toBeInTheDocument()
+    })
+
+    it('formats the snapshot date using the given locale (build step 49)', () => {
+      renderSection({ snapshot: SNAPSHOT, locale: 'en-GB' })
+      expect(screen.getByText('15/01/2024')).toBeInTheDocument()
     })
 
     it('shows win/loss/draw counts when present', () => {

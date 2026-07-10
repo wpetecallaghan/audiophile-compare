@@ -5,6 +5,7 @@ import type { FeedTest } from '@/components/feed/FeedCard'
 import { getTranslations } from 'next-intl/server'
 import { buttonVariants } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
+import { getRequestLocale } from '@/lib/dates/get-request-locale'
 
 const PAGE_SIZE = 20
 
@@ -20,6 +21,7 @@ export default async function HomePage({ searchParams }: Props) {
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const locale = await getRequestLocale()
 
   const { data, count, error } = await supabase
     .from('tests')
@@ -153,7 +155,7 @@ export default async function HomePage({ searchParams }: Props) {
       ) : (
         <ul className="space-y-2">
           {feedTests.map(test => (
-            <FeedCard key={test.id} test={test} />
+            <FeedCard key={test.id} test={test} locale={locale} />
           ))}
         </ul>
       )}

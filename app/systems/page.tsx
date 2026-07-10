@@ -4,11 +4,13 @@ import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { buttonVariants } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
+import { getRequestLocale } from '@/lib/dates/get-request-locale'
 
 export default async function SystemsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const t = await getTranslations('systems')
+  const locale = await getRequestLocale()
 
   if (!user) return null // middleware handles the redirect
 
@@ -83,7 +85,7 @@ export default async function SystemsPage() {
                       </p>
                     </div>
                     <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(system.created_at).toLocaleDateString()}
+                      {new Date(system.created_at).toLocaleDateString(locale)}
                     </span>
                   </div>
                 </Link>

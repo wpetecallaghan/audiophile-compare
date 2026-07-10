@@ -28,7 +28,7 @@ function statusBadge(
     : { text: t('statusBlind'),    status: 'blind' as const }
 }
 
-export default async function FeedCard({ test }: { test: FeedTest }) {
+export default async function FeedCard({ test, locale }: { test: FeedTest; locale?: string }) {
   const t = await getTranslations('feed')
   const tCommon = await getTranslations('common')
   const badge = statusBadge(test.status, test.has_dead_clip, t)
@@ -56,10 +56,7 @@ export default async function FeedCard({ test }: { test: FeedTest }) {
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {test.creator?.display_name ?? t('anonymous')}
               {' · '}
-              {/* suppressHydrationWarning: toLocaleDateString() may differ between Node.js and browser locale */}
-              <span suppressHydrationWarning>
-                {new Date(test.created_at).toLocaleDateString()}
-              </span>
+              {new Date(test.created_at).toLocaleDateString(locale)}
               {' · '}
               {test.vote_count} {test.vote_count === 1 ? 'vote' : 'votes'}
               {test.is_imported && (

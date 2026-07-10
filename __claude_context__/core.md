@@ -208,9 +208,9 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-Steps 1–48 complete: core app (1–29, 40–48) plus the forum-ingestion
-pipeline (30–39) through a real production import. Current unit suite: 39
-files / 452 tests passing (`npm run test`); integration suite (`npm run
+Steps 1–49 complete: core app (1–29, 40–49) plus the forum-ingestion
+pipeline (30–39) through a real production import. Current unit suite: 40
+files / 460 tests passing (`npm run test`); integration suite (`npm run
 test:integration`, testing.md §11): 17/17 passing against real staging.
 
 Full step-by-step detail, one file per step: `build-history/index.md`

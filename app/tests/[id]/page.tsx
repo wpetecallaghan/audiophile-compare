@@ -19,6 +19,7 @@ import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
 import { Badge } from '@/components/ui/Badge'
 import { formatSnapshotLine, type SnapshotSummary } from '@/lib/tests/format-snapshot-line'
+import { getRequestLocale } from '@/lib/dates/get-request-locale'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -31,6 +32,7 @@ export default async function TestDetailPage({ params }: Props) {
   const t = await getTranslations('tests')
   const tCommon = await getTranslations('common')
   const tForumLink = await getTranslations('tests.forumLink')
+  const locale = await getRequestLocale()
 
   const { data: test, error } = await supabase
     .from('tests')
@@ -218,7 +220,7 @@ export default async function TestDetailPage({ params }: Props) {
         )}
         <p className="text-xs text-gray-500 dark:text-gray-400">
           by {creator?.display_name ?? t('anonymous')} ·{' '}
-          {new Date(test.created_at).toLocaleDateString()} ·{' '}
+          {new Date(test.created_at).toLocaleDateString(locale)} ·{' '}
           {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
           {isImported && (
             <>

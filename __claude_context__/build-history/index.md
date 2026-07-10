@@ -63,3 +63,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 46 | Optional, editable forum discussion link | [46-forum-discussion-link.md](46-forum-discussion-link.md) |
 | 47 | "Imported" badge survives a claim | [47-imported-badge-survives-claim.md](47-imported-badge-survives-claim.md) |
 | 48 | Monochrome favicon from a supplied portrait | [48-monochrome-favicon.md](48-monochrome-favicon.md) |
+| 49 | Format dates using the visiting browser's locale | [49-browser-locale-dates.md](49-browser-locale-dates.md) |
