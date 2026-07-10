@@ -284,6 +284,22 @@ The creator can replace a dead clip's URL via `PATCH /api/clips/[id]`, but
 only while the test has zero votes — the same "frozen forever after a
 vote" rule as deleting a test (step 26).
 
+**One-day grace period before `dead` (step 50).** The cron never jumps a
+clip straight from `ok` to `dead` in a single run — a bad check only
+demotes by one step (`ok → degraded`); it takes a *second* consecutive
+daily bad check to actually reach `dead` (`lib/clips/next-url-status.ts`,
+composed with `checkDirectUrl`'s raw per-check result in the cron route).
+A successful check always recovers to `ok` immediately, no grace period on
+the way up. This exists because a real production false positive traced
+back to a Cloudflare-fronted host's bot-mitigation blocking the cron's
+HEAD request (no `User-Agent` header, a datacenter IP — the classic
+"uptime checker says down, browser says fine" pattern) — the request
+returned a `4xx`, which the health check had always mapped straight to
+`dead` with zero tolerance, unlike `5xx`/timeout which already had a
+`degraded` grace state. The grace period generalizes that same tolerance
+to any single bad check, not just `5xx`/timeout, without weakening
+detection of a URL that's actually gone (still reached within two days).
+
 **`clips` was missing its UPDATE policy on the live database** — present
 in the initial schema migration file, absent from `pg_policies` when
 actually queried, for reasons that predate this step and were never

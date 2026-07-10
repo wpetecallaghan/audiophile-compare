@@ -3,6 +3,8 @@ import type { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { detectProvider } from '@/lib/clips/detect-provider'
 import { checkDirectUrl } from '@/lib/clips/check-url'
+import type { UrlStatus } from '@/lib/clips/check-url'
+import { nextUrlStatus } from '@/lib/clips/next-url-status'
 
 // GET /api/cron/check-urls
 //
@@ -42,8 +44,14 @@ export async function GET(request: NextRequest) {
 
     const updates: Record<string, string> = {}
 
-    if (result.url_status !== clip.url_status) {
-      updates.url_status = result.url_status
+    // One-day grace period before a clip is marked 'dead' — see
+    // lib/clips/next-url-status.ts. Absorbs one-off false positives (e.g. a
+    // host's bot-mitigation blocking this cron's request) without weakening
+    // detection of a URL that's actually gone; a persistently dead URL still
+    // reaches 'dead' within two daily runs.
+    const nextStatus = nextUrlStatus(clip.url_status as UrlStatus, result.url_status)
+    if (nextStatus !== clip.url_status) {
+      updates.url_status = nextStatus
     }
 
     // Upgrade media_type from 'unknown' when the HEAD response tells us more.
