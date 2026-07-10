@@ -222,6 +222,22 @@ separate path — it doesn't change `DELETE /api/tests/[id]`'s own behavior,
 which still refuses a voted-on test exactly as before for any normal,
 self-service caller.
 
+### Rule 7 — clip health rules (step 27)
+
+- `POST /api/votes` re-checks every chosen clip's `url_status` and returns
+  409 if any is `dead` — defense in depth behind the UI, which already
+  hides the vote form when `hasDeadClip` is true. `degraded` never blocks
+  voting (may be transient).
+- `PATCH /api/clips/[id]` — creator only (via the clip's parent test); 409
+  if the test has any vote. Trusts the client-supplied verified fields
+  (`source_url`/`provider`/`media_type`/`url_status`) the same way
+  `POST /api/tests` already does — the client already called
+  `POST /api/clips/verify` moments earlier — rather than re-verifying
+  server-side.
+
+See `audiophile-compare-schema.md`'s "Clip health rules" section for the
+full design, including the missing-RLS-policy incident above.
+
 ### Rule 8 — admin-gated routes/pages (step 39's `/version` precedent, extended by step 38)
 
 Session + `isAdminEmail(user.email)` (`lib/admin/is-admin-email.ts`,
@@ -248,21 +264,32 @@ page.tsx` / `app/api/admin/claim/route.ts` (step 39 — calls
 `claim_placeholder` via the admin client, then `admin.auth.admin.
 deleteUser()` for the now-merged placeholder identity).
 
-### Rule 7 — clip health rules (step 27)
+### Rule 9 — system/snapshot identity is never disclosed until revealed (step 43)
 
-- `POST /api/votes` re-checks every chosen clip's `url_status` and returns
-  409 if any is `dead` — defense in depth behind the UI, which already
-  hides the vote form when `hasDeadClip` is true. `degraded` never blocks
-  voting (may be transient).
-- `PATCH /api/clips/[id]` — creator only (via the clip's parent test); 409
-  if the test has any vote. Trusts the client-supplied verified fields
-  (`source_url`/`provider`/`media_type`/`url_status`) the same way
-  `POST /api/tests` already does — the client already called
-  `POST /api/clips/verify` moments earlier — rather than re-verifying
-  server-side.
+Which systems/components are under comparison must not be disclosed until
+a test is revealed or the viewer is its creator — page-level, like Rule 3,
+not just an `app/api/` route rule.
 
-See `audiophile-compare-schema.md`'s "Clip health rules" section for the
-full design, including the missing-RLS-policy incident above.
+```typescript
+const canSeeSystemInfo =
+  test?.status === 'revealed' || test?.creator_id === user?.id
+
+if (!canSeeSystemInfo) {
+  // Redact snapshot_a/snapshot_b before render; for list pages, redact
+  // per-row after the shared query rather than a query-level filter,
+  // since other row fields must still render regardless of entitlement.
+}
+```
+
+Deliberately **not** `|| hasVoted`, unlike Rule 2's `canSeeTally` — a
+voter who hasn't yet had the test revealed still shouldn't learn which
+systems were compared just because they voted. Ingested test titles no
+longer bake the system name in either (`resolveTestTitle`'s fallback
+reverted from step 40 Part B) — there's no reliable way to disclose it
+only once revealed since the title is fixed once at ingest time. See
+`components.md §8` for the three different implementation mechanisms
+across the three affected pages, and
+`build-history/43-hide-blind-test-system-info.md` for the full design.
 
 ---
 

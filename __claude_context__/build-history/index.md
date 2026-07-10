@@ -57,3 +57,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 40 | Surface system/snapshot info consistently: test detail page + ingested test titles | [40-system-snapshot-info-consistency.md](40-system-snapshot-info-consistency.md) |
 | 41 | Surface admin page links on the profile page | [41-admin-page-links-profile.md](41-admin-page-links-profile.md) |
 | 42 | Correct /about, /privacy, /terms against real functionality | [42-about-privacy-terms-correction.md](42-about-privacy-terms-correction.md) |
+| 43 | Hide system/component identity on blind tests | [43-hide-blind-test-system-info.md](43-hide-blind-test-system-info.md) |

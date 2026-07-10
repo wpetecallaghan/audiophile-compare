@@ -18,7 +18,7 @@ test.beforeAll(async () => {
 })
 
 test.describe('Voting flow', () => {
-  test('before voting: tally is hidden but vote count and snapshot info are visible', async ({ page }) => {
+  test('before voting, as the creator: tally is hidden but system/snapshot info and vote count are visible (creator entitlement)', async ({ page }) => {
     await page.goto(routes.test(fixture.test.id))
 
     // The vote count should be visible to all (public stat). Not sourced from
@@ -29,16 +29,38 @@ test.describe('Voting flow', () => {
     // Tally bars (percentages) should NOT be visible before the user votes
     await expect(page.getByText(/%/)).not.toBeVisible()
 
-    // System/snapshot info (build-history.md step 40 Part A) is neutral,
-    // non-spoiling information — it must already be visible before any
-    // reveal action, not gated behind isRevealed the way the mapping/tally
-    // above are.
+    // System/snapshot info is gated by canSeeSystemInfo = isRevealed ||
+    // isCreator (step 43) — this session IS the test's creator
+    // (seedCompleteTest's default creatorId), so it's entitled to see it
+    // even though the test is still blind. See the next test for the
+    // non-creator case, which must NOT see this.
     await expect(
       page.getByText(`${fixture.systemA.name} · ${fixture.snapshotA.label}`),
     ).toBeVisible()
     await expect(
       page.getByText(`${fixture.systemB.name} · ${fixture.snapshotB.label}`),
     ).toBeVisible()
+  })
+
+  test('before voting, as a non-creator: system/snapshot info is hidden on a blind test', async ({ browser }) => {
+    // Use an empty context (no cookies) to simulate a non-creator viewer —
+    // the harness has only one real authenticated E2E identity (the test's
+    // own creator), so a logged-out session is the closest available stand-in
+    // for "not the creator." canSeeSystemInfo's isCreator check doesn't
+    // distinguish anonymous from a different authenticated user either way.
+    const context = await browser.newContext({ storageState: undefined })
+    const page = await context.newPage()
+
+    await page.goto(routes.test(fixture.test.id))
+
+    await expect(
+      page.getByText(`${fixture.systemA.name} · ${fixture.snapshotA.label}`),
+    ).not.toBeVisible()
+    await expect(
+      page.getByText(`${fixture.systemB.name} · ${fixture.snapshotB.label}`),
+    ).not.toBeVisible()
+
+    await context.close()
   })
 
   test('cast a vote: select clip A for the first technique → Save votes', async ({ page }) => {
@@ -83,11 +105,35 @@ test.describe('Voting flow', () => {
     // a warning panel with a second "Yes, reveal" button
     await page.getByRole(ROLE.button, { name: m.tests.reveal.confirmButton }).click()
 
-    // After reveal, the test is in revealed state — clip mapping is shown
+    // Wait for the reveal button itself to be gone, not for `mapping.before`
+    // ("Before") text to appear — ConfirmButton.tsx's own confirmWarning
+    // copy ("...will see the result before they vote") contains the word
+    // "before" and stays mounted for the whole confirming/pending duration,
+    // so asserting on that text (as this test previously did, paired via
+    // `.or()`) can pass as a false positive before the reveal API call has
+    // actually completed. The reveal button disappearing only once the page
+    // re-renders with isRevealed=true from a real server round-trip is a
+    // reliable signal; the next test in this file depends on the reveal
+    // having genuinely completed by the time this test finishes.
+    await expect(revealButton).not.toBeVisible({ timeout: 5_000 })
+    await expect(page.getByText(m.tests.revealedStatus).first()).toBeVisible()
+  })
+
+  test('after reveal: system/snapshot info is visible to a non-creator too', async ({ browser }) => {
+    // Runs after the previous test has revealed fixture.test — canSeeSystemInfo
+    // = isRevealed || isCreator is now true for anyone, not just the creator.
+    const context = await browser.newContext({ storageState: undefined })
+    const page = await context.newPage()
+
+    await page.goto(routes.test(fixture.test.id))
+
     await expect(
-      page.getByText(m.tests.revealedStatus).or(page.getByText(m.tests.mapping.before)).first(),
-    ).toBeVisible({
-      timeout: 5_000,
-    })
+      page.getByText(`${fixture.systemA.name} · ${fixture.snapshotA.label}`),
+    ).toBeVisible()
+    await expect(
+      page.getByText(`${fixture.systemB.name} · ${fixture.snapshotB.label}`),
+    ).toBeVisible()
+
+    await context.close()
   })
 })

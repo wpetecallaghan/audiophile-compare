@@ -225,23 +225,13 @@ describe('resolveTestTitle', () => {
     expect(title).toBe('DAC shootout')
   })
 
-  it('falls back to "system · artist – title" when omitted, deduplicating the shared system name', () => {
+  it('falls back to "artist – title" when omitted, never disclosing system identity', () => {
     const title = resolveTestTitle(validPayload())
-    expect(title).toBe(`${SYSTEM_NAME} · ${ARTIST} – ${TRACK_TITLE}`)
+    expect(title).toBe(`${ARTIST} – ${TRACK_TITLE}`)
   })
 
   it('falls back when title is whitespace-only', () => {
     const title = resolveTestTitle(validPayload({ title: '   ' }))
-    expect(title).toBe(`${SYSTEM_NAME} · ${ARTIST} – ${TRACK_TITLE}`)
-  })
-
-  it('joins both system names with "/" when snapshot_a and snapshot_b genuinely differ', () => {
-    const title = resolveTestTitle(
-      validPayload({
-        snapshot_a: { system_name: 'Living room rig', version_label: VERSION_LABEL },
-        snapshot_b: { system_name: 'Office rig', version_label: 'v3 — new cables' },
-      }),
-    )
-    expect(title).toBe(`Living room rig / Office rig · ${ARTIST} – ${TRACK_TITLE}`)
+    expect(title).toBe(`${ARTIST} – ${TRACK_TITLE}`)
   })
 })

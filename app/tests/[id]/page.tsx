@@ -50,6 +50,7 @@ export default async function TestDetailPage({ params }: Props) {
 
   const isCreator  = user?.id === test.creator_id
   const isRevealed = test.status === 'revealed'
+  const canSeeSystemInfo = isRevealed || isCreator
 
   // clip_mapping: only fetch if entitled
   let mapping: { before_clip_id: string; after_clip_id: string } | null = null
@@ -144,11 +145,11 @@ export default async function TestDetailPage({ params }: Props) {
   const creator = Array.isArray(test.creator) ? test.creator[0] : test.creator
 
   // Same normalization, one level deeper for snapshot_a/snapshot_b's own
-  // nested system join — see lib/tests/format-snapshot-line.ts (step 40
-  // Part A), shared with the feed's identical "SystemName · label"
-  // presentation, shown unconditionally (never gated behind isRevealed —
-  // naming which two snapshots are compared doesn't disclose before/after
-  // identity or which one people preferred).
+  // nested system join — see lib/tests/format-snapshot-line.ts, shared with
+  // the feed's identical "SystemName · label" presentation. Gated behind
+  // canSeeSystemInfo (step 43) — which systems/components are under
+  // comparison must not be disclosed until the test is revealed or the
+  // viewer is its creator.
   function normalizeSnapshot(raw: unknown): SnapshotSummary {
     const snap = (Array.isArray(raw) ? raw[0] : raw) as
       | { label: string; system: { name: string } | { name: string }[] | null }
@@ -157,8 +158,8 @@ export default async function TestDetailPage({ params }: Props) {
     const system = Array.isArray(snap.system) ? snap.system[0] : snap.system
     return { label: snap.label, system: system ?? null }
   }
-  const snapshotA = normalizeSnapshot(test.snapshot_a)
-  const snapshotB = normalizeSnapshot(test.snapshot_b)
+  const snapshotA = canSeeSystemInfo ? normalizeSnapshot(test.snapshot_a) : null
+  const snapshotB = canSeeSystemInfo ? normalizeSnapshot(test.snapshot_b) : null
   const snapshotLine = formatSnapshotLine(snapshotA, snapshotB)
 
   return (

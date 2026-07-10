@@ -26,6 +26,7 @@ export default async function HomePage({ searchParams }: Props) {
     .select(
       `
         id, title, status, created_at,
+        creator_id,
         creator:users!creator_id(display_name, is_placeholder),
         track:tracks(artist, title),
         snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
@@ -42,6 +43,7 @@ export default async function HomePage({ searchParams }: Props) {
     title: string
     status: string
     created_at: string
+    creator_id: string
     creator:
       | { display_name: string | null; is_placeholder: boolean }
       | { display_name: string | null; is_placeholder: boolean }[]
@@ -77,6 +79,13 @@ export default async function HomePage({ searchParams }: Props) {
     const sysA = rawA ? (Array.isArray(rawA.system) ? rawA.system[0] : rawA.system) : null
     const sysB = rawB ? (Array.isArray(rawB.system) ? rawB.system[0] : rawB.system) : null
 
+    // Which systems/components are under comparison must not be disclosed
+    // until the test is revealed or the viewer is its creator (step 43) —
+    // redacted per row here since a single feed query mixes tests of every
+    // status, so this can't be filtered at the query level like the whole
+    // rows in app/systems/[id]/page.tsx are.
+    const canSeeSystemInfo = t.status === 'revealed' || t.creator_id === user?.id
+
     return {
       id:         t.id,
       title:      t.title,
@@ -85,8 +94,8 @@ export default async function HomePage({ searchParams }: Props) {
       vote_count: voteCountMap.get(t.id) ?? 0,
       creator:    creator ?? null,
       track:      track   ?? null,
-      snapshot_a: rawA ? { label: rawA.label, system: sysA ?? null } : null,
-      snapshot_b: rawB ? { label: rawB.label, system: sysB ?? null } : null,
+      snapshot_a: canSeeSystemInfo && rawA ? { label: rawA.label, system: sysA ?? null } : null,
+      snapshot_b: canSeeSystemInfo && rawB ? { label: rawB.label, system: sysB ?? null } : null,
       has_dead_clip: t.clips.some(c => c.url_status === 'dead'),
     }
   })

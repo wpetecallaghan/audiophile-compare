@@ -82,6 +82,11 @@ export default async function SystemDetailPage({ params }: Props) {
   let allTests: TestRow[] = []
 
   if (snapshotIds.length > 0) {
+    // Which systems/components are under comparison must not be disclosed
+    // until a test is revealed or the viewer is its creator (step 43) — a
+    // blind test involving one of this system's snapshots is excluded
+    // entirely here (whole row, not a redacted field), since this page is
+    // reachable by any logged-in user, not just the system's owner.
     const { data: tests } = await supabase
       .from('tests')
       .select(`
@@ -93,6 +98,7 @@ export default async function SystemDetailPage({ params }: Props) {
       .or(
         `snapshot_a_id.in.(${snapshotIds.join(',')}),snapshot_b_id.in.(${snapshotIds.join(',')})`,
       )
+      .or(`status.eq.revealed,creator_id.eq.${user?.id ?? '00000000-0000-0000-0000-000000000000'}`)
       .order('created_at', { ascending: false })
 
     allTests = (tests ?? []) as TestRow[]

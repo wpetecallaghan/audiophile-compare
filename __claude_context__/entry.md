@@ -8,7 +8,7 @@ description: >
 
 # Audiophile Compare — Entry Point
 
-Blind A/B comparison app for hi-fi audio systems. Next.js 16+ App Router, Supabase (Postgres + Auth), Tailwind CSS, Vercel. Steps 1–42 complete (core app plus the forum-ingestion pipeline through a real production import, data erasure requests, and the claim flow) — see `build-history/index.md` and `build-history-ingestion/index.md`. 38 unit test files / 440 tests passing.
+Blind A/B comparison app for hi-fi audio systems. Next.js 16+ App Router, Supabase (Postgres + Auth), Tailwind CSS, Vercel. Steps 1–43 complete (core app plus the forum-ingestion pipeline through a real production import, data erasure requests, the claim flow, and hiding blind-test system identity) — see `build-history/index.md` and `build-history-ingestion/index.md`. 38 unit test files / 439 tests passing.
 
 ## Step 1 — Always read core.md first
 
@@ -32,5 +32,6 @@ Blind A/B comparison app for hi-fi audio systems. Next.js 16+ App Router, Supaba
 - Default to server components. Add `'use client'` only when required — see `components.md §1`.
 - Client components **cannot** import `lib/supabase/server.ts`.
 - `clip_mapping` is never returned to the client until `tests.status = 'revealed'` or the caller is the test creator — see `api-conventions.md §4`.
+- System/snapshot identity (`canSeeSystemInfo`) is never disclosed until `tests.status = 'revealed'` or the caller is the test creator — see `api-conventions.md` Rule 9.
 - All user-facing strings go in `messages/en.json` — never hardcoded in components.
 - Migrations apply to staging first, then production.

@@ -272,15 +272,36 @@ const ownerId = Array.isArray(sys) ? sys[0]?.owner_id : sys?.owner_id
 YouTube IFrame API types are declared in `types/youtube.d.ts` (extends the `Window` interface).
 `next-intl` message types are extended in `types/next-intl.d.ts` — unknown i18n keys are TypeScript errors.
 
-**`lib/tests/format-snapshot-line.ts`** (step 40 Part A) — the shared
+**`lib/tests/format-snapshot-line.ts`** — the shared
 "`SystemName · label`  vs  `SystemName · label`" formatter, extracted so
 `components/feed/FeedCard.tsx` and `app/tests/[id]/page.tsx` don't each
 reimplement the same join/format logic. Each call site still does its own
 array-vs-object normalization (the pattern above) on the raw Supabase join
 before calling it — the helper itself just takes the already-normalized
-`SnapshotSummary` shape. Shown unconditionally on both pages, never gated
-behind reveal status: naming which two snapshots are being compared
-doesn't disclose before/after identity or which one people preferred.
+`SnapshotSummary` shape and has no visibility opinion of its own; it's the
+caller's job to pass `null` for either side when the viewer isn't entitled.
+
+**Which systems/components are under comparison is gated by
+`canSeeSystemInfo = isRevealed || isCreator` (step 43)** — deliberately
+stricter than `canSeeTally`'s `isRevealed || hasVoted`; voting doesn't
+unblind which systems were compared. Three different mechanisms, chosen
+per surface's query shape rather than forced to one — intentional, not an
+inconsistency to "fix":
+- `app/tests/[id]/page.tsx` (single row) — post-fetch redaction: `null` out
+  the normalized snapshot values before calling `formatSnapshotLine`.
+- `app/page.tsx` + `FeedCard.tsx` (list, mixed reveal status, one query) —
+  per-row post-fetch redaction, since a list query can't conditionally
+  omit a join per-row and every row's title/badge/vote-count must still
+  render regardless of entitlement — only the snapshot sub-field is
+  sensitive.
+- `app/systems/[id]/page.tsx` (list of whole test rows grouped per
+  snapshot) — query-level `.or()` filter (`status.eq.revealed,creator_id.eq.<uuid>`),
+  since whole rows are excluded here, not a sub-field, so filtering at the
+  query avoids fetching track/clip data for a row that will never render.
+
+Ingested test titles also used to bake the system name in (step 40 Part
+B); reverted by step 43 for the same reason — see
+`lib/ingestion/ingest-test-payload.ts`'s `resolveTestTitle`.
 
 ---
 

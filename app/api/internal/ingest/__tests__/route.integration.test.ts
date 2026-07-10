@@ -129,11 +129,12 @@ describe('POST /api/internal/ingest (integration)', () => {
       .single()
 
     expect(testRow?.source_url).toBe('https://www.lejonklou.com/forum/viewtopic.php?f=2&t=3233#p187')
-    // build-history.md step 40 Part B: no explicit title in the payload,
-    // so resolveTestTitle's fallback runs — "system · artist – title",
-    // deduplicated since this fixture's snapshot_a/snapshot_b share one
-    // system name.
-    expect(testRow?.title).toBe(`${SYSTEM_NAME} · ${TRACK_ARTIST} – ${TRACK_TITLE}`)
+    // build-history/43-hide-blind-test-system-info.md: no explicit title in
+    // the payload, so resolveTestTitle's fallback runs — "artist – title",
+    // never disclosing system identity (reverted step 40 Part B's
+    // system-name prefix, which leaked which system was under test on
+    // still-blind imported tests).
+    expect(testRow?.title).toBe(`${TRACK_ARTIST} – ${TRACK_TITLE}`)
   })
 
   it('is a no-op when re-run with the same source_ref', async () => {
