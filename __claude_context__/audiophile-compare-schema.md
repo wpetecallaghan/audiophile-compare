@@ -13,6 +13,23 @@ comparison app. Read this file when writing queries, migrations, or RLS policies
 
 ---
 
+## Migration files are immutable once applied
+
+**Never edit a migration file after it has been applied to a database
+(staging or production) — write a new migration that layers on top
+instead.** `supabase db push` tracks which migrations have run by
+filename; editing an already-applied file's contents doesn't cause it to
+re-run, so the edit silently does nothing on that database — the schema
+and the file on disk quietly diverge.
+
+Check `supabase migration list` against the target project if unsure
+whether a file is still safe to edit. This isn't a hypothetical risk: it
+caused a real shipped bug — a migration edit meant to restore a dropped
+column silently no-opped on the already-applied file, see
+`build-history-ingestion/36-commit.md` finding 9 for the full account.
+
+---
+
 ## Tables and columns
 
 ```sql
@@ -279,7 +296,7 @@ public, stable, embeddable URL for third-party use. See `components.md`
 
 ### Placeholder authors (step 30)
 
-Forum-ingested content (see `build-history-ingestion.md`) is attributed to
+Forum-ingested content (see `build-history-ingestion/index.md`) is attributed to
 a real, full `users` row per external author — not a single shared bot
 user, and not a nullable-owner schema — so ownership works identically to
 any real account everywhere in the app. `is_placeholder = true` marks these
@@ -293,8 +310,7 @@ admin/service-role client, which is also why neither needs a write RLS
 policy (see the table above). When a real person eventually claims their
 imported content, the expected merge repoints `import_authors.user_id`
 (preserving the "this account is forum-user X" fact) rather than deleting
-the row — planned as `build-history-ingestion.md` step 39 (claim flow),
-not yet built.
+the row — see `build-history-ingestion/39-claim-flow.md` for the full design.
 
 ### ingest_test function (step 31)
 
@@ -324,8 +340,8 @@ with the anon key: calling the RPC returns `401`,
 ### Data erasure functions (step 38)
 
 Three `security definer` Postgres functions supporting admin-triggered,
-human-verified removal of a user's data — see `build-history-ingestion.md`
-step 38 for the full design. Called via `.rpc(...)` from
+human-verified removal of a user's data — see `build-history-ingestion/38-data-erasure-requests.md`
+for the full design. Called via `.rpc(...)` from
 `app/api/admin/erase-user-data/route.ts`, never directly from the client.
 Not the same thing as `scripts/rollback-lejonklou.ts`/`lib/ingestion/
 rollback.ts` (an interim ingestion-pipeline-only tool, unrelated to this).
@@ -361,7 +377,7 @@ only to `service_role`.
 
 A `security definer` Postgres function merging a placeholder identity
 (an imported forum author who hasn't joined the app) into a real,
-registered account — see `build-history-ingestion.md` step 39 for the
+registered account — see `build-history-ingestion/39-claim-flow.md` for the
 full design. Called via `.rpc(...)` from `app/api/admin/claim/route.ts`,
 never directly from the client.
 

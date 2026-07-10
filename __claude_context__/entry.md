@@ -8,7 +8,7 @@ description: >
 
 # Audiophile Compare — Entry Point
 
-Blind A/B comparison app for hi-fi audio systems. Next.js 16+ App Router, Supabase (Postgres + Auth), Tailwind CSS, Vercel. Steps 1–37 and 40 complete (core app plus the forum-ingestion pipeline through a real production import); steps 38 (data erasure requests) and 39 (claim flow) planned but not yet built — see `build-history-ingestion.md`. 37 unit test files / 440 tests passing.
+Blind A/B comparison app for hi-fi audio systems. Next.js 16+ App Router, Supabase (Postgres + Auth), Tailwind CSS, Vercel. Steps 1–42 complete (core app plus the forum-ingestion pipeline through a real production import, data erasure requests, and the claim flow) — see `build-history/index.md` and `build-history-ingestion/index.md`. 38 unit test files / 440 tests passing.
 
 ## Step 1 — Always read core.md first
 
@@ -22,8 +22,8 @@ Blind A/B comparison app for hi-fi audio systems. Next.js 16+ App Router, Supaba
 | Components / pages | `components.md` |
 | Tests | `testing.md` |
 | Queries / migrations / RLS | `audiophile-compare-schema.md` |
-| Build history / orientation | `build-history.md` |
-| Forum ingestion pipeline (scraper, extraction, commit, rollback, erasure) | `build-history-ingestion.md` |
+| Build history / orientation | `build-history/index.md`, then the specific step file |
+| Forum ingestion pipeline (scraper, extraction, commit, rollback, erasure) | `build-history-ingestion/index.md`, then the specific step file |
 | Deferred features (ingestion, storage, mobile) | `deferred-features.md` |
 | Writing or reviewing code (app or test) that repeats a string literal | `repeated-string-constants.md` |
 

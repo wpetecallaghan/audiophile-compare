@@ -360,7 +360,7 @@ warning can be safely ignored. `middleware.ts` continues to work in Next.js 16+.
 ## 12. Visual design system (established in build step 20)
 
 Established by an audit of actual class usage, not arbitrary rules — see
-`build-history.md` step 20 for the full rationale. Buttons and status badges
+`build-history/20-visual-polish.md` for the full rationale. Buttons and status badges
 are now real components (`components/ui/Button.tsx`, `Badge.tsx`, built on
 `class-variance-authority` — see `docs/dependencies.md`) specifically because
 hand-copying the same class string into 15+ files is how the drift this step
@@ -469,8 +469,8 @@ import { Link } from '@/components/ui/Link'
 <Link href={`/tests/${id}`} size="compact">Test exists →</Link>              {/* smaller inline CTA, e.g. dense lists */}
 ```
 Three roles (`nav | card | inline`, `inline` default) — see `Link.tsx`'s
-`cva` config for the exact classes per variant, and `build-history.md` step
-21 for the audit behind them. `card`'s `block` vs `flex items-center
+`cva` config for the exact classes per variant, and `build-history/21-link-component.md`
+for the audit behind them. `card`'s `block` vs `flex items-center
 justify-between` is a real per-page layout difference, not part of the
 variant — pass it via `className`. `size` (`standard` default `| compact`)
 only affects `variant="inline"`; don't rely on a plain `className` override
@@ -616,7 +616,7 @@ gap from before `messages/en.json` was the rule for all user-facing
 text (step 15) — left as-is rather than fixed in passing, since that gap
 isn't this step's job to close.
 
-See `build-history.md` step 22 for the full audit behind these five
+See `build-history/22-componentize-form-elements.md` for the full audit behind these five
 components (exact occurrence counts, and the bugs found and fixed along
 the way — a missing dark-mode variant on an info box, a stray `green-700`,
 two disagreeing "compact" field sizes, three disagreeing "muted" label

@@ -145,7 +145,7 @@ votes → clip_mapping → clips → tests → system_snapshots → systems → 
 Reused beyond just E2E teardown: `lib/ingestion/rollback.ts` (votes →
 clip_mapping → clips → tests, stopping there — see its own file for why)
 and, once built, step 38's `erase_user_content` (the full order above,
-minus tracks — see `build-history-ingestion.md` step 38's plan for why
+minus tracks — see `build-history-ingestion/38-data-erasure-requests.md` for why
 tracks are never deleted by either).
 
 ---
@@ -288,11 +288,11 @@ system under the same author reuses it rather than duplicating; two
 different authors naming the same system each get their own system row;
 `status`/`revealed_at` are set to `'revealed'`/non-null when the payload
 carries at least one vote and left `'open'`/`null` when it has none
-(build-history-ingestion.md step 36 finding 8); an explicit `created_at`
+(build-history-ingestion/36-commit.md finding 8); an explicit `created_at`
 in the payload becomes the real `tests.created_at`, and omitting it still
 falls back to ingestion time exactly as before; the created test's title
 follows `resolveTestTitle`'s new "system · artist – title" fallback
-format (build-history.md step 40 Part B); a request with the wrong
+format (build-history/40-system-snapshot-info-consistency.md Part B); a request with the wrong
 `x-ingest-secret` is rejected with 403.
 
 **Coverage** (`app/api/admin/erase-user-data/__tests__/route.integration.test.ts`,
@@ -328,5 +328,5 @@ technique_id)` the placeholder did, the placeholder's colliding vote is
 dropped and the real user's own vote survives untouched, rather than the
 merge erroring (decision 5); rejects an anon-key caller (EXECUTE
 lockdown). Requires this step's migration to be applied first (see
-build-history-ingestion.md step 39 for the exact filename and staging/
+build-history-ingestion/39-claim-flow.md for the exact filename and staging/
 production apply status once run).

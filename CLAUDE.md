@@ -22,6 +22,7 @@ GitHub staging → Vercel Preview    → Supabase audiophile-staging
 ```
 
 Migrations apply independently to each project — apply to staging first, then production.
+Never edit a migration file once it has been applied to any project — `supabase db push` tracks applied files by filename, so an edit to one silently no-ops. Write a new migration instead.
 
 ## Server vs client — decision rule
 
@@ -39,7 +40,7 @@ All detailed context is in `__claude_context__/`. Read `core.md` first for the f
 | Components / pages | `components.md` |
 | Tests | `testing.md` |
 | Queries / migrations / RLS | `audiophile-compare-schema.md` |
-| Build history / orientation | `build-history.md` |
-| Forum ingestion pipeline (scraper, extraction, commit, rollback, erasure) | `build-history-ingestion.md` |
+| Build history / orientation | `build-history/index.md`, then the specific step file |
+| Forum ingestion pipeline (scraper, extraction, commit, rollback, erasure) | `build-history-ingestion/index.md`, then the specific step file |
 | Deferred features (ingestion, storage, mobile) | `deferred-features.md` |
 | Writing or reviewing code (app or test) that repeats a string literal | `repeated-string-constants.md` |

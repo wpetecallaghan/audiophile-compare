@@ -57,8 +57,8 @@ Read `entry.md` first, then the file for your task:
 | [__claude_context__/components.md](__claude_context__/components.md) | Component patterns, MediaPlayer contracts, wizard state, mobile responsiveness, error boundaries |
 | [__claude_context__/testing.md](__claude_context__/testing.md) | Unit and E2E conventions, test inventory, vitest mocks, Playwright strategy |
 | [__claude_context__/audiophile-compare-schema.md](__claude_context__/audiophile-compare-schema.md) | Complete database schema, RLS policies, query patterns, auth triggers |
-| [__claude_context__/build-history.md](__claude_context__/build-history.md) | Build step log — core app steps (1–29, 40) with implementation notes |
-| [__claude_context__/build-history-ingestion.md](__claude_context__/build-history-ingestion.md) | Build step log — forum ingestion pipeline (steps 30–39): scraper, extraction, commit, rollback, data erasure |
+| [__claude_context__/build-history/](__claude_context__/build-history/index.md) | Build step log, one file per step (1–42) — core app steps with implementation notes |
+| [__claude_context__/build-history-ingestion/](__claude_context__/build-history-ingestion/index.md) | Build step log, one file per step — forum ingestion pipeline (steps 30–39): scraper, extraction, commit, rollback, data erasure |
 | [__claude_context__/deferred-features.md](__claude_context__/deferred-features.md) | Deferred feature notes: agentic ingestion pipeline, owned blob storage, mobile app |
 | [__claude_context__/repeated-string-constants.md](__claude_context__/repeated-string-constants.md) | Convention: extract repeated string literals into scoped named constants |
 

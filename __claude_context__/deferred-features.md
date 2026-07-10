@@ -18,23 +18,23 @@ Neither use case is currently implemented. `source_ref` is already included in t
 
 ### Use case 1 — Forum ingestion pipeline
 
-**No longer purely deferred — actively planned as build-history.md steps
+**No longer deferred — built as `build-history/index.md` steps
 30, 31, 33, and 35–39 (plus steps 32 and 34 — import provenance UI, Google
-Drive clip provider support — detailed directly in `build-history.md`),
-with the full pipeline step-by-step plan in `build-history-ingestion.md`.**
+Drive clip provider support — detailed directly in `build-history/`),
+with the full pipeline step-by-step plan in `build-history-ingestion/index.md`.**
 That plan diverges from the "single `ingestion_bot` owns everything" model
 described just below: it attributes each import to a per-forum-author
 placeholder identity instead, so a later merge step can hand real people
 their own content once they join. The rest of this section remains as
 background/rationale for the parts that didn't change (idempotency via
 `source_ref`, the ingest endpoint's general shape, the "no separate Go
-service" decision) — see `build-history-ingestion.md` for what's current.
+service" decision) — see `build-history-ingestion/index.md` for what's current.
 
 An AI process reads Lejonklou forum threads, extracts recordings and listening comparisons, and writes them into the database as tests, tracks, clips, and votes. Periodic scheduled refreshes catch new posts.
 
 **Authentication:** A single dedicated `ingestion_bot` user in `auth.users`, created manually. The ingestion service authenticates as this user via Supabase Auth (magic link issued once; token stored in the service's environment). No API key table needed. Subject to standard RLS — no policy exceptions required.
 
-*(Superseded by `build-history-ingestion.md` step 31: per-author placeholder identities via the admin/service-role client, not a single session-based bot user — see that file for why.)*
+*(Superseded by `build-history-ingestion/31-internal-ingest-api-route.md`: per-author placeholder identities via the admin/service-role client, not a single session-based bot user — see that file for why.)*
 
 **Idempotency:** Forum posts must not produce duplicate tests on repeated runs. The `source_ref` column on `tests` (UNIQUE, nullable) records forum provenance (e.g. `'lejonklou-forum:thread-42:post-187'`). Before inserting a test, check `source_ref` — skip if already present.
 

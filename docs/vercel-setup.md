@@ -140,7 +140,7 @@ branch when done testing.
 ## Forum ingestion: `AI_GATEWAY_API_KEY` (local-script-only)
 
 The extraction step of the forum ingestion pipeline (`scripts/extract-lejonklou.ts`,
-`build-history-ingestion.md` step 35) calls the Vercel AI Gateway to classify forum
+`build-history-ingestion/35-extraction-decisions.md`) calls the Vercel AI Gateway to classify forum
 posts. Unlike every other variable above, this one is **not** added to the
 Production/Preview/Development scopes in the dashboard — extraction never runs as a
 deployed Vercel Function, only as a local script a human runs by hand, so it only
@@ -168,9 +168,9 @@ already sitting there.
 ## Forum ingestion: commit-script env vars (local-script-only)
 
 The commit step of the forum ingestion pipeline (`scripts/commit-lejonklou.ts`,
-`build-history-ingestion.md` step 36) POSTs approved candidates to a *deployed*
+`build-history-ingestion/36-commit.md`) POSTs approved candidates to a *deployed*
 environment's `POST /api/internal/ingest` — first staging, then production
-(`build-history-ingestion.md` step 37). It needs two things per environment: the
+(`build-history-ingestion/37-run-import.md`). It needs two things per environment: the
 ingest secret and the deployed base URL. Both are read from `.env.local` under
 per-environment names — never a single ambient value — so the same session can
 commit to staging then production without editing `.env.local` in between.
@@ -208,8 +208,8 @@ wrong secret to the wrong environment silently (the request would just fail with
 
 ## Forum ingestion: rollback-script env vars (local-script-only)
 
-`scripts/rollback-lejonklou.ts` (built during `build-history-ingestion.md`
-step 36's iteration, an interim ingestion-pipeline-only tool — **not** step 38,
+`scripts/rollback-lejonklou.ts` (built during `build-history-ingestion/36-commit.md`'s
+iteration, an interim ingestion-pipeline-only tool — **not** step 38,
 which now covers a different, unrelated data-erasure requirement; see step
 38's rewritten plan) deletes committed test data directly from a Supabase
 project — unlike the commit script, this isn't a deployed HTTP call, so it
@@ -228,12 +228,17 @@ SUPABASE_SERVICE_ROLE_KEY_PRODUCTION=<the Production-scope SUPABASE_SERVICE_ROLE
 **`rollback-lejonklou.ts` has its own known, still-unresolved limitation,
 independent of step 38's rewrite: no placeholder-ownership check.** It has no
 way to confirm a test's owner is still a placeholder before deleting it — see
-`build-history-ingestion.md` step 36 findings 8–9 for the full account. Once
-step 39 (claim flow) exists and real content has actually been claimed, this
-script could delete a real claimed user's content if pointed at `--env
-production`. Only add the `_PRODUCTION` pair once that's addressed (or once
-you're confident nothing on production has been claimed yet). `--env staging`
-is safe today: nothing has ever been claimed on either environment.
+`build-history-ingestion/36-commit.md` findings 8–9 for the full account.
+**This is no longer a hypothetical risk:** step 39's claim flow
+(`build-history-ingestion/39-claim-flow.md`) is now built and deployed to
+both `audiophile-staging` and `audiophile-prod`, so real content may already
+have been claimed on either. Pointing this script at `--env production` (or
+`--env staging`) could silently delete a real, claimed user's content, not
+just an unmerged placeholder's. Before adding the `_PRODUCTION` pair below,
+either add the ownership check to the script, or confirm directly against
+that environment that nothing has been claimed yet — an `import_authors` row
+whose mapped `user_id` no longer belongs to an `is_placeholder = true` user
+has been claimed.
 
 ---
 
