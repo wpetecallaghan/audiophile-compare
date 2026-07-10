@@ -268,3 +268,54 @@ export async function seedClaimedTest(suffix: string): Promise<SeedTestFixture> 
   await seedClipMapping(test.id, clipA.id, clipB.id)
   return { track, systemA, systemB, snapshotA, snapshotB, test, clipA, clipB }
 }
+
+// ---------------------------------------------------------------------------
+// Listening technique preferences (build step 45) — the real E2E test user
+// is a single, persistent, shared identity across every spec file, run
+// sequentially in filename order (see zz-sign-out.spec.ts's own comment on
+// why it runs last). Unlike per-run [E2E]-prefixed content, narrowing this
+// account's technique preferences and not resetting them would leak into
+// every spec that runs afterward in the same suite invocation — so any
+// test that changes them must call resetTechniquePreferences() afterward,
+// typically from a test.afterEach.
+// ---------------------------------------------------------------------------
+
+export async function getActiveTechniqueIds(): Promise<string[]> {
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from('listening_techniques')
+    .select('id')
+    .eq('is_active', true)
+  if (error) throw new Error(`getActiveTechniqueIds: ${error.message}`)
+  return (data ?? []).map((t) => t.id)
+}
+
+export async function getTechniqueIdByName(name: string): Promise<string> {
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from('listening_techniques')
+    .select('id')
+    .eq('name', name)
+    .single()
+  if (error || !data) throw new Error(`getTechniqueIdByName: ${name} not found — ${error?.message}`)
+  return data.id
+}
+
+export async function setTechniquePreferences(techniqueIds: string[]): Promise<void> {
+  const admin = createAdminClient()
+  const userId = await getTestUserId()
+  await admin.from('user_technique_preferences').delete().eq('user_id', userId)
+  const { error } = await admin
+    .from('user_technique_preferences')
+    .insert(techniqueIds.map((technique_id) => ({ user_id: userId, technique_id })))
+  if (error) throw new Error(`setTechniquePreferences: ${error.message}`)
+}
+
+// Restores the "never customized" default (no rows = every active
+// technique enabled) — the state every test that touches preferences must
+// leave the shared account in when it finishes.
+export async function resetTechniquePreferences(): Promise<void> {
+  const admin = createAdminClient()
+  const userId = await getTestUserId()
+  await admin.from('user_technique_preferences').delete().eq('user_id', userId)
+}

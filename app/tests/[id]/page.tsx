@@ -83,15 +83,38 @@ export default async function TestDetailPage({ params }: Props) {
     .rpc('test_vote_count', { test_id: test.id })
   const voteCount: number = voteCountData ?? 0
 
-  // Listening techniques (only needed for open tests)
+  // Listening techniques (only needed for open tests) — step 45: filtered
+  // to the viewer's own enabled-technique preferences, unless they've never
+  // customized (no user_technique_preferences rows at all — the default is
+  // every active technique enabled, not zero). A technique the viewer has
+  // already voted on for THIS test stays offered even if since disabled
+  // elsewhere, so an existing vote never becomes invisible/unreachable —
+  // existingVotes is already fetched above, no extra query needed for that
+  // half of the union.
   let techniques: Technique[] = []
   if (!isRevealed) {
-    const { data } = await supabase
+    const { data: allActive } = await supabase
       .from('listening_techniques')
       .select('id, name, description, is_other')
       .eq('is_active', true)
       .order('sort_order')
-    techniques = data ?? []
+
+    if (user) {
+      const { data: prefs } = await supabase
+        .from('user_technique_preferences')
+        .select('technique_id')
+        .eq('user_id', user.id)
+
+      if (!prefs || prefs.length === 0) {
+        techniques = allActive ?? []
+      } else {
+        const enabledIds = new Set(prefs.map(p => p.technique_id))
+        const votedIds = new Set(existingVotes.map(v => v.technique_id))
+        techniques = (allActive ?? []).filter(t => enabledIds.has(t.id) || votedIds.has(t.id))
+      }
+    } else {
+      techniques = allActive ?? []
+    }
   }
 
   // --- Shape the clips for ABPlayer ---
@@ -289,6 +312,14 @@ export default async function TestDetailPage({ params }: Props) {
         <Callout tone="neutral" className="p-4 sm:p-6 text-center text-sm text-gray-500 dark:text-gray-400">
           <Link href="/login">{t('signIn')}</Link>
           {' '}{t('signInToVote')}
+        </Callout>
+      )}
+
+      {/* Reminder that enabled techniques are configurable — step 45 */}
+      {user && !isRevealed && (
+        <Callout tone="neutral" className="text-sm text-gray-500 dark:text-gray-400">
+          {t('techniquePreferencesReminder')}{' '}
+          <Link href="/profile" variant="inline">{tCommon('profileLink')}</Link>.
         </Callout>
       )}
 

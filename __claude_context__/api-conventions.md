@@ -203,6 +203,13 @@ itself to chain `.select().single()` after every mutating query and treat
 a missing row as failure — **never trust an absent `error` to mean a row
 actually changed; check what you asked to change is actually returned.**
 
+**A clean example of this rule applied from the start (step 45):**
+`PATCH /api/profile/technique-preferences` does a delete-then-insert
+against `user_technique_preferences`, both covered by one
+`for all using (user_id = auth.uid())` policy — no `security definer`
+RPC needed, since (unlike `ingest_test`/`claim_placeholder`/
+`erase_user_*`) this route only ever touches the caller's own rows.
+
 ### Rule 6 — delete rules (step 26)
 
 - `DELETE /api/tests/[id]` — creator only; 409 if the test has any vote.

@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (38 files · 439 tests · all passing)
+## 4. Unit test inventory (39 files · 452 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -78,6 +78,7 @@ indirectly through the step tests.
 | `components/__tests__/ForgotPasswordForm.test.tsx` | 5 | resetPasswordForEmail, success message, onBack callback |
 | `components/__tests__/SignOutButton.test.tsx` | 4 | signOut, window.location navigation, loading state |
 | `components/__tests__/ProfileForm.test.tsx` | 13 | PATCH /api/profile, trim, validation, success/error states |
+| `components/__tests__/TechniquePreferencesForm.test.tsx` | 13 | PATCH /api/profile/technique-preferences with only checked ids; renders all techniques checked by default; min-1 disables Save and shows the error; success/error states (step 45) |
 | `components/__tests__/ChangeEmailForm.test.tsx` | 4 | updateUser({ email }), confirmation message, loading state |
 | `components/__tests__/ChangePasswordForm.test.tsx` | 9 | updateUser({ password }), validation, autoOpen prop, loading state |
 | `components/media/__tests__/ABPlayer.test.tsx` | 4 | Renders A and B labels; hideClipA/hideClipB hide that slot entirely; a Google Drive clip renders an iframe embed and the sibling's pause is a harmless no-op |
@@ -142,6 +143,20 @@ ever creating (and thus without needing to clean up) a throwaway
 placeholder/`import_authors` row; it's covered by the main sweep like any
 other `seedTest` fixture.
 
+**Technique preference helpers** (`getActiveTechniqueIds`,
+`getTechniqueIdByName`, `setTechniquePreferences`,
+`resetTechniquePreferences` in `e2e/helpers/admin.ts`, step 45) — unlike
+`[E2E]`-prefixed content, `user_technique_preferences` rows belong
+directly to the one real, persistent `E2E_TEST_USER_EMAIL` account shared
+across every spec file, run sequentially in filename order. Narrowing
+that account's preferences and not resetting them would leak into
+whichever spec runs next in the same suite invocation — not caught by
+`global-teardown.ts`'s per-run content sweep at all, since this isn't
+`[E2E]`-prefixed content, it's account state. Any test that changes
+preferences (`setTechniquePreferences` or the profile UI itself) must
+call `resetTechniquePreferences()` in a `test.afterEach`, restoring the
+"never customized" default.
+
 **Do not** assert on exact record counts when reading existing staging data — assert on structure only.
 
 **Teardown deletion order** (no `ON DELETE CASCADE` — must respect FK constraints):
@@ -164,10 +179,10 @@ tracks are never deleted by either).
 | `auth.spec.ts` | Authenticated nav links (Tests / Systems / Tracks / Profile); redirectTo preserved through login flow |
 | `systems.spec.ts` | Create system; edit name and description; add snapshot; edit snapshot label; systems list shows test user's systems |
 | `test-creation.spec.ts` | Track search; full wizard (select track → snapshots → verify clips → publish) |
-| `voting.spec.ts` | Tally hidden before voting; vote count visible; system/snapshot info visible to the test's creator before reveal but hidden from a non-creator (`canSeeSystemInfo`, step 43); cast vote; update existing vote; creator can reveal; system/snapshot info visible to a non-creator too once revealed |
+| `voting.spec.ts` | Tally hidden before voting; vote count visible; system/snapshot info visible to the test's creator before reveal but hidden from a non-creator (`canSeeSystemInfo`, step 43); cast vote; update existing vote; creator can reveal; system/snapshot info visible to a non-creator too once revealed; narrowed technique preferences filter the vote form, and a technique already voted on for a specific test stays offered there even after being disabled elsewhere (step 45) |
 | `delete.spec.ts` | Creator deletes a zero-vote test (redirects home); Delete hidden once a vote exists; owner deletes an unreferenced snapshot; Delete hidden when a test references the snapshot; owner deletes a snapshot-less system (redirects to systems list); Delete hidden when the system has a snapshot |
 | `clip-health.spec.ts` | Dead clip shows a warning and player still renders; vote form replaced with an explanatory message; creator replaces a dead clip's URL, clearing the warning; "Broken" badge shown on the track and system detail pages; unsupported-playback clip shows a bare link in blind view with no "could not be identified" message; once revealed, its Before/After label in the mapping badge links directly to it with no separate link below |
-| `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared; non-admin user does not see the Admin section (step 41) |
+| `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared; non-admin user does not see the Admin section (step 41); every active technique checked by default, saving a narrowed selection persists across a reload, Save disabled once the last technique is unchecked (step 45) |
 | `import-provenance.spec.ts` | Placeholder-owned content shows the "Imported" badge on the test detail page, feed card, and track's test row; test detail page also shows a working "view original post" link (`target="_blank"`) and the claim-contact text; system detail page shows the badge and claim-contact text; an ordinarily-owned test shows none of this; a claimed test (step 44, `seedClaimedTest`) still shows the original-post link but not the badge or claim-contact text |
 | `zz-sign-out.spec.ts` | Sign out clears the session; header reverts to unauthenticated. Runs last — see file for why |
 
@@ -322,17 +337,21 @@ to be applied first — applied to staging, confirmed via
 yet — separate step).
 
 **Coverage** (`app/api/admin/claim/__tests__/route.integration.test.ts`,
-3 tests, step 39): calls `claim_placeholder` directly via `.rpc(...)`
-rather than importing the route handler (same reason as step 38's, §7) —
-reassigns all five content FK columns (systems, tests, tracks, comments,
-votes) from a disposable placeholder to a disposable real user, repoints
-(not deletes) `import_authors` to the real user, deletes the
-placeholder's `public.users` row, and confirms `admin.auth.admin.
-deleteUser()` still succeeds afterward against the now-orphaned auth
-identity; when the real user already voted the same `(test_id,
-technique_id)` the placeholder did, the placeholder's colliding vote is
-dropped and the real user's own vote survives untouched, rather than the
-merge erroring (decision 5); rejects an anon-key caller (EXECUTE
-lockdown). Requires this step's migration to be applied first (see
-build-history-ingestion/39-claim-flow.md for the exact filename and staging/
-production apply status once run).
+3 tests, steps 39 and 45): calls `claim_placeholder` directly via
+`.rpc(...)` rather than importing the route handler (same reason as step
+38's, §7) — reassigns all content FK columns (systems, tests, tracks,
+comments, votes, and — step 45 — `user_technique_preferences`) from a
+disposable placeholder to a disposable real user, repoints (not deletes)
+`import_authors` to the real user, deletes the placeholder's
+`public.users` row, and confirms `admin.auth.admin.deleteUser()` still
+succeeds afterward against the now-orphaned auth identity; when the real
+user already voted the same `(test_id, technique_id)` the placeholder
+did — or already has a preference row for the same technique — the
+placeholder's colliding row is dropped and the real user's own survives
+untouched, rather than the merge erroring (decision 5, and step 45's
+identical collision handling for `user_technique_preferences`); rejects
+an anon-key caller (EXECUTE lockdown). Requires this step's migration to
+be applied first (see build-history-ingestion/39-claim-flow.md for the
+exact filename and staging/production apply status once run;
+`20260710082825_user_technique_preferences.sql` layers step 45's
+extension on top, applied to staging).

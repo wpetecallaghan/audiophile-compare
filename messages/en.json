@@ -4,7 +4,8 @@
     "networkError": "Network error — please try again",
     "importedBadge": "Imported",
     "viewOriginalPost": "View original post",
-    "claimContact": "Think this is yours? Contact wpete.callaghan@gmail.com to claim it."
+    "claimContact": "Think this is yours? Contact wpete.callaghan@gmail.com to claim it.",
+    "profileLink": "your profile"
   },
   "nav": {
     "wordmark": "Compare",
@@ -122,6 +123,7 @@
     "anonymous": "Anonymous",
     "signIn": "Sign in",
     "signInToVote": "to vote.",
+    "techniquePreferencesReminder": "You can change the listening methods you're offered from",
     "openClipLink": "Open link directly",
     "wizard": {
       "stepTrack": "Track",
@@ -221,6 +223,12 @@
     "saving": "Saving…",
     "successMessage": "Display name updated.",
     "cancelButton": "Cancel",
+    "techniquesHeading": "Listening methods",
+    "techniquesDescription": "Choose which listening methods you want offered when voting on a blind test. At least one must stay selected.",
+    "techniquesMinError": "Select at least one listening method.",
+    "techniquesSuccessMessage": "Listening method preferences updated.",
+    "techniquesSaveButton": "Save listening methods",
+    "techniquesSaving": "Saving…",
     "changeEmailHeading": "Change email",
     "newEmailLabel": "New email address",
     "newEmailPlaceholder": "new@example.com",

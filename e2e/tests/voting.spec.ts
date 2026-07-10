@@ -7,7 +7,13 @@
  */
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
-import { seedCompleteTest, type SeedTestFixture } from '../helpers/admin'
+import {
+  seedCompleteTest,
+  getTechniqueIdByName,
+  setTechniquePreferences,
+  resetTechniquePreferences,
+  type SeedTestFixture,
+} from '../helpers/admin'
 import { ROLE } from '../helpers/constants'
 import m from '../../messages/en.json'
 
@@ -135,5 +141,57 @@ test.describe('Voting flow', () => {
     ).toBeVisible()
 
     await context.close()
+  })
+})
+
+test.describe('Technique preferences applied to voting (build step 45)', () => {
+  let techFixture: SeedTestFixture
+
+  test.beforeAll(async () => {
+    techFixture = await seedCompleteTest(`vote-techniques-${Date.now()}`)
+  })
+
+  // The real E2E test user is one persistent, shared identity across every
+  // spec file — see e2e/helpers/admin.ts's own comment on why any test
+  // touching technique preferences must reset them afterward.
+  test.afterEach(async () => {
+    await resetTechniquePreferences()
+  })
+
+  test('vote form only offers enabled techniques, and a technique already voted on for this test stays offered even after being disabled elsewhere', async ({ page }) => {
+    const tuneMethodId = await getTechniqueIdByName('Tune Method')
+    const pratId = await getTechniqueIdByName('PRaT')
+
+    await setTechniquePreferences([tuneMethodId, pratId])
+    await page.goto(routes.test(techFixture.test.id))
+
+    // Narrowed correctly — only the two enabled techniques are offered
+    await expect(page.getByText('Tune Method')).toBeVisible()
+    await expect(page.getByText('PRaT')).toBeVisible()
+    await expect(page.getByText('Tonal / Frequency balance')).not.toBeVisible()
+
+    // Vote using PRaT specifically, scoped to its own radio group by the
+    // technique-id-keyed input name VoteForm renders
+    // (`technique-${t.id}`) — the same clip value appears in every
+    // technique's radio group, so this can't be selected by value alone.
+    await page.locator(`input[name="technique-${pratId}"][value="${techFixture.clipA.id}"]`).check()
+    await page.getByRole(ROLE.button, { name: m.tests.vote.saveButton }).click()
+    await expect(page.getByText(/%/).first()).toBeVisible({ timeout: 5_000 })
+
+    // Now disable PRaT — the technique this session just voted with on
+    // this specific test — leaving only Tune Method enabled.
+    await setTechniquePreferences([tuneMethodId])
+    await page.reload()
+
+    // The decision-1 fix: PRaT's block stays offered here specifically,
+    // because existingVotes for this test includes it, even though it's
+    // no longer in the current preference set. Scoped to the vote form
+    // itself, not the whole page — a cast vote means canSeeTally is now
+    // true too, and TallyDisplay (a sibling of the form, not inside it)
+    // renders its own "PRaT" technique label alongside the tally bar.
+    const voteForm = page.locator('form')
+    await expect(voteForm.getByText('Tune Method')).toBeVisible()
+    await expect(voteForm.getByText('PRaT')).toBeVisible()
+    await expect(voteForm.getByText('Tonal / Frequency balance')).not.toBeVisible()
   })
 })

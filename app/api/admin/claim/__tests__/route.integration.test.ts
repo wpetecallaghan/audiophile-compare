@@ -176,6 +176,13 @@ describe('claim_placeholder (integration)', () => {
       .select('id')
       .single()
 
+    // Step 45 — a placeholder never actually sets these itself in
+    // practice (placeholders never log in), but the reassignment must
+    // still work correctly if one somehow exists.
+    await admin
+      .from('user_technique_preferences')
+      .insert({ user_id: placeholderId, technique_id: fixture.techniqueId })
+
     const { data, error } = await admin.rpc('claim_placeholder', {
       placeholder_user_id: placeholderId,
       real_user_id: realUserId,
@@ -188,6 +195,8 @@ describe('claim_placeholder (integration)', () => {
       comments_reassigned: 1,
       votes_reassigned: 1,
       votes_dropped_collision: 0,
+      technique_prefs_reassigned: 1,
+      technique_prefs_dropped_collision: 0,
       import_authors_repointed: 1,
     })
 
@@ -205,6 +214,14 @@ describe('claim_placeholder (integration)', () => {
 
     const { data: vote } = await admin.from('votes').select('user_id').eq('test_id', fixture.test.id).single()
     expect(vote?.user_id).toBe(realUserId)
+
+    const { data: techniquePref } = await admin
+      .from('user_technique_preferences')
+      .select('user_id')
+      .eq('technique_id', fixture.techniqueId)
+      .eq('user_id', realUserId)
+      .maybeSingle()
+    expect(techniquePref?.user_id).toBe(realUserId)
 
     // Repointed, not deleted — the provenance record survives, now
     // pointing at the real user.
@@ -252,12 +269,38 @@ describe('claim_placeholder (integration)', () => {
       technique_id: fixture.techniqueId,
     })
 
+    // Same collision shape for technique preferences — both the real user
+    // and the placeholder have a preference row for the same technique.
+    await admin
+      .from('user_technique_preferences')
+      .insert({ user_id: realUserId, technique_id: fixture.techniqueId })
+    await admin
+      .from('user_technique_preferences')
+      .insert({ user_id: placeholderId, technique_id: fixture.techniqueId })
+
     const { data, error } = await admin.rpc('claim_placeholder', {
       placeholder_user_id: placeholderId,
       real_user_id: realUserId,
     })
     expect(error).toBeNull()
-    expect(data).toMatchObject({ votes_reassigned: 0, votes_dropped_collision: 1 })
+    expect(data).toMatchObject({
+      votes_reassigned: 0,
+      votes_dropped_collision: 1,
+      technique_prefs_reassigned: 0,
+      technique_prefs_dropped_collision: 1,
+    })
+
+    // Scoped to this test's own two users — Tune Method is a shared global
+    // technique, so an unscoped query would also pick up rows left behind
+    // by other runs (disposable real users' rows are never explicitly
+    // cleaned up in this file, same as their public.users rows).
+    const { data: techniquePrefs } = await admin
+      .from('user_technique_preferences')
+      .select('user_id')
+      .eq('technique_id', fixture.techniqueId)
+      .in('user_id', [placeholderId, realUserId])
+    expect(techniquePrefs).toHaveLength(1)
+    expect(techniquePrefs?.[0].user_id).toBe(realUserId)
 
     const { data: votes } = await admin
       .from('votes')

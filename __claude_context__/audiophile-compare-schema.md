@@ -151,6 +151,15 @@ listening_techniques (
 -- Tune Method (sort 1), PRaT (2), Tonal / Frequency balance (3),
 -- Soundstage & imaging (4), General preference (5), Other (6, is_other=true)
 
+-- Step 45: which active techniques a user wants offered when voting.
+-- No rows for a user = every active technique enabled (the default) — see
+-- "listening_techniques governance" below for the full rule.
+user_technique_preferences (
+  user_id      uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  technique_id uuid NOT NULL REFERENCES listening_techniques(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, technique_id)
+)
+
 -- One vote per user per technique per test
 votes (
   id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -211,6 +220,7 @@ All tables have RLS enabled. Policy intent per table:
 | clips | Public | Test creator only, checked via JOIN (insert + update + delete) |
 | clip_mapping | Revealed tests OR creator | Test creator only, checked via JOIN (insert + delete) |
 | listening_techniques | Public | Nobody (migration only) |
+| user_technique_preferences | Own rows only | Owner only (insert + update + delete) |
 | votes | Own votes OR revealed test | Authenticated (own rows) |
 | comments | Public | Authenticated (insert); owner (delete) |
 | import_authors | Public | Nobody (admin/service-role client only — ingest route and future merge step) |
@@ -382,23 +392,28 @@ full design. Called via `.rpc(...)` from `app/api/admin/claim/route.ts`,
 never directly from the client.
 
 - **`claim_placeholder(placeholder_user_id uuid, real_user_id uuid)
-  returns jsonb`** — reassigns all six FK references to
+  returns jsonb`** — reassigns all FK references to
   `public.users(id)`: `systems.owner_id`, `tests.creator_id`,
-  `tracks.created_by`, `comments.user_id`, and `votes.user_id` are
-  repointed from `placeholder_user_id` to `real_user_id` (the
-  placeholder's own authored content becomes the real user's);
-  `import_authors.user_id` is repointed too, but for a different
-  reason — that row *is* the provenance record being preserved, not
-  content being reassigned. A vote collision (the real user already
-  voted the same `(test_id, technique_id)` the placeholder did) is
-  resolved in the real user's favour: the placeholder's colliding vote
-  is deleted, not reassigned, rather than erroring the whole merge.
-  `import_authors` is repointed strictly *before* `public.users` is
+  `tracks.created_by`, `comments.user_id`, `votes.user_id`, and (step
+  45) `user_technique_preferences.user_id` are repointed from
+  `placeholder_user_id` to `real_user_id` (the placeholder's own
+  authored content becomes the real user's); `import_authors.user_id`
+  is repointed too, but for a different reason — that row *is* the
+  provenance record being preserved, not content being reassigned. A
+  vote collision (the real user already voted the same `(test_id,
+  technique_id)` the placeholder did) is resolved in the real user's
+  favour: the placeholder's colliding vote is deleted, not reassigned,
+  rather than erroring the whole merge — `user_technique_preferences`
+  has the identical collision shape (`user_id` is part of its own
+  primary key), resolved the same way, though in practice a placeholder
+  never has preference rows to begin with, since placeholders never log
+  in. `import_authors` is repointed strictly *before* `public.users` is
   deleted — `import_authors.user_id references public.users(id) on
   delete cascade`, so deleting `public.users` first would cascade-delete
   the very mapping this function exists to preserve. Returns
   `{systems_reassigned, tests_reassigned, tracks_reassigned,
   comments_reassigned, votes_reassigned, votes_dropped_collision,
+  technique_prefs_reassigned, technique_prefs_dropped_collision,
   import_authors_repointed}` (all `int`). Deliberately the mirror image
   of `erase_user_account`: that function nulls/deletes a real user's
   references because the account is going away; this one reassigns them
@@ -492,6 +507,24 @@ The `Other` row (`is_other = true`) is the only free-text technique.
 Votes with `technique.is_other = true` must have `other_description` populated.
 The `Other` technique is excluded from cross-test analytics — it is qualitative
 only, displayed as a list of descriptions rather than a percentage bar.
+
+**Per-user preferences (step 45):** a user can narrow which active
+techniques they're offered when voting, via `user_technique_preferences`
+(min 1, enforced client- and server-side — see `api-conventions.md`
+Rule 5). No rows for a user means "never customized — every active
+technique enabled," not "zero enabled"; a save always writes the user's
+complete current selection (delete-all-then-insert-all), so this is never
+ambiguous. `Other` has no special exemption — it's includable/excludable
+like any other technique.
+
+A technique a user already voted on for a *specific* test stays offered
+on that test even if they later disable it elsewhere, so an existing vote
+never becomes invisible/unreachable in the vote form — new votes on other
+tests only ever offer the current preference set. This mirrors (and, for
+the per-user case, closes) a pre-existing gap in `is_active`: a globally
+deactivated technique's past votes persist untouched in the DB/tally but
+silently disappear from the editable form, with no equivalent "still show
+it on this test" fix — left as-is, out of scope for step 45.
 
 ### Cross-check tests
 A cross-check test reuses `source_url` values from existing clips on different
