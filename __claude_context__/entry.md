@@ -8,7 +8,7 @@ description: >
 
 # Audiophile Compare — Entry Point
 
-Blind A/B comparison app for hi-fi audio systems. Next.js 16+ App Router, Supabase (Postgres + Auth), Tailwind CSS, Vercel. Steps 1–43 complete (core app plus the forum-ingestion pipeline through a real production import, data erasure requests, the claim flow, and hiding blind-test system identity) — see `build-history/index.md` and `build-history-ingestion/index.md`. 38 unit test files / 439 tests passing.
+Blind A/B comparison app for hi-fi audio systems. Next.js 16+ App Router, Supabase (Postgres + Auth), Tailwind CSS, Vercel. Steps 1–44 complete (core app plus the forum-ingestion pipeline through a real production import, data erasure requests, the claim flow, hiding blind-test system identity, and preserving provenance links after a claim) — see `build-history/index.md` and `build-history-ingestion/index.md`. 38 unit test files / 439 tests passing.
 
 ## Step 1 — Always read core.md first
 

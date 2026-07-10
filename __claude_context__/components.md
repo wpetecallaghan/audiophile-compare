@@ -435,11 +435,16 @@ the win/loss/blind/revealed/broken status badge — it describes the
 `app/tracks/[id]/page.tsx`, and (net new — this page previously showed no
 owner information at all) `app/systems/[id]/page.tsx`. Each extends its
 existing `creator`/`owner` join with `is_placeholder`. The test detail page
-additionally shows two links when placeholder-owned: "view original post"
-(`tests.source_url`, when present — an external link using `Link`
-`variant="inline"` with `target="_blank" rel="noopener noreferrer"`; `Link`
-already wraps `next/link`, which renders a plain anchor for an absolute
-URL) and a static claim-contact string (`common.claimContact`). The feed
+additionally shows two links, each gated independently (step 44 — they used
+to share one `is_placeholder` condition, which incorrectly hid the first
+link once a test was claimed): "view original post" (`tests.source_url`,
+whenever present — an external link using `Link` `variant="inline"` with
+`target="_blank" rel="noopener noreferrer"`; `Link` already wraps
+`next/link`, which renders a plain anchor for an absolute URL) survives a
+claim (step 39) unchanged, since `claim_placeholder` reassigns
+`creator_id` but never touches `source_url`; a static claim-contact string
+(`common.claimContact`) stays gated on `is_placeholder` alone, since once
+claimed there's no placeholder identity left to contact about. The feed
 card and track's per-test rows show the badge only, not the links — those
 rows are already whole-card `<Link>`s to the test's own detail page, so a
 nested link isn't valid HTML there; the full detail lives one click away.

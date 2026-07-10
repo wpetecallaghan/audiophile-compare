@@ -237,3 +237,34 @@ export async function seedPlaceholderOwnedTest(suffix: string): Promise<SeedTest
   await seedClipMapping(test.id, clipA.id, clipB.id)
   return { track, systemA, systemB, snapshotA, snapshotB, test, clipA, clipB }
 }
+
+// ---------------------------------------------------------------------------
+// Seed a test in the *post-claim* shape (build step 44): a real, registered
+// owner (not a placeholder) whose test still carries a source_url — the
+// state claim_placeholder (step 39) actually leaves behind, since it
+// reassigns tests.creator_id but never touches tests.source_url. Reuses
+// seedTest's own creatorId/sourceUrl params directly rather than seeding a
+// throwaway placeholder and really claiming it — real claiming deletes the
+// placeholder's public.users row and repoints its import_authors mapping
+// permanently, so exercising the real RPC per test run would accumulate an
+// orphaned import_authors row forever; unnecessary here since this UI only
+// cares about the resulting is_placeholder/source_url shape, not the
+// mechanism that produced it (claim_placeholder has its own dedicated
+// integration test: app/api/admin/claim/__tests__/route.integration.test.ts).
+// ---------------------------------------------------------------------------
+
+export async function seedClaimedTest(suffix: string): Promise<SeedTestFixture> {
+  const track = await seedTrack('Test Artist', `Claimed Track ${suffix}`)
+  const systemA = await seedSystem(`Claimed System A ${suffix}`)
+  const systemB = await seedSystem(`Claimed System B ${suffix}`)
+  const snapshotA = await seedSnapshot(systemA.id, `Snapshot A ${suffix}`)
+  const snapshotB = await seedSnapshot(systemB.id, `Snapshot B ${suffix}`)
+  const test = await seedTest(
+    track.id, snapshotA.id, snapshotB.id, `Claimed Test ${suffix}`,
+    undefined, PLACEHOLDER_FIXTURE_SOURCE_URL,
+  )
+  const clipA = await seedClip(test.id, 'A', YOUTUBE_A)
+  const clipB = await seedClip(test.id, 'B', YOUTUBE_B)
+  await seedClipMapping(test.id, clipA.id, clipB.id)
+  return { track, systemA, systemB, snapshotA, snapshotB, test, clipA, clipB }
+}

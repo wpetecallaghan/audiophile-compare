@@ -58,3 +58,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 41 | Surface admin page links on the profile page | [41-admin-page-links-profile.md](41-admin-page-links-profile.md) |
 | 42 | Correct /about, /privacy, /terms against real functionality | [42-about-privacy-terms-correction.md](42-about-privacy-terms-correction.md) |
 | 43 | Hide system/component identity on blind tests | [43-hide-blind-test-system-info.md](43-hide-blind-test-system-info.md) |
+| 44 | Keep the "view original post" link after a claim | [44-preserve-original-post-link-after-claim.md](44-preserve-original-post-link-after-claim.md) |

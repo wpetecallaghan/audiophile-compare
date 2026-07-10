@@ -194,8 +194,12 @@ export default async function TestDetailPage({ params }: Props) {
             </>
           )}
         </p>
-        {creator?.is_placeholder && (
+        {(test.source_url || creator?.is_placeholder) && (
           <p className="text-xs text-gray-500 dark:text-gray-400 space-x-3">
+            {/* source_url survives a claim (step 39) unchanged — the link
+                stays useful as provenance even once the content is
+                normally-owned, unlike claim-contact below, which only
+                makes sense while there's still a placeholder to claim. */}
             {test.source_url && (
               <Link
                 href={test.source_url}
@@ -206,7 +210,7 @@ export default async function TestDetailPage({ params }: Props) {
                 {tCommon('viewOriginalPost')}
               </Link>
             )}
-            <span>{tCommon('claimContact')}</span>
+            {creator?.is_placeholder && <span>{tCommon('claimContact')}</span>}
           </p>
         )}
       </div>

@@ -135,6 +135,12 @@ real `E2E_TEST_USER_EMAIL` account. Because the owner differs, this content is i
 `global-teardown.ts`'s main sweep (which matches by that one specific user id) — the teardown has
 a second pass matching by `is_placeholder` instead, so it's still cleaned up. The placeholder
 identity itself is never deleted, same as the real test user account.
+`seedClaimedTest` (step 44, same file) deliberately does *not* use a
+placeholder at all — it seeds a normal, `E2E_TEST_USER_EMAIL`-owned test
+with a `source_url` set directly, reproducing the post-claim shape without
+ever creating (and thus without needing to clean up) a throwaway
+placeholder/`import_authors` row; it's covered by the main sweep like any
+other `seedTest` fixture.
 
 **Do not** assert on exact record counts when reading existing staging data — assert on structure only.
 
@@ -162,7 +168,7 @@ tracks are never deleted by either).
 | `delete.spec.ts` | Creator deletes a zero-vote test (redirects home); Delete hidden once a vote exists; owner deletes an unreferenced snapshot; Delete hidden when a test references the snapshot; owner deletes a snapshot-less system (redirects to systems list); Delete hidden when the system has a snapshot |
 | `clip-health.spec.ts` | Dead clip shows a warning and player still renders; vote form replaced with an explanatory message; creator replaces a dead clip's URL, clearing the warning; "Broken" badge shown on the track and system detail pages; unsupported-playback clip shows a bare link in blind view with no "could not be identified" message; once revealed, its Before/After label in the mapping badge links directly to it with no separate link below |
 | `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared; non-admin user does not see the Admin section (step 41) |
-| `import-provenance.spec.ts` | Placeholder-owned content shows the "Imported" badge on the test detail page, feed card, and track's test row; test detail page also shows a working "view original post" link (`target="_blank"`) and the claim-contact text; system detail page shows the badge and claim-contact text; an ordinarily-owned test shows none of this |
+| `import-provenance.spec.ts` | Placeholder-owned content shows the "Imported" badge on the test detail page, feed card, and track's test row; test detail page also shows a working "view original post" link (`target="_blank"`) and the claim-contact text; system detail page shows the badge and claim-contact text; an ordinarily-owned test shows none of this; a claimed test (step 44, `seedClaimedTest`) still shows the original-post link but not the badge or claim-contact text |
 | `zz-sign-out.spec.ts` | Sign out clears the session; header reverts to unauthenticated. Runs last — see file for why |
 
 Step 17 is complete (24/24 passing against staging). Not covered by any spec

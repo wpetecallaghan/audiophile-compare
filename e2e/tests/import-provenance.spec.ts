@@ -7,7 +7,7 @@
  */
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
-import { seedCompleteTest, seedPlaceholderOwnedTest } from '../helpers/admin'
+import { seedCompleteTest, seedPlaceholderOwnedTest, seedClaimedTest } from '../helpers/admin'
 import { ROLE } from '../helpers/constants'
 import m from '../../messages/en.json'
 
@@ -58,5 +58,17 @@ test.describe('Import provenance', () => {
     await expect(page.getByText(m.common.importedBadge)).not.toBeVisible()
     await expect(page.getByText(m.common.claimContact)).not.toBeVisible()
     await expect(page.getByRole(ROLE.link, { name: m.common.viewOriginalPost })).not.toBeVisible()
+  })
+
+  test('claimed test (build step 44): still shows the original-post link, but not the badge or claim contact', async ({ page }) => {
+    const fixture = await seedClaimedTest(`provenance-claimed-${Date.now()}`)
+    await page.goto(routes.test(fixture.test.id))
+
+    await expect(page.getByText(m.common.importedBadge)).not.toBeVisible()
+    await expect(page.getByText(m.common.claimContact)).not.toBeVisible()
+
+    const originalPostLink = page.getByRole(ROLE.link, { name: m.common.viewOriginalPost })
+    await expect(originalPostLink).toBeVisible()
+    await expect(originalPostLink).toHaveAttribute('target', '_blank')
   })
 })
