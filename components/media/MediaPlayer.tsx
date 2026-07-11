@@ -40,45 +40,61 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
     },
   }))
 
+  // A plain link to the clip's original source is always shown alongside
+  // the embed below — not a failure-only fallback, a permanent companion —
+  // since an embed can fail for reasons specific to its provider (iframe
+  // blocked, video removed/region-locked, host-side hotlink protection)
+  // that the listener has no other way to route around from this page.
   if (clip.provider === 'youtube' && clip.embed_id) {
     return (
-      <YouTubePlayer
-        ref={innerRef}
-        videoId={clip.embed_id}
-        onPlay={onPlay}
-      />
+      <div className="space-y-2">
+        <YouTubePlayer
+          ref={innerRef}
+          videoId={clip.embed_id}
+          onPlay={onPlay}
+        />
+        <UnknownPlayer url={clip.source_url} />
+      </div>
     )
   }
 
   if (clip.provider === 'vimeo' && clip.embed_id) {
     return (
-      <VimeoPlayer
-        ref={innerRef}
-        videoId={clip.embed_id}
-        onPlay={onPlay}
-      />
+      <div className="space-y-2">
+        <VimeoPlayer
+          ref={innerRef}
+          videoId={clip.embed_id}
+          onPlay={onPlay}
+        />
+        <UnknownPlayer url={clip.source_url} />
+      </div>
     )
   }
 
   if (clip.provider === 'google-drive' && clip.embed_id) {
     return (
-      <GoogleDrivePlayer
-        ref={innerRef}
-        videoId={clip.embed_id}
-        onPlay={onPlay}
-      />
+      <div className="space-y-2">
+        <GoogleDrivePlayer
+          ref={innerRef}
+          videoId={clip.embed_id}
+          onPlay={onPlay}
+        />
+        <UnknownPlayer url={clip.source_url} />
+      </div>
     )
   }
 
   if (clip.provider === 'direct') {
     return (
-      <NativePlayer
-        ref={innerRef}
-        url={clip.canonical_url ?? clip.source_url}
-        fallbackUrl={clip.source_url}
-        mediaType={clip.media_type === 'audio' ? 'audio' : 'video'}
-        onPlay={onPlay}
-      />
+      <div className="space-y-2">
+        <NativePlayer
+          ref={innerRef}
+          url={clip.canonical_url ?? clip.source_url}
+          mediaType={clip.media_type === 'audio' ? 'audio' : 'video'}
+          onPlay={onPlay}
+        />
+        <UnknownPlayer url={clip.source_url} />
+      </div>
     )
   }
 

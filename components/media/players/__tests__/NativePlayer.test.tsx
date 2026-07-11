@@ -6,15 +6,19 @@ import NativePlayer, { type PlayerHandle } from '../NativePlayer'
 // @vitest-environment jsdom
 
 describe('NativePlayer', () => {
-  // The core behavior for build step 56's redesign: no timeout to guess —
-  // the fallback link is the default, visible from first render, so a
-  // clip that never resolves (errors, hangs, or is a Google Photos-style
-  // HTML page) never needs a "give up" moment. It was already showing.
-  it('shows the fallback link immediately, before the media element has loaded', () => {
-    const url = 'https://example.com/clip.mov'
-    render(<NativePlayer url={url} mediaType="video" onPlay={vi.fn()} />)
+  // Build step 57: NativePlayer has no fallback UI of its own — a link to
+  // the clip's original source is always rendered one level up in
+  // MediaPlayer.tsx instead, regardless of provider or load state. This
+  // guards against silently reintroducing a duplicate link here.
+  it('never renders a link itself, at any state', () => {
+    render(<NativePlayer url="https://example.com/clip.mov" mediaType="video" onPlay={vi.fn()} />)
+    expect(screen.queryByRole('link')).toBeNull()
 
-    expect(screen.getByRole('link')).toBeInTheDocument()
+    fireEvent.loadedMetadata(document.querySelector('video')!)
+    expect(screen.queryByRole('link')).toBeNull()
+
+    fireEvent.error(document.querySelector('video')!)
+    expect(screen.queryByRole('link')).toBeNull()
   })
 
   it('renders an <audio> element for mediaType audio, mounted but hidden until loaded', () => {
@@ -33,13 +37,12 @@ describe('NativePlayer', () => {
     expect(video!.className).toContain('hidden')
   })
 
-  it('reveals the media element and hides the fallback link once metadata loads', () => {
+  it('reveals the media element once metadata loads', () => {
     render(<NativePlayer url="https://example.com/clip.mov" mediaType="video" onPlay={vi.fn()} />)
 
     fireEvent.loadedMetadata(document.querySelector('video')!)
 
     expect(document.querySelector('video')!.className).not.toContain('hidden')
-    expect(screen.queryByRole('link')).toBeNull()
   })
 
   it('calls onPlay when the media element fires its play event', () => {
@@ -51,14 +54,12 @@ describe('NativePlayer', () => {
     expect(onPlay).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps showing the fallback link if the media element errors — no state to recover from', () => {
-    const url = 'https://example.com/not-actually-playable'
-    render(<NativePlayer url={url} mediaType="video" onPlay={vi.fn()} />)
+  it('keeps the media element hidden if it errors — no state to recover from', () => {
+    render(<NativePlayer url="https://example.com/not-actually-playable" mediaType="video" onPlay={vi.fn()} />)
 
     fireEvent.error(document.querySelector('video')!)
 
-    const link = screen.getByRole('link') as HTMLAnchorElement
-    expect(link.href).toBe(url)
+    expect(document.querySelector('video')!.className).toContain('hidden')
   })
 
   it('does not throw when pause() is called via ref before the media element has loaded', () => {
@@ -68,28 +69,15 @@ describe('NativePlayer', () => {
     expect(() => ref.current?.pause()).not.toThrow()
   })
 
-  // Build step 56: a Dropbox clip plays via its rewritten raw=1
-  // canonical_url, but the fallback link should point at the original,
-  // human-friendly share page instead of the raw stream URL —
-  // fallbackUrl is what lets those diverge.
-  it('uses fallbackUrl, not url, for the link when the two differ', () => {
-    const playableUrl = 'https://www.dropbox.com/scl/fi/abc/clip.mov?rlkey=xyz&raw=1'
-    const shareUrl = 'https://www.dropbox.com/scl/fi/abc/clip.mov?rlkey=xyz&dl=0'
-    render(<NativePlayer url={playableUrl} fallbackUrl={shareUrl} mediaType="video" onPlay={vi.fn()} />)
-
-    const link = screen.getByRole('link') as HTMLAnchorElement
-    expect(link.href).toBe(shareUrl)
-  })
-
-  it('resets to showing the fallback link again when the url prop changes', () => {
+  it('resets to hidden again when the url prop changes', () => {
     const { rerender } = render(
       <NativePlayer url="https://example.com/clip-a.mov" mediaType="video" onPlay={vi.fn()} />,
     )
     fireEvent.loadedMetadata(document.querySelector('video')!)
-    expect(screen.queryByRole('link')).toBeNull()
+    expect(document.querySelector('video')!.className).not.toContain('hidden')
 
     rerender(<NativePlayer url="https://example.com/clip-b.mov" mediaType="video" onPlay={vi.fn()} />)
 
-    expect(screen.getByRole('link')).toBeInTheDocument()
+    expect(document.querySelector('video')!.className).toContain('hidden')
   })
 })
