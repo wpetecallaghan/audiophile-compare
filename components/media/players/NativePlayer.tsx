@@ -69,6 +69,19 @@ const NativePlayer = forwardRef<PlayerHandle, Props>(function NativePlayer(
     className: hasLoaded ? 'w-full max-w-full' : 'hidden',
     onPlay,   // fires when the user presses play on this element
     onLoadedMetadata: () => setHasLoaded(true),
+    // Google Photos' CDN (lh3.googleusercontent.com, used by
+    // resolve-google-photos.ts) returns 429 specifically when the request
+    // carries a Referer header pointing at a dev-looking host like
+    // localhost — confirmed live: identical requests succeed with no
+    // referrer, or with an arbitrary third-party/production-looking one,
+    // and only "localhost" triggers the block. A browser's default
+    // referrer policy sends the page's origin on every cross-origin
+    // <video src> request, so without this the clip silently never loads
+    // (NativePlayer falls back to the link, never surfacing an error).
+    // Suppressing the referrer entirely is harmless for every other direct
+    // URL (Dropbox etc. don't require one) and removes this whole class of
+    // host-based blocking risk rather than special-casing Google Photos.
+    referrerPolicy: 'no-referrer' as const,
   }
 
   return (

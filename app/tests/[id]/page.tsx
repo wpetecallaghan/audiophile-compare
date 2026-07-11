@@ -155,8 +155,10 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
 
   if (!rawA || !rawB) notFound()
 
-  const clipA = toClipData(rawA)
-  const clipB = toClipData(rawB)
+  // Promise.all rather than sequential awaits — avoids doubling worst-case
+  // latency when both clips in one A/B test are Google Photos links (common,
+  // since a listener often shares before/after clips from the same source).
+  const [clipA, clipB] = await Promise.all([toClipData(rawA), toClipData(rawB)])
 
   // Clip health — dead blocks voting; degraded is a lighter-touch note only
   const hasDeadClip = rawA.url_status === STATUS_DEAD || rawB.url_status === STATUS_DEAD
