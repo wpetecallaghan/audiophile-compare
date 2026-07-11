@@ -50,10 +50,11 @@ describe('ABPlayer', () => {
     expect(screen.queryByText('Clip B')).not.toBeInTheDocument()
   })
 
-  it('renders a Google Drive clip as an iframe embed, and the sibling pausing it is a harmless no-op', () => {
-    // Drive's /preview embed has no control SDK — pause() on it is a
-    // documented no-op (build-history.md step 34, decision 3). This just
-    // confirms rendering it, and the sibling's pause path, doesn't throw.
+  it('renders a Google Drive clip as an iframe embed with the expected preview src', () => {
+    // Drive's /preview embed has no control SDK, so play/pause coordination
+    // is approximated instead of exact (build step 53) — see
+    // GoogleDrivePlayer.test.tsx for that behavior. This just confirms
+    // rendering it doesn't throw and the iframe src is correct.
     const clipA = makeClip({
       label: 'A',
       provider: 'google-drive',

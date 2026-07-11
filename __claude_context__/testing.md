@@ -81,7 +81,8 @@ indirectly through the step tests.
 | `components/__tests__/TechniquePreferencesForm.test.tsx` | 13 | PATCH /api/profile/technique-preferences with only checked ids; renders all techniques checked by default; min-1 disables Save and shows the error; success/error states (step 45) |
 | `components/__tests__/ChangeEmailForm.test.tsx` | 4 | updateUser({ email }), confirmation message, loading state |
 | `components/__tests__/ChangePasswordForm.test.tsx` | 11 | updateUser({ password }), validation (length, complexity — step 51, match), autoOpen prop, loading state |
-| `components/media/__tests__/ABPlayer.test.tsx` | 4 | Renders A and B labels; hideClipA/hideClipB hide that slot entirely; a Google Drive clip renders an iframe embed and the sibling's pause is a harmless no-op |
+| `components/media/__tests__/ABPlayer.test.tsx` | 4 | Renders A and B labels; hideClipA/hideClipB hide that slot entirely; a Google Drive clip renders an iframe embed with the expected preview src |
+| `components/media/players/__tests__/GoogleDrivePlayer.test.tsx` | 3 | Play detection via focus/blur heuristic (step 53): onPlay fires when focus moves into the iframe, doesn't fire for an unrelated window blur; pause() force-remounts the iframe (no real pause API exists) |
 | `components/tests/__tests__/VoteForm.test.tsx` | 22 | Rendering, Other field visibility, validation, submission, pre-population, hasDeadClip |
 | `components/tests/__tests__/StepSnapshots.test.tsx` | 28 | Open/close, validation, POST, onSnapshotCreated, inline system creation |
 | `components/systems/__tests__/AddSnapshotForm.test.tsx` | 14 | Open/close, POST, router.refresh on success, validation |

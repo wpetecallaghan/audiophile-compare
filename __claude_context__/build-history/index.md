@@ -67,3 +67,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 50 | Fix false-positive "dead" clips from the URL health-check cron | [50-url-check-grace-period.md](50-url-check-grace-period.md) |
 | 51 | Minimum password complexity, sliding by length | [51-password-complexity.md](51-password-complexity.md) |
 | 52 | Componentize repeated page-level DOM/styling | [52-componentize-page-layout.md](52-componentize-page-layout.md) |
+| 53 | Fix Google Drive clips not pausing each other | [53-google-drive-pause-fix.md](53-google-drive-pause-fix.md) |
