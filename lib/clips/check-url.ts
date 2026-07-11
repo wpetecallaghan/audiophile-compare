@@ -1,10 +1,10 @@
-import type { DetectedClip } from './detect-provider'
+import type { DetectedClip, MediaType } from './detect-provider'
 
 export type UrlStatus = 'ok' | 'degraded' | 'dead'
 
 export type UrlCheckResult = {
   url_status: UrlStatus
-  media_type: 'audio' | 'video' | 'unknown'
+  media_type: MediaType
   duration_ms: null   // not derivable from a HEAD request; null until playback
 }
 
@@ -20,7 +20,7 @@ export const STATUS_DEAD: UrlStatus = 'dead'
 const MEDIA_TYPE_UNKNOWN = 'unknown'
 
 // Maps Content-Type header values to our media_type enum
-function resolveMediaType(contentType: string | null): 'audio' | 'video' | 'unknown' {
+function resolveMediaType(contentType: string | null): MediaType {
   if (!contentType) return MEDIA_TYPE_UNKNOWN
   if (contentType.startsWith('audio/')) return 'audio'
   if (contentType.startsWith('video/')) return 'video'

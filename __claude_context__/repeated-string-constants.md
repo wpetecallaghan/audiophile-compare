@@ -36,6 +36,27 @@ well-named default parameter (e.g. `timeoutMs = 5000`) already documents
 itself via its name — it doesn't also need a separate top-level constant
 duplicating the same value for no second call site.
 
+## Typed discriminated-union members get the same structural exemption
+
+A string literal returned into a field with an explicit string-literal-union
+type (e.g. `provider: 'youtube'` where the field's type is
+`'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'`) doesn't need
+its own named constant just because the same union member is returned from
+more than one branch of the same function. The compiler already provides
+the safety a constant would buy — a typo doesn't type-check — so a constant
+adds indirection without adding information. `lib/clips/detect-provider.ts`
+returns `media_type: 'unknown'` from three different branches and
+`provider: 'direct'` from two; neither needs extracting.
+
+This exemption covers only *individual members* of an already-declared
+union returned inline. It does not cover the union *type declaration*
+itself — when the same literal union is retyped from scratch in a second
+file instead of importing the first file's exported type (e.g. `provider`'s
+five-value union used to be redeclared in six different files instead of
+importing `ClipProvider` from `lib/clips/detect-provider.ts`), that's real
+duplication and should be fixed the normal way: export the type once from
+its owning module, import it everywhere else.
+
 ## Scope the constant to its reuse
 
 - **Repeats only within one file** → a local `const` at the top of that file.

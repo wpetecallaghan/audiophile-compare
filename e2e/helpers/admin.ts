@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { E2E_PREFIX } from './constants'
 import { createPlaceholderAuthor } from '@/lib/ingestion/create-placeholder-author'
 import { STATUS_OK, type UrlStatus } from '@/lib/clips/check-url'
+import type { ClipProvider, MediaType } from '@/lib/clips/detect-provider'
 
 // ---------------------------------------------------------------------------
 // Admin client — bypasses RLS; use only in test setup/teardown
@@ -144,8 +145,8 @@ export async function seedClip(
   label: 'A' | 'B',
   sourceUrl: string,
   urlStatus: UrlStatus = STATUS_OK,
-  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown' = 'youtube',
-  mediaType: 'audio' | 'video' | 'unknown' = 'video',
+  provider: ClipProvider = 'youtube',
+  mediaType: MediaType = 'video',
 ): Promise<SeededClip> {
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -191,10 +192,10 @@ export async function seedCompleteTest(
   opts: {
     clipAStatus?: UrlStatus
     clipBStatus?: UrlStatus
-    clipAProvider?: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
-    clipBProvider?: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
-    clipAMediaType?: 'audio' | 'video' | 'unknown'
-    clipBMediaType?: 'audio' | 'video' | 'unknown'
+    clipAProvider?: ClipProvider
+    clipBProvider?: ClipProvider
+    clipAMediaType?: MediaType
+    clipBMediaType?: MediaType
   } = {},
 ): Promise<SeedTestFixture> {
   const track = await seedTrack(DEFAULT_TEST_ARTIST, `Track ${suffix}`)

@@ -106,16 +106,23 @@ Magic link and OAuth callbacks perform a server-side redirect — not affected b
 
 ### `ClipData` type — canonical definition in `components/media/MediaPlayer.tsx`
 ```typescript
+import type { ClipProvider, MediaType } from '@/lib/clips/detect-provider'
+
 export type ClipData = {
   id: string
   label: 'A' | 'B'
   source_url: string
-  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
-  media_type: 'audio' | 'video' | 'unknown'
+  provider: ClipProvider
+  media_type: MediaType
   canonical_url?: string
   embed_id?: string | null
 }
 ```
+`ClipProvider` (`'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'`) and
+`MediaType` (`'audio' | 'video' | 'unknown'`) are owned by
+`lib/clips/detect-provider.ts` — every file needing either union (API routes,
+`lib/types/test-creation.ts`, `lib/clips/check-url.ts`, `e2e/helpers/admin.ts`,
+`ClipData` here) imports the type rather than redeclaring the literals.
 
 ### `PlayerHandle` type — canonical definition in `components/media/players/NativePlayer.tsx`
 ```typescript

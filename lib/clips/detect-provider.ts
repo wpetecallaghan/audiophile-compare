@@ -1,7 +1,13 @@
+// Canonical source for these two literal unions — every other file that
+// needs a clip's provider/media_type imports them from here rather than
+// redeclaring the same values.
+export type ClipProvider = 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
+export type MediaType = 'audio' | 'video' | 'unknown'
+
 // Describes everything we can know about a clip URL before any network request
 export type DetectedClip = {
-  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
-  media_type: 'audio' | 'video' | 'unknown'
+  provider: ClipProvider
+  media_type: MediaType
   embed_id: string | null   // YouTube video ID, Vimeo video ID, or Drive file ID; null for direct/unknown
   canonical_url: string     // normalised URL suitable for the iframe src
 }

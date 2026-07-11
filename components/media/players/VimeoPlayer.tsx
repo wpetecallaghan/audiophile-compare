@@ -3,6 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import VimeoSDK from '@vimeo/player'
 import type { PlayerHandle } from './NativePlayer'
+import { EMBED_WRAPPER_CLASSES } from './embedLayout'
 
 type Props = {
   videoId: string
@@ -44,7 +45,7 @@ const VimeoPlayer = forwardRef<PlayerHandle, Props>(function VimeoPlayer(
   }, [videoId])
 
   return (
-    <div className="relative w-full max-w-full aspect-video overflow-hidden">
+    <div className={EMBED_WRAPPER_CLASSES}>
       <div ref={containerRef} className="absolute inset-0" />
     </div>
   )

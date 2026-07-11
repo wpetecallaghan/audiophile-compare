@@ -1,3 +1,6 @@
+import type { ClipProvider, MediaType } from '@/lib/clips/detect-provider'
+import type { UrlStatus } from '@/lib/clips/check-url'
+
 // Track as returned by /api/tracks
 export type Track = {
   id: string
@@ -32,9 +35,9 @@ export type SystemWithSnapshots = {
 
 // Result from /api/clips/verify
 export type VerifiedClip = {
-  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
-  media_type: 'audio' | 'video' | 'unknown'
-  url_status: 'ok' | 'degraded' | 'dead'
+  provider: ClipProvider
+  media_type: MediaType
+  url_status: UrlStatus
   canonical_url: string
   embed_id: string | null
 }

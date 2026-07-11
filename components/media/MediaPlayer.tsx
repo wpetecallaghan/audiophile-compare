@@ -6,6 +6,7 @@ import YouTubePlayer from './players/YouTubePlayer'
 import VimeoPlayer from './players/VimeoPlayer'
 import GoogleDrivePlayer from './players/GoogleDrivePlayer'
 import UnknownPlayer from './players/UnknownPlayer'
+import type { ClipProvider, MediaType } from '@/lib/clips/detect-provider'
 
 // This is the shape of the clip data your API returns.
 // It matches the columns in your clips table.
@@ -13,8 +14,8 @@ export type ClipData = {
   id: string
   label: 'A' | 'B'
   source_url: string
-  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
-  media_type: 'audio' | 'video' | 'unknown'
+  provider: ClipProvider
+  media_type: MediaType
   canonical_url?: string
   embed_id?: string | null
 }

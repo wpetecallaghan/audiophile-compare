@@ -3,12 +3,13 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { isValidForumLink } from '@/lib/tests/validate-forum-link'
 import { STATUS_OK } from '@/lib/clips/check-url'
+import type { ClipProvider, MediaType } from '@/lib/clips/detect-provider'
 
 type ClipInput = {
   source_url: string
   canonical_url: string
-  provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
-  media_type: 'audio' | 'video' | 'unknown'
+  provider: ClipProvider
+  media_type: MediaType
   embed_id: string | null
 }
 

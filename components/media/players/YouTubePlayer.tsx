@@ -3,6 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 import { loadYouTubeApi } from '@/lib/youtube-api'
 import type { PlayerHandle } from './NativePlayer'
+import { EMBED_WRAPPER_CLASSES, EMBED_FILL_CLASSES } from './embedLayout'
 
 type Props = {
   videoId: string
@@ -69,7 +70,7 @@ const YouTubePlayer = forwardRef<PlayerHandle, Props>(function YouTubePlayer(
   }, [videoId])   // re-run this effect if videoId changes
 
   return (
-    <div className="relative w-full max-w-full aspect-video overflow-hidden">
+    <div className={EMBED_WRAPPER_CLASSES}>
       {/* w-full h-full matters: the YouTube IFrame API preserves this
           div's className on the <iframe> it replaces it with, but without
           an explicit width/height, YouTube's own default 640x360 HTML
@@ -78,7 +79,7 @@ const YouTubePlayer = forwardRef<PlayerHandle, Props>(function YouTubePlayer(
           cause of a real report that the embed didn't shrink to fit on
           mobile (build step 55). Matches GoogleDrivePlayer.tsx's iframe,
           which already includes these for the same reason. */}
-      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
+      <div ref={containerRef} className={EMBED_FILL_CLASSES} />
     </div>
   )
 })

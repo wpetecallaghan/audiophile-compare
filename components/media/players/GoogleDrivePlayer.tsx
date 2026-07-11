@@ -2,6 +2,7 @@
 
 import { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react'
 import type { PlayerHandle } from './NativePlayer'
+import { EMBED_WRAPPER_CLASSES, EMBED_FILL_CLASSES } from './embedLayout'
 
 type Props = {
   videoId: string
@@ -78,12 +79,12 @@ const GoogleDrivePlayer = forwardRef<PlayerHandle, Props>(function GoogleDrivePl
   }, [onPlay])
 
   return (
-    <div className="relative w-full max-w-full aspect-video overflow-hidden">
+    <div className={EMBED_WRAPPER_CLASSES}>
       <iframe
         key={reloadKey}
         ref={iframeRef}
         src={`https://drive.google.com/file/d/${videoId}/preview`}
-        className="absolute inset-0 w-full h-full"
+        className={EMBED_FILL_CLASSES}
         allow="autoplay"
         title="Google Drive video player"
       />
