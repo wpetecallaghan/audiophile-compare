@@ -219,7 +219,8 @@
     },
     "results": {
       "heading": "Results",
-      "noVotes": "No votes recorded yet."
+      "noVotes": "No votes recorded yet.",
+      "ownVoteOnlyNote": "Showing only your own vote. Full results from every listener appear once this test is revealed."
     },
     "mapping": {
       "revealedBadge": "Revealed",

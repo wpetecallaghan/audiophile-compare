@@ -7,9 +7,14 @@ type Props = {
   tally: TallyResult
   clipAId: string
   clipBId: string
+  // True when this tally reflects only the viewer's own vote — RLS
+  // ("votes: read own or revealed") only returns every voter's row once
+  // the test is revealed; before that, a voter sees just their own choice
+  // reflected back, by design, not the full group's.
+  ownVoteOnly: boolean
 }
 
-export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
+export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnly }: Props) {
   const t = await getTranslations('tests.results')
   const { curated, others, divergent } = tally
   const votedTechniques = curated.filter(r => r.total > 0)
@@ -18,6 +23,10 @@ export default async function TallyDisplay({ tally, clipAId, clipBId }: Props) {
   return (
     <div className="space-y-4">
       <Heading level={2}>{t('heading')}</Heading>
+
+      {ownVoteOnly && (
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('ownVoteOnlyNote')}</p>
+      )}
 
       {!hasAnyVotes && (
         <p className="text-sm text-gray-500 dark:text-gray-400">{t('noVotes')}</p>

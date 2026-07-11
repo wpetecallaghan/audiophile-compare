@@ -171,7 +171,12 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
   const hideClipA = canShowMappingLinks && isUnsupportedClip(rawA)
   const hideClipB = canShowMappingLinks && isUnsupportedClip(rawB)
 
-  // Vote tally — fetch all votes for this test when the viewer is entitled
+  // Vote tally — fetch all votes for this test when the viewer is entitled.
+  // On an open (unrevealed) test, "votes: read own or revealed" RLS means
+  // this only ever returns the CALLER's own vote row, not every voter's —
+  // by design (see canSeeTally above and TallyDisplay's ownVoteOnly prop):
+  // a voter sees their own choice reflected back, not the full group's,
+  // until the test is officially revealed.
   let tally: TallyResult | null = null
   if (canSeeTally) {
     const { data } = await supabase
@@ -402,7 +407,7 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
 
       {/* Vote tally */}
       {canSeeTally && tally && (
-        <TallyDisplay tally={tally} clipAId={rawA.id} clipBId={rawB.id} />
+        <TallyDisplay tally={tally} clipAId={rawA.id} clipBId={rawB.id} ownVoteOnly={!isRevealed} />
       )}
 
       {/* Vote form */}
