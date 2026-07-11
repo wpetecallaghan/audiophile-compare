@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import NextLink from 'next/link'
-import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/Badge'
 import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
+import { RowCard } from '@/components/ui/RowCard'
+import { Text } from '@/components/ui/Text'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 import { STATUS_DEAD } from '@/lib/clips/check-url'
 
@@ -53,7 +55,7 @@ export default async function TrackDetailPage({ params }: Props) {
   )
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <PageShell maxWidth="4xl">
       {/* Breadcrumb */}
       <nav className="text-xs text-gray-500 dark:text-gray-400">
         <NextLink href="/tracks" className="hover:underline">
@@ -63,33 +65,31 @@ export default async function TrackDetailPage({ params }: Props) {
         <span>{track.artist} — {track.title}</span>
       </nav>
 
-      {/* Header */}
+      {/* Header — richer than PageHeader's shape (eyebrow + two optional
+          subtitle lines, no actions), left as raw JSX rather than forced
+          into a single-subtitle slot; see build-history/52-*.md */}
       <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <Text size="xs" className="font-semibold uppercase tracking-wide">
           {t('trackBadge')}
-        </p>
+        </Text>
         <Heading level={1}>
           {track.artist} — {track.title}
         </Heading>
-        {track.album && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">{track.album}</p>
-        )}
-        {track.passage_note && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 italic">{track.passage_note}</p>
-        )}
+        {track.album && <Text>{track.album}</Text>}
+        {track.passage_note && <Text className="italic">{track.passage_note}</Text>}
       </div>
 
       {/* Tests */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Heading level={2}>{t('testsHeading')}</Heading>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <Text as="span">
             {tests.length} {tests.length === 1 ? 'test' : 'tests'}
-          </span>
+          </Text>
         </div>
 
         {tests.length === 0 ? (
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('noTestsForTrack')}</p>
+          <Text>{t('noTestsForTrack')}</Text>
         ) : (
           <ul className="space-y-2">
             {tests.map(test => {
@@ -108,37 +108,31 @@ export default async function TrackDetailPage({ params }: Props) {
                 ? { status: 'revealed' as const, text: t('statusRevealed') }
                 : { status: 'blind' as const, text: t('statusBlind') }
               return (
-                <li key={test.id}>
-                  <Link
-                    href={`/tests/${test.id}`}
-                    variant="card"
-                    className="flex items-center justify-between"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{test.title}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        by {creator?.display_name ?? t('anonymous')} ·{' '}
-                        {new Date(test.created_at).toLocaleDateString(locale)}
-                        {isImported && (
-                          <>
-                            {' · '}
-                            <Badge status="imported" className="align-middle">
-                              {tCommon('importedBadge')}
-                            </Badge>
-                          </>
-                        )}
-                      </p>
-                    </div>
-                    <Badge status={badge.status} className="ml-4 shrink-0">
-                      {badge.text}
-                    </Badge>
-                  </Link>
-                </li>
+                <RowCard
+                  key={test.id}
+                  href={`/tests/${test.id}`}
+                  title={test.title}
+                  subtitle={
+                    <Text size="xs">
+                      by {creator?.display_name ?? t('anonymous')} ·{' '}
+                      {new Date(test.created_at).toLocaleDateString(locale)}
+                      {isImported && (
+                        <>
+                          {' · '}
+                          <Badge status="imported" className="align-middle">
+                            {tCommon('importedBadge')}
+                          </Badge>
+                        </>
+                      )}
+                    </Text>
+                  }
+                  trailing={<Badge status={badge.status}>{badge.text}</Badge>}
+                />
               )
             })}
           </ul>
         )}
       </div>
-    </main>
+    </PageShell>
   )
 }

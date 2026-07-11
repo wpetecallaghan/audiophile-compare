@@ -448,10 +448,12 @@ Established by an audit of actual class usage, not arbitrary rules — see
 are now real components (`components/ui/Button.tsx`, `Badge.tsx`, built on
 `class-variance-authority` — see `docs/dependencies.md`) specifically because
 hand-copying the same class string into 15+ files is how the drift this step
-cleaned up happened in the first place. Type scale, text color, and border
-roles below aren't (yet) componentized — they're conventions to follow by
-hand — but don't introduce new shades or one-off combinations for those
-either.
+cleaned up happened in the first place. Border roles below aren't (yet)
+componentized — a convention to follow by hand — but don't introduce new
+shades or one-off combinations for those either. Type scale and text color
+roles **are** componentized as of build step 52 — see `Text` in §13 — but
+the roles themselves are described here first since `Text` is just their
+concrete implementation.
 
 **Type scale:** `text-xs` (metadata/badges/timestamps), `text-sm` (body,
 inputs, buttons, nav), `text-base sm:text-lg font-semibold` (h2 section
@@ -460,8 +462,9 @@ headings — always this exact pair, never plain `text-lg` or plain
 
 **Text color roles:** primary = default/inherit (or `gray-900`/`gray-100`
 dark for emphasis); muted/secondary = `text-gray-500 dark:text-gray-400`
-(metadata, labels, timestamps); readable secondary body copy (About-page-style
-prose, not metadata) = `text-gray-600 dark:text-gray-300` — a deliberate
+(metadata, labels, timestamps) = `<Text tone="muted">` (the default tone);
+readable secondary body copy (About-page-style prose, not metadata) =
+`text-gray-600 dark:text-gray-300` = `<Text tone="body">` — a deliberate
 second, higher-contrast tier, not a mistake if you see both. Error messages:
 `text-red-600 dark:text-red-400`. Never leave a light-mode-only or
 dark-mode-only color unpaired — always specify both, since `darkMode: 'media'`
@@ -658,7 +661,7 @@ import { ConfirmButton } from '@/components/ui/ConfirmButton'
 async function handleDelete() {
   const res = await fetch(`/api/tests/${testId}`, { method: 'DELETE' })
   const json = await res.json()
-  if (!res.ok) return { error: json.error ?? 'Something went wrong' }
+  if (!res.ok) return { error: json.error ?? tCommon('somethingWentWrong') }
   router.push('/')   // caller navigates/refreshes on success; no return value needed
 }
 
@@ -726,3 +729,106 @@ colors). One-off styling that doesn't fit any role (a genuinely unique tab
 bar, a single search-result row button, an inline icon-button) stays raw —
 same "don't force an abstraction used exactly once" rule as everywhere else
 in this codebase.
+
+---
+
+## 13. Page-level layout — `PageShell`/`Text`/`Section`/`RowCard`/`PageHeader` (build step 52)
+
+Same motivation as step 22, one layer up — page-level structure (the
+`<main>` wrapper, `<section>` groupings, muted/body text, list-item cards,
+title+subtitle headers) was still hand-copied across all 17 `app/**/page.tsx`
+files. Found via a full audit (three parallel reviews, cross-referenced);
+see `build-history/52-componentize-page-layout.md` for the full catalog,
+including patterns identified but deliberately **not** componentized yet
+(`Breadcrumbs`, `AuthShell`, `ClipHealthWarning`, `Divider`, `Byline`,
+`SectionHeading`, `ButtonRow`).
+
+**The page wrapper — use `<PageShell maxWidth />` (`components/ui/PageShell.tsx`),
+never a raw `<main className="container mx-auto max-w-...">`:**
+```tsx
+import { PageShell } from '@/components/ui/PageShell'
+<PageShell maxWidth="2xl">...</PageShell>   {/* static/content/admin pages */}
+<PageShell maxWidth="4xl">...</PageShell>   {/* feed, profile, systems, tracks, tests */}
+<PageShell maxWidth="4xl" spacing="responsive">...</PageShell>  {/* tests/[id] only — space-y-4 sm:space-y-6 */}
+```
+`login`/`register` deliberately don't use `PageShell` — they're a
+different, centered-card shell (`AuthShell` in the catalog, not built yet).
+
+**Muted/body text — use `<Text size tone as />` (`components/ui/Text.tsx`),
+never a raw `<p>`/`<span>` with a hand-copied color class:**
+```tsx
+import { Text } from '@/components/ui/Text'
+<Text>{t('subheading')}</Text>                          {/* size="sm" tone="muted" — the default */}
+<Text size="xs">{new Date(x).toLocaleDateString()}</Text>
+<Text tone="body">{t('whyBody1')}</Text>                 {/* about/privacy/terms prose */}
+<Text as="span" size="xs">{t('pageOf', { page, total })}</Text>
+<Text size="xs" className="truncate">{track.album}</Text>  {/* modifiers via className, same as Badge/Link */}
+```
+This is the concrete implementation of the "text color roles" described in
+§12 — see that section before reaching for a raw color class here.
+
+**A heading-led content group — use `<Section heading? />`
+(`components/ui/Section.tsx`), never a raw `<section className="space-y-3">`:**
+```tsx
+import { Section } from '@/components/ui/Section'
+<Section heading={t('whyHeading')}>
+  <Text tone="body">{t('whyBody1')}</Text>
+</Section>
+<Section>{/* no heading prop when the section's own child already renders one */}
+  <h2 className="text-sm font-semibold">{t('techniquesHeading')}</h2>
+  <TechniquePreferencesForm ... />
+</Section>
+```
+`profile.tsx`'s two `text-sm font-semibold` raw `<h2>`s are a genuinely
+smaller size than `Heading level={2}` — same judgment call as
+`ChangePasswordForm.tsx`'s disclosure heading in §12, left raw rather than
+forced.
+
+**A list-item card (title, optional subtitle, optional trailing content) —
+use `<RowCard href title subtitle? trailing? />` (`components/ui/RowCard.tsx`),
+never a hand-rolled `<li><Link variant="card">...`:**
+```tsx
+import { RowCard } from '@/components/ui/RowCard'
+<RowCard
+  href={`/tests/${test.id}`}
+  title={test.title}
+  subtitle={<Text size="xs">{creator} · {date}</Text>}
+  trailing={<Badge status={badge.status}>{badge.text}</Badge>}
+/>
+```
+Found independently duplicated (with small unintentional divergences —
+`items-start` vs `items-center`, `ml-4` vs `gap-4`, presence/absence of
+`truncate`) in `FeedCard.tsx`, `systems/page.tsx`, `systems/[id]/page.tsx`,
+`tracks/page.tsx`, and `tracks/[id]/page.tsx`. Those divergences were
+resolved onto one canonical layout (`items-start`, `gap-4`, always
+`truncate`) rather than preserved via a variant prop — `items-start` was
+picked over the more common `items-center` (3 of the 5 original sites)
+specifically because a real side-by-side visual diff against staging
+caught `FeedCard.tsx`'s badge visibly re-centering against its multi-line
+subtitle block — the one non-neutral visual change out of the whole step.
+`FeedCard.tsx`'s badge keeps its original `mt-0.5` nudge via `className`
+passthrough; the newly-`items-start` sites (which never had that nudge
+before) don't need one.
+
+**A page title block (optional eyebrow, title, optional subtitle, optional
+trailing actions) — use `<PageHeader eyebrow? title subtitle? actions? />`
+(`components/ui/PageHeader.tsx`):**
+```tsx
+import { PageHeader } from '@/components/ui/PageHeader'
+<PageHeader
+  eyebrow="System"
+  title={system.name}
+  subtitle={system.description}
+  actions={isOwner && <NextLink href={editHref} className={buttonVariants({ variant: 'secondary', size: 'compact' })}>Edit</NextLink>}
+>
+  {/* extra meta content below the subtitle, e.g. a snapshot-count line */}
+</PageHeader>
+```
+Used on `app/page.tsx`, `app/profile/page.tsx`, `app/systems/[id]/page.tsx`,
+and both admin pages. **Not** used on `tracks/[id]/page.tsx` or
+`tests/[id]/page.tsx` — both have richer headers (eyebrow + a
+creator/date/vote-count/imported-badge "byline" line, sometimes two
+subtitle lines) that don't fit the single-`subtitle`-slot shape; forcing
+them in would either drop content or require a shape mismatched to every
+other caller. Left as raw JSX pending a future `Byline` component (see the
+catalog) rather than bent to fit.

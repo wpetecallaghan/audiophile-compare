@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { isAdminEmail } from '@/lib/admin/is-admin-email'
 import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
 
 export default async function VersionPage() {
   const supabase = await createClient()
@@ -30,7 +31,7 @@ export default async function VersionPage() {
   ]
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <PageShell maxWidth="2xl">
       <Heading level={1}>{t('heading')}</Heading>
 
       <dl className="space-y-3">
@@ -45,6 +46,6 @@ export default async function VersionPage() {
           </div>
         ))}
       </dl>
-    </main>
+    </PageShell>
   )
 }

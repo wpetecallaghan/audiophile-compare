@@ -1,58 +1,52 @@
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
+import { Section } from '@/components/ui/Section'
+import { Text } from '@/components/ui/Text'
 
 export default async function TermsPage() {
   const t = await getTranslations('terms')
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <PageShell maxWidth="2xl">
       <Heading level={1}>{t('heading')}</Heading>
-      <p className="text-sm text-gray-600 dark:text-gray-300">{t('intro')}</p>
+      <Text tone="body">{t('intro')}</Text>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('serviceHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('serviceBody')}</p>
-      </section>
+      <Section heading={t('serviceHeading')}>
+        <Text tone="body">{t('serviceBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('accountHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('accountBody')}</p>
-      </section>
+      <Section heading={t('accountHeading')}>
+        <Text tone="body">{t('accountBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('contentHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('contentBody')}</p>
-      </section>
+      <Section heading={t('contentHeading')}>
+        <Text tone="body">{t('contentBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('acceptableUseHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('acceptableUseBody')}</p>
-      </section>
+      <Section heading={t('acceptableUseHeading')}>
+        <Text tone="body">{t('acceptableUseBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('warrantyHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('warrantyBody')}</p>
-      </section>
+      <Section heading={t('warrantyHeading')}>
+        <Text tone="body">{t('warrantyBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('liabilityHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('liabilityBody')}</p>
-      </section>
+      <Section heading={t('liabilityHeading')}>
+        <Text tone="body">{t('liabilityBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('endingHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('endingBody')}</p>
-      </section>
+      <Section heading={t('endingHeading')}>
+        <Text tone="body">{t('endingBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('changesHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('changesBody')}</p>
-      </section>
+      <Section heading={t('changesHeading')}>
+        <Text tone="body">{t('changesBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('contactHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('contactBody')}</p>
-      </section>
-    </main>
+      <Section heading={t('contactHeading')}>
+        <Text tone="body">{t('contactBody')}</Text>
+      </Section>
+    </PageShell>
   )
 }

@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import NextLink from 'next/link'
-import { Link } from '@/components/ui/Link'
 import { computeOutcome } from '@/lib/votes/compute-outcome'
 import type { Outcome } from '@/lib/votes/compute-outcome'
 import CrossCheckSelector from '@/components/tests/CrossCheckSelector'
@@ -10,7 +9,10 @@ import SnapshotSection from '@/components/systems/SnapshotSection'
 import DeleteSystemButton from '@/components/systems/DeleteSystemButton'
 import { Badge } from '@/components/ui/Badge'
 import { buttonVariants } from '@/components/ui/Button'
-import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { RowCard } from '@/components/ui/RowCard'
+import { Text } from '@/components/ui/Text'
 import { getTranslations } from 'next-intl/server'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 import { STATUS_DEAD } from '@/lib/clips/check-url'
@@ -164,7 +166,7 @@ export default async function SystemDetailPage({ params }: Props) {
   })
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <PageShell maxWidth="4xl">
 
       {/* Breadcrumb */}
       <nav className="text-xs text-gray-500 dark:text-gray-400">
@@ -173,29 +175,23 @@ export default async function SystemDetailPage({ params }: Props) {
         <span>{system.name}</span>
       </nav>
 
-      {/* System header */}
-      <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-          System
-        </p>
-        <div className="flex items-start justify-between gap-4">
-          <Heading level={1}>{system.name}</Heading>
-          {isOwner && (
-            <div className="shrink-0 flex gap-3">
-              <NextLink
-                href={`/systems/${id}/edit`}
-                className={buttonVariants({ variant: 'secondary', size: 'compact' })}
-              >
-                Edit
-              </NextLink>
-              {snapshots.length === 0 && <DeleteSystemButton systemId={id} />}
-            </div>
-          )}
-        </div>
-        {system.description && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">{system.description}</p>
+      <PageHeader
+        eyebrow="System"
+        title={system.name}
+        subtitle={system.description}
+        actions={isOwner && (
+          <>
+            <NextLink
+              href={`/systems/${id}/edit`}
+              className={buttonVariants({ variant: 'secondary', size: 'compact' })}
+            >
+              Edit
+            </NextLink>
+            {snapshots.length === 0 && <DeleteSystemButton systemId={id} />}
+          </>
         )}
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+      >
+        <Text size="xs">
           {snapshots.length} {snapshots.length === 1 ? 'snapshot' : 'snapshots'}
           {owner?.is_placeholder && (
             <>
@@ -205,13 +201,11 @@ export default async function SystemDetailPage({ params }: Props) {
               </Badge>
             </>
           )}
-        </p>
+        </Text>
         {owner?.is_placeholder && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {tCommon('claimContact')}
-          </p>
+          <Text size="xs">{tCommon('claimContact')}</Text>
         )}
-      </div>
+      </PageHeader>
 
       {/* Actions: add snapshot (owner only) + cross-check (when ≥2 snapshots exist) */}
       {isOwner && <AddSnapshotForm systemId={id} />}
@@ -224,7 +218,7 @@ export default async function SystemDetailPage({ params }: Props) {
 
       {/* Per-snapshot sections */}
       {snapshotsWithHistory.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">No snapshots yet.</p>
+        <Text>No snapshots yet.</Text>
       ) : (
         <div className="space-y-6">
           {snapshotsWithHistory.map(snapshot => {
@@ -256,9 +250,7 @@ export default async function SystemDetailPage({ params }: Props) {
                 locale={locale}
               >
                 {snapshot.tests.length === 0 ? (
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    No tests have used this snapshot yet.
-                  </p>
+                  <Text size="xs">No tests have used this snapshot yet.</Text>
                 ) : (
                   <ul className="space-y-2">
                     {snapshot.tests.map(test => {
@@ -266,30 +258,24 @@ export default async function SystemDetailPage({ params }: Props) {
                         ? { text: 'Broken', status: 'broken' as const }
                         : outcomeLabel(test.outcome)
                       return (
-                        <li key={test.id}>
-                          <Link
-                            href={`/tests/${test.id}`}
-                            variant="card"
-                            className="flex items-center justify-between"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium truncate">
-                                {test.title}
-                              </p>
+                        <RowCard
+                          key={test.id}
+                          href={`/tests/${test.id}`}
+                          title={test.title}
+                          subtitle={
+                            <>
                               {test.track && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                <Text size="xs" className="truncate">
                                   {test.track.artist} — {test.track.title}
-                                </p>
+                                </Text>
                               )}
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                              <Text size="xs">
                                 {new Date(test.created_at).toLocaleDateString(locale)}
-                              </p>
-                            </div>
-                            <Badge status={badge.status} className="ml-4 shrink-0">
-                              {badge.text}
-                            </Badge>
-                          </Link>
-                        </li>
+                              </Text>
+                            </>
+                          }
+                          trailing={<Badge status={badge.status}>{badge.text}</Badge>}
+                        />
                       )
                     })}
                   </ul>
@@ -299,6 +285,6 @@ export default async function SystemDetailPage({ params }: Props) {
           })}
         </div>
       )}
-    </main>
+    </PageShell>
   )
 }

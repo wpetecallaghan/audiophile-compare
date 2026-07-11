@@ -18,6 +18,8 @@ import type { RawVoteRow, TallyResult } from '@/lib/votes/compute-tally'
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
 import { Badge } from '@/components/ui/Badge'
+import { PageShell } from '@/components/ui/PageShell'
+import { Text } from '@/components/ui/Text'
 import { formatSnapshotLine, type SnapshotSummary } from '@/lib/tests/format-snapshot-line'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 import { STATUS_DEAD, STATUS_DEGRADED } from '@/lib/clips/check-url'
@@ -201,25 +203,28 @@ export default async function TestDetailPage({ params }: Props) {
   const snapshotLine = formatSnapshotLine(snapshotA, snapshotB)
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+    <PageShell maxWidth="4xl" spacing="responsive">
 
-      {/* Header */}
+      {/* Header — richer than PageHeader's shape (eyebrow + byline with
+          embedded vote count/imported badge + provenance/forum links +
+          EditForumLinkButton), left as raw JSX rather than forced into a
+          single-subtitle slot; see build-history/52-*.md */}
       <div className="space-y-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <Text size="xs" className="font-semibold uppercase tracking-wide">
           {isRevealed ? t('revealedStatus') : t('blindStatus')}
-        </p>
+        </Text>
         <Heading level={1}>{test.title}</Heading>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <Text>
           {track?.artist} — {track?.title}
           {track?.album && ` (${track.album})`}
-        </p>
+        </Text>
         {track?.passage_note && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 italic">{track.passage_note}</p>
+          <Text className="italic">{track.passage_note}</Text>
         )}
         {snapshotLine && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">{snapshotLine}</p>
+          <Text size="xs">{snapshotLine}</Text>
         )}
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <Text size="xs">
           by {creator?.display_name ?? t('anonymous')} ·{' '}
           {new Date(test.created_at).toLocaleDateString(locale)} ·{' '}
           {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
@@ -231,9 +236,9 @@ export default async function TestDetailPage({ params }: Props) {
               </Badge>
             </>
           )}
-        </p>
+        </Text>
         {(test.source_url || creator?.is_placeholder) && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 space-x-3">
+          <Text size="xs" className="space-x-3">
             {/* source_url survives a claim (step 39) unchanged — the link
                 stays useful as provenance even once the content is
                 normally-owned, unlike claim-contact below, which only
@@ -249,7 +254,7 @@ export default async function TestDetailPage({ params }: Props) {
               </Link>
             )}
             {creator?.is_placeholder && <span>{tCommon('claimContact')}</span>}
-          </p>
+          </Text>
         )}
         {/* Creator-supplied forum discussion link (step 46) — distinct from
             source_url above: hidden from non-creators until revealed
@@ -257,7 +262,7 @@ export default async function TestDetailPage({ params }: Props) {
             reveal status. Never touched by ReplaceClipUrlButton's
             voteCount === 0 gating — pure metadata, not what's being tested. */}
         {canSeeSystemInfo && test.forum_link && (
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <Text size="xs">
             <Link
               href={test.forum_link}
               variant="inline"
@@ -266,7 +271,7 @@ export default async function TestDetailPage({ params }: Props) {
             >
               {tForumLink('label')}
             </Link>
-          </p>
+          </Text>
         )}
         {isCreator && (
           <EditForumLinkButton testId={test.id} currentLink={test.forum_link} />
@@ -358,6 +363,6 @@ export default async function TestDetailPage({ params }: Props) {
         </Callout>
       )}
 
-    </main>
+    </PageShell>
   )
 }

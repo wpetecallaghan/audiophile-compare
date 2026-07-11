@@ -4,7 +4,9 @@ import FeedCard from '@/components/feed/FeedCard'
 import type { FeedTest } from '@/components/feed/FeedCard'
 import { getTranslations } from 'next-intl/server'
 import { buttonVariants } from '@/components/ui/Button'
-import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Text } from '@/components/ui/Text'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 import { STATUS_DEAD } from '@/lib/clips/check-url'
 
@@ -118,29 +120,21 @@ export default async function HomePage({ searchParams }: Props) {
   const t = await getTranslations('feed')
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <PageShell maxWidth="4xl">
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <Heading level={1}>{t('heading')}</Heading>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {t('subheading')}
-          </p>
-        </div>
-        {user && (
-          <Link
-            href="/tests/new"
-            className={buttonVariants({ size: 'compact', className: 'shrink-0' })}
-          >
+      <PageHeader
+        title={t('heading')}
+        subtitle={t('subheading')}
+        actions={user && (
+          <Link href="/tests/new" className={buttonVariants({ size: 'compact' })}>
             {t('newTestButton')}
           </Link>
         )}
-      </div>
+      />
 
       {/* Feed */}
       {feedTests.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <Text>
           {t('noTests')}{' '}
           {user ? (
             <Link href="/tests/new">
@@ -152,7 +146,7 @@ export default async function HomePage({ searchParams }: Props) {
               {' '}{t('toCreateFirst')}
             </>
           )}
-        </p>
+        </Text>
       ) : (
         <ul className="space-y-2">
           {feedTests.map(test => (
@@ -180,9 +174,9 @@ export default async function HomePage({ searchParams }: Props) {
               <span />
             )}
           </div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
+          <Text as="span" size="xs">
             {t('pageOf', { page, total: totalPages })}
-          </span>
+          </Text>
           <div className="flex items-center gap-3">
             {hasNext ? (
               <Link
@@ -202,7 +196,7 @@ export default async function HomePage({ searchParams }: Props) {
         </div>
       )}
 
-    </main>
+    </PageShell>
   )
 }
 

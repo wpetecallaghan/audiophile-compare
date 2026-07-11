@@ -4,6 +4,9 @@ import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { buttonVariants } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
+import { RowCard } from '@/components/ui/RowCard'
+import { Text } from '@/components/ui/Text'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 
 export default async function SystemsPage() {
@@ -34,13 +37,13 @@ export default async function SystemsPage() {
   const systems = data ?? []
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <PageShell maxWidth="4xl">
       <div className="flex items-center justify-between">
         <Heading level={1}>{t('heading')}</Heading>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
+          <Text as="span">
             {systems.length} {systems.length === 1 ? 'system' : 'systems'}
-          </span>
+          </Text>
           <NextLink
             href="/systems/new"
             className={buttonVariants({ size: 'compact' })}
@@ -51,49 +54,39 @@ export default async function SystemsPage() {
       </div>
 
       {systems.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <Text>
           {t('empty')}{' '}
           <Link href="/tests/new">
             {t('createTestLink')}
           </Link>{' '}
           to add your first system.
-        </p>
+        </Text>
       ) : (
         <ul className="space-y-3">
           {systems.map(system => {
             const snapshots = system.system_snapshots as SnapshotRow[]
             const latest = snapshots[0]
             return (
-              <li key={system.id}>
-                <Link
-                  href={`/systems/${system.id}`}
-                  variant="card"
-                  className="block"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{system.name}</p>
-                      {system.description && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          {system.description}
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {snapshots.length}{' '}
-                        {snapshots.length === 1 ? 'snapshot' : 'snapshots'}
-                        {latest && ` · latest: v${latest.version} — ${latest.label}`}
-                      </p>
-                    </div>
-                    <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(system.created_at).toLocaleDateString(locale)}
-                    </span>
-                  </div>
-                </Link>
-              </li>
+              <RowCard
+                key={system.id}
+                href={`/systems/${system.id}`}
+                title={system.name}
+                subtitle={
+                  <>
+                    {system.description && <Text size="xs">{system.description}</Text>}
+                    <Text size="xs">
+                      {snapshots.length}{' '}
+                      {snapshots.length === 1 ? 'snapshot' : 'snapshots'}
+                      {latest && ` · latest: v${latest.version} — ${latest.label}`}
+                    </Text>
+                  </>
+                }
+                trailing={<Text size="xs">{new Date(system.created_at).toLocaleDateString(locale)}</Text>}
+              />
             )
           })}
         </ul>
       )}
-    </main>
+    </PageShell>
   )
 }

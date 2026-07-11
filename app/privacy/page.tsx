@@ -1,48 +1,44 @@
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
+import { Section } from '@/components/ui/Section'
+import { Text } from '@/components/ui/Text'
 
 export default async function PrivacyPage() {
   const t = await getTranslations('privacy')
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <PageShell maxWidth="2xl">
       <Heading level={1}>{t('heading')}</Heading>
-      <p className="text-sm text-gray-600 dark:text-gray-300">{t('intro')}</p>
+      <Text tone="body">{t('intro')}</Text>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('collectHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('collectBody')}</p>
-      </section>
+      <Section heading={t('collectHeading')}>
+        <Text tone="body">{t('collectBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('useHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('useBody')}</p>
-      </section>
+      <Section heading={t('useHeading')}>
+        <Text tone="body">{t('useBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('thirdPartiesHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('thirdPartiesBody')}</p>
-      </section>
+      <Section heading={t('thirdPartiesHeading')}>
+        <Text tone="body">{t('thirdPartiesBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('cookiesHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('cookiesBody')}</p>
-      </section>
+      <Section heading={t('cookiesHeading')}>
+        <Text tone="body">{t('cookiesBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('rightsHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('rightsBody')}</p>
-      </section>
+      <Section heading={t('rightsHeading')}>
+        <Text tone="body">{t('rightsBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('childrenHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('childrenBody')}</p>
-      </section>
+      <Section heading={t('childrenHeading')}>
+        <Text tone="body">{t('childrenBody')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('contactHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('contactBody')}</p>
-      </section>
-    </main>
+      <Section heading={t('contactHeading')}>
+        <Text tone="body">{t('contactBody')}</Text>
+      </Section>
+    </PageShell>
   )
 }

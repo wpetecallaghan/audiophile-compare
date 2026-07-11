@@ -4,6 +4,7 @@ import Link from 'next/link'
 import EditSystemForm from '@/components/systems/EditSystemForm'
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -30,7 +31,7 @@ export default async function EditSystemPage({ params }: Props) {
   const t = await getTranslations('systems')
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <PageShell maxWidth="4xl">
       <nav className="text-xs text-gray-500 dark:text-gray-400">
         <Link href="/systems" className="hover:underline">{t('heading')}</Link>
         {' / '}
@@ -44,6 +45,6 @@ export default async function EditSystemPage({ params }: Props) {
         initialName={system.name}
         initialDescription={system.description ?? null}
       />
-    </main>
+    </PageShell>
   )
 }

@@ -1,37 +1,36 @@
 import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
+import { Section } from '@/components/ui/Section'
+import { Text } from '@/components/ui/Text'
 
 export default async function AboutPage() {
   const t = await getTranslations('about')
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <PageShell maxWidth="2xl">
       <Heading level={1}>{t('heading')}</Heading>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('whyHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('whyBody1')}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('whyBody2')}</p>
-      </section>
+      <Section heading={t('whyHeading')}>
+        <Text tone="body">{t('whyBody1')}</Text>
+        <Text tone="body">{t('whyBody2')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('listenersHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('listenersBody1')}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('listenersBody2')}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('listenersBody3')}</p>
-      </section>
+      <Section heading={t('listenersHeading')}>
+        <Text tone="body">{t('listenersBody1')}</Text>
+        <Text tone="body">{t('listenersBody2')}</Text>
+        <Text tone="body">{t('listenersBody3')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('creatorsHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('creatorsBody1')}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('creatorsBody2')}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('creatorsBody3')}</p>
-      </section>
+      <Section heading={t('creatorsHeading')}>
+        <Text tone="body">{t('creatorsBody1')}</Text>
+        <Text tone="body">{t('creatorsBody2')}</Text>
+        <Text tone="body">{t('creatorsBody3')}</Text>
+      </Section>
 
-      <section className="space-y-3">
-        <Heading level={2}>{t('gettingStartedHeading')}</Heading>
-        <p className="text-sm text-gray-600 dark:text-gray-300">{t('gettingStartedBody')}</p>
+      <Section heading={t('gettingStartedHeading')}>
+        <Text tone="body">{t('gettingStartedBody')}</Text>
         <div className="flex items-center gap-4">
           <Link href="/register">
             {t('registerCta')}
@@ -40,7 +39,7 @@ export default async function AboutPage() {
             {t('signInCta')}
           </Link>
         </div>
-      </section>
-    </main>
+      </Section>
+    </PageShell>
   )
 }

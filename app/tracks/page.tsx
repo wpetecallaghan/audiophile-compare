@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { Link } from '@/components/ui/Link'
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
+import { RowCard } from '@/components/ui/RowCard'
+import { Text } from '@/components/ui/Text'
 
 export default async function TracksPage() {
   const supabase = await createClient()
@@ -22,52 +25,44 @@ export default async function TracksPage() {
   }))
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
+    <PageShell maxWidth="4xl">
       <div className="flex items-center justify-between">
         <Heading level={1}>{t('heading')}</Heading>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+        <Text as="span">
           {tracks.length} {tracks.length === 1 ? 'track' : 'tracks'}
-        </span>
+        </Text>
       </div>
 
       {tracks.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <Text>
           {t('empty')}{' '}
           <Link href="/tests/new">
             {t('createTestLink')}
           </Link>{' '}
           {t('toAddFirst')}
-        </p>
+        </Text>
       ) : (
         <ul className="space-y-2">
           {tracks.map(track => (
-            <li key={track.id}>
-              <Link
-                href={`/tracks/${track.id}`}
-                variant="card"
-                className="flex items-center justify-between"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {track.artist} — {track.title}
-                  </p>
-                  {track.album && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{track.album}</p>
-                  )}
+            <RowCard
+              key={track.id}
+              href={`/tracks/${track.id}`}
+              title={`${track.artist} — ${track.title}`}
+              subtitle={
+                <>
+                  {track.album && <Text size="xs" className="truncate">{track.album}</Text>}
                   {track.passage_note && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 italic truncate">
-                      {track.passage_note}
-                    </p>
+                    <Text size="xs" className="italic truncate">{track.passage_note}</Text>
                   )}
-                </div>
-                <span className="ml-4 shrink-0 text-xs text-gray-500 dark:text-gray-400">
-                  {track.testCount} {track.testCount === 1 ? 'test' : 'tests'}
-                </span>
-              </Link>
-            </li>
+                </>
+              }
+              trailing={
+                <Text size="xs">{track.testCount} {track.testCount === 1 ? 'test' : 'tests'}</Text>
+              }
+            />
           ))}
         </ul>
       )}
-    </main>
+    </PageShell>
   )
 }

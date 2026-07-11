@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { isAdminEmail } from '@/lib/admin/is-admin-email'
-import { Heading } from '@/components/ui/Heading'
+import { PageShell } from '@/components/ui/PageShell'
+import { PageHeader } from '@/components/ui/PageHeader'
 import ClaimPlaceholderForm from '@/components/admin/ClaimPlaceholderForm'
 
 // build-history-ingestion.md step 39 — admin-only, human-verified claim
@@ -22,13 +23,10 @@ export default async function ClaimPlaceholderPage() {
   const t = await getTranslations('admin.claim')
 
   return (
-    <main className="container mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
-      <div className="space-y-1">
-        <Heading level={1}>{t('heading')}</Heading>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t('description')}</p>
-      </div>
+    <PageShell maxWidth="2xl">
+      <PageHeader title={t('heading')} subtitle={t('description')} />
 
       <ClaimPlaceholderForm />
-    </main>
+    </PageShell>
   )
 }

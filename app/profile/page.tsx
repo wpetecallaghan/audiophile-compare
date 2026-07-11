@@ -5,8 +5,10 @@ import TechniquePreferencesForm from '@/components/TechniquePreferencesForm'
 import ChangeEmailForm from '@/components/ChangeEmailForm'
 import ChangePasswordForm from '@/components/ChangePasswordForm'
 import { getTranslations } from 'next-intl/server'
-import { Heading } from '@/components/ui/Heading'
 import { Link } from '@/components/ui/Link'
+import { PageShell } from '@/components/ui/PageShell'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Section } from '@/components/ui/Section'
 import { isAdminEmail } from '@/lib/admin/is-admin-email'
 
 export default async function ProfilePage({
@@ -51,44 +53,39 @@ export default async function ProfilePage({
       : (techniques ?? []).map(t => t.id)
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
-      <div className="space-y-1">
-        <Heading level={1}>{t('heading')}</Heading>
-        {profile?.email && (
-          <p className="text-sm text-gray-500 dark:text-gray-400">{profile.email}</p>
-        )}
-      </div>
+    <PageShell maxWidth="4xl">
+      <PageHeader title={t('heading')} subtitle={profile?.email} />
 
       {/* Display name */}
-      <section className="space-y-3">
+      <Section>
         <ProfileForm initialDisplayName={profile?.display_name ?? ''} />
-      </section>
+      </Section>
 
       <hr className="border-gray-100 dark:border-gray-800" />
 
       {/* Listening technique preferences — step 45 */}
-      <section className="space-y-3">
+      <Section>
         <h2 className="text-sm font-semibold">{t('techniquesHeading')}</h2>
         <TechniquePreferencesForm
           techniques={techniques ?? []}
           initialEnabledIds={enabledTechniqueIds}
         />
-      </section>
+      </Section>
 
       <hr className="border-gray-100 dark:border-gray-800" />
 
       {/* Change email */}
-      <section className="space-y-3">
+      <Section>
         <h2 className="text-sm font-semibold">{t('changeEmailHeading')}</h2>
         <ChangeEmailForm />
-      </section>
+      </Section>
 
       <hr className="border-gray-100 dark:border-gray-800" />
 
       {/* Change password */}
-      <section className="space-y-3">
+      <Section>
         <ChangePasswordForm autoOpen={params.reset === 'true'} />
-      </section>
+      </Section>
 
       {isAdmin && (
         <>
@@ -97,15 +94,14 @@ export default async function ProfilePage({
           {/* Admin — build step 41. Link labels reuse each admin page's own
               heading string rather than duplicating the copy, so they can
               never drift from what those pages call themselves. */}
-          <section className="space-y-3">
-            <Heading level={2}>{t('adminHeading')}</Heading>
+          <Section heading={t('adminHeading')}>
             <div className="flex flex-col items-start gap-2">
               <Link href="/admin/erase-user-data">{tEraseUserData('heading')}</Link>
               <Link href="/admin/claim">{tClaim('heading')}</Link>
             </div>
-          </section>
+          </Section>
         </>
       )}
-    </main>
+    </PageShell>
   )
 }
