@@ -67,6 +67,33 @@ describe('detectProvider', () => {
     })
   })
 
+  describe('Dropbox', () => {
+    it('rewrites a dl=0 share link to raw=1, preserving rlkey and other params', () => {
+      const result = detectProvider(
+        'https://www.dropbox.com/scl/fi/ialickzq1q7hg77kkj56o/IMG_0300.mov?rlkey=hmo5rrmnyrkibs8whu8hux6j1&st=sve9hgm9&dl=0',
+      )
+      expect(result.provider).toBe('direct')
+      expect(result.canonical_url).toBe(
+        'https://www.dropbox.com/scl/fi/ialickzq1q7hg77kkj56o/IMG_0300.mov?rlkey=hmo5rrmnyrkibs8whu8hux6j1&st=sve9hgm9&raw=1',
+      )
+    })
+
+    it('adds raw=1 even when there is no dl param at all', () => {
+      const result = detectProvider('https://www.dropbox.com/scl/fi/abc123/clip.mp4?rlkey=xyz')
+      expect(result.canonical_url).toBe('https://www.dropbox.com/scl/fi/abc123/clip.mp4?rlkey=xyz&raw=1')
+    })
+
+    it('is idempotent for a URL already using raw=1', () => {
+      const result = detectProvider('https://www.dropbox.com/scl/fi/abc123/clip.mp4?rlkey=xyz&raw=1')
+      expect(result.canonical_url).toBe('https://www.dropbox.com/scl/fi/abc123/clip.mp4?rlkey=xyz&raw=1')
+    })
+
+    it('handles the bare dropbox.com host, not just www', () => {
+      const result = detectProvider('https://dropbox.com/scl/fi/abc123/clip.mp4?rlkey=xyz&dl=0')
+      expect(result.canonical_url).toBe('https://dropbox.com/scl/fi/abc123/clip.mp4?rlkey=xyz&raw=1')
+    })
+  })
+
   describe('direct', () => {
     it('classifies a direct audio URL as direct with unknown media_type', () => {
       // media_type for direct URLs is resolved by HEAD request, not URL pattern

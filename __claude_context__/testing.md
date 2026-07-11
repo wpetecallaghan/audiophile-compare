@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (47 files · 506 tests · all passing)
+## 4. Unit test inventory (47 files · 511 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -82,8 +82,8 @@ indirectly through the step tests.
 | `components/__tests__/ChangeEmailForm.test.tsx` | 4 | updateUser({ email }), confirmation message, loading state |
 | `components/__tests__/ChangePasswordForm.test.tsx` | 11 | updateUser({ password }), validation (length, complexity — step 51, match), autoOpen prop, loading state |
 | `components/media/__tests__/ABPlayer.test.tsx` | 4 | Renders A and B labels; hideClipA/hideClipB hide that slot entirely; a Google Drive clip renders an iframe embed with the expected preview src |
-| `components/media/__tests__/MediaPlayer.test.tsx` | 4 | Dispatch logic (step 54): a direct clip with media_type unknown renders NativePlayer (a `<video>`), not a bare link; unresolved media_type defaults to `<video>` not `<audio>`; media_type audio renders `<audio>`; provider unknown still renders the bare link |
-| `components/media/players/__tests__/NativePlayer.test.tsx` | 9 | Renders `<audio>`/`<video>` per mediaType; onPlay fires on the element's play event; falls back to UnknownPlayer's link when the element fires onError (step 54); pause() via ref doesn't throw after that fallback; falls back after a bounded 3s load timeout when neither onError nor onLoadedMetadata ever fires (a Google Photos share link resolving to an HTML page, found via real user report — onError alone was flaky); does not fall back once onLoadedMetadata has fired, even past the timeout; the media element stays visually hidden until onLoadedMetadata fires, then reveals; never reveals when falling back to the link instead |
+| `components/media/__tests__/MediaPlayer.test.tsx` | 5 | Dispatch logic (step 54): a direct clip with media_type unknown renders NativePlayer (a `<video>`), not a bare link; unresolved media_type defaults to `<video>` not `<audio>`; media_type audio renders `<audio>`; provider unknown still renders the bare link; uses canonical_url (not source_url) as the media element src when they differ (step 56, Dropbox) |
+| `components/media/players/__tests__/NativePlayer.test.tsx` | 9 | Redesigned in step 56 to drop the load-timeout race entirely (3s then 5s both still produced occasional false fallbacks on real Dropbox clips): the fallback link is the default, shown immediately; `<audio>`/`<video>` is mounted but visually hidden until `onLoadedMetadata` confirms real media, at which point it's revealed and the link disappears; onPlay fires on the element's play event; the link simply keeps showing if the element errors, since there's no separate error state to recover from; pause() via ref doesn't throw before load; uses fallbackUrl (not url) for the link when the two differ (Dropbox's raw=1 vs its original share page); resets to showing the link again when the url prop changes |
 | `components/media/players/__tests__/YouTubePlayer.test.tsx` | 4 | `playerVars.playsinline` is `1` — keeps embeds inline on iOS Safari instead of forcing native fullscreen (step 55); onStateChange with PLAYING calls onPlay; pause() via ref calls the SDK's pauseVideo(); the SDK target container carries the classes (`absolute inset-0 w-full h-full`) the IFrame API needs to size the iframe it replaces it with responsively |
 | `components/media/players/__tests__/GoogleDrivePlayer.test.tsx` | 3 | Play detection via focus/blur heuristic (step 53): onPlay fires when focus moves into the iframe, doesn't fire for an unrelated window blur; pause() force-remounts the iframe (no real pause API exists) |
 | `components/tests/__tests__/VoteForm.test.tsx` | 22 | Rendering, Other field visibility, validation, submission, pre-population, hasDeadClip |
@@ -93,7 +93,7 @@ indirectly through the step tests.
 | `components/systems/__tests__/EditSystemForm.test.tsx` | 12 | PATCH /api/systems/[id], validation, redirect, cancel |
 | `components/systems/__tests__/SnapshotSection.test.tsx` | 27 | Display/edit mode, component rows, PATCH, router.refresh, delete confirm/cancel |
 | `lib/auth/__tests__/password-rules.test.ts` | 11 | Password complexity sliding by length (step 51) — 3-of-4 character classes under 20 chars, the `'password123'` regression case, the 20-char boundary, long all-digit/all-symbol strings rejected, a long plain-lowercase passphrase accepted |
-| `lib/clips/__tests__/detect-provider.test.ts` | 12 | YouTube / Vimeo / Google Drive / direct / unknown URL classification; a Drive folder link isn't misdetected as a file |
+| `lib/clips/__tests__/detect-provider.test.ts` | 16 | YouTube / Vimeo / Google Drive / direct / unknown URL classification; a Drive folder link isn't misdetected as a file; Dropbox share links (step 56) rewrite dl=0/absent-dl to raw=1 preserving rlkey and other params, idempotent for an already-raw=1 URL, and handles bare dropbox.com as well as www |
 | `lib/clips/__tests__/is-unsupported.test.ts` | 3 | `isUnsupportedClip` (step 54 simplification): true only for provider unknown; false for direct regardless of media_type; false for every embeddable provider |
 | `lib/clips/__tests__/to-clip-data.test.ts` | 6 | embed_id and canonical_url derivation for each provider, including Google Drive |
 | `lib/clips/__tests__/find-shared-clips.test.ts` | 9 | Shared track finder; side A/B selection; no shared tracks |

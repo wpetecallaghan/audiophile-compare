@@ -45,6 +45,27 @@ function extractGoogleDriveId(url: URL): string | null {
   return match?.[1] ?? null
 }
 
+// Dropbox share URLs (e.g.
+// https://www.dropbox.com/scl/fi/<id>/<filename>?rlkey=...&dl=0) serve an
+// HTML share page by default — dl=0/dl=1 both do — which <audio>/<video>
+// can never play. Swapping the dl param for raw=1 makes Dropbox serve the
+// actual file bytes directly instead, confirmed live against a real file
+// (build step 56): dl=0 fails instantly with a real <video> element,
+// raw=1 plays it with correct duration/dimensions and no error. No SDK or
+// iframe needed — matched by hostname only (not a specific path shape,
+// unlike Drive's file-vs-folder distinction) since the rewrite is a safe
+// no-op for any Dropbox URL that isn't actually a file link.
+function isDropboxUrl(url: URL): boolean {
+  return url.hostname === 'www.dropbox.com' || url.hostname === 'dropbox.com'
+}
+
+function toDropboxRawUrl(url: URL): string {
+  const rewritten = new URL(url.toString())
+  rewritten.searchParams.delete('dl')   // whatever dl=0/dl=1 was there
+  rewritten.searchParams.set('raw', '1')
+  return rewritten.toString()           // rlkey and every other param untouched
+}
+
 export function detectProvider(rawUrl: string): DetectedClip {
   let url: URL
 
@@ -91,6 +112,15 @@ export function detectProvider(rawUrl: string): DetectedClip {
       media_type: 'video',
       embed_id: googleDriveId,
       canonical_url: `https://drive.google.com/file/d/${googleDriveId}/preview`,
+    }
+  }
+
+  if (isDropboxUrl(url)) {
+    return {
+      provider: 'direct',
+      media_type: 'unknown',   // HEAD misreports Content-Type even for raw=1 — resolved client-side (step 54)
+      embed_id: null,
+      canonical_url: toDropboxRawUrl(url),
     }
   }
 

@@ -138,28 +138,33 @@ export type PlayerHandle = {
   URL that never parsed) — a `direct` clip is never hidden this way, even
   with `media_type: 'unknown'`, since it always gets a real inline
   playback attempt (see `NativePlayer` below).
-- **`NativePlayer` (`direct` clips, step 54)** always attempts playback
-  regardless of `media_type` — a server-resolved `'unknown'` media_type
-  reflects an unreliable/missing `Content-Type` header, not proof the
-  file can't play. If the rendered `<audio>`/`<video>` element fires
-  `onError`, it swaps in `UnknownPlayer`'s link-out in the same slot
-  instead of failing silently. `MediaPlayer.tsx` defaults an unresolved
-  `media_type` to `'video'` (not `'audio'`) when dispatching, since a
-  `<video>` element still plays audio-only files acceptably.
-  `onError` alone isn't reliable enough — some "direct" URLs actually
-  resolve to an HTML page (e.g. a Google Photos share link, found via a
-  real user report), and how quickly/reliably the browser reports that
-  as an error varies (confirmed flaky on mobile). `NativePlayer` also
-  runs a bounded `LOAD_TIMEOUT_MS` (3s) timer, cleared only by
-  `onLoadedMetadata` (proof real media data arrived — HTML can never
-  produce that event) — if neither error nor metadata happens in time,
-  it falls back anyway. This is what makes the fallback deterministic
-  rather than dependent on browser-specific error timing. The
-  `<audio>`/`<video>` element itself stays mounted but visually hidden
-  (`hidden` className) for that whole uncertain window — it needs to
-  stay mounted to keep loading, but isn't revealed until
-  `onLoadedMetadata` confirms it actually works, so a slow-to-resolve
-  clip never briefly shows a blank/broken-looking native player.
+- **`NativePlayer` (`direct` clips, step 54, redesigned step 56)** always
+  attempts playback regardless of `media_type` — a server-resolved
+  `'unknown'` media_type reflects an unreliable/missing `Content-Type`
+  header, not proof the file can't play. `MediaPlayer.tsx` defaults an
+  unresolved `media_type` to `'video'` (not `'audio'`) when dispatching,
+  since a `<video>` element still plays audio-only files acceptably.
+  It also passes `url={clip.canonical_url ?? clip.source_url}` (the
+  playable URL, possibly rewritten — e.g. Dropbox's `raw=1`, step 56) and
+  `fallbackUrl={clip.source_url}` (always the original, human-friendly
+  URL) as two separate props, since these diverge for Dropbox but must
+  stay in sync everywhere else.
+  **There is no load timeout.** An earlier version tried "wait up to Xms,
+  then give up and show the link" (3s in step 54, 5s in step 56) to
+  detect e.g. a Google Photos share link that resolves to an HTML page,
+  not media — but real Dropbox clips on a cold connection kept
+  intermittently missing both durations, and no fixed duration is both
+  short enough to not feel broken on a dead link and long enough to never
+  misfire on a slow-but-working one. Instead: `UnknownPlayer`'s link-out
+  is the **default**, rendered immediately; the `<audio>`/`<video>`
+  element is mounted alongside it (visually hidden via `hidden`
+  className) and attempts to load in the background. Only
+  `onLoadedMetadata` — proof real media data arrived, since parsing HTML
+  as a media container can't produce that event — swaps them: link
+  hidden, player revealed. If the element errors, or metadata never
+  arrives, the link was already showing and just stays there — no
+  failure state to detect, no duration to guess, no way to misfire in
+  either direction.
 - All player components use `forwardRef` + `useImperativeHandle`. Do not deviate from this structure:
 
 ```typescript

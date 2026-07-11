@@ -1,33 +1,45 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createRef } from 'react'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import NativePlayer, { type PlayerHandle } from '../NativePlayer'
 
 // @vitest-environment jsdom
 
-const LOAD_TIMEOUT_MS = 3000
-
-beforeEach(() => {
-  vi.useFakeTimers()
-})
-
-afterEach(() => {
-  vi.useRealTimers()
-})
-
 describe('NativePlayer', () => {
-  it('renders an <audio> element for mediaType audio', () => {
-    render(<NativePlayer url="https://example.com/audio.mp3" mediaType="audio" onPlay={vi.fn()} />)
+  // The core behavior for build step 56's redesign: no timeout to guess —
+  // the fallback link is the default, visible from first render, so a
+  // clip that never resolves (errors, hangs, or is a Google Photos-style
+  // HTML page) never needs a "give up" moment. It was already showing.
+  it('shows the fallback link immediately, before the media element has loaded', () => {
+    const url = 'https://example.com/clip.mov'
+    render(<NativePlayer url={url} mediaType="video" onPlay={vi.fn()} />)
 
-    expect(document.querySelector('audio')).not.toBeNull()
-    expect(document.querySelector('video')).toBeNull()
+    expect(screen.getByRole('link')).toBeInTheDocument()
   })
 
-  it('renders a <video> element for mediaType video', () => {
+  it('renders an <audio> element for mediaType audio, mounted but hidden until loaded', () => {
+    render(<NativePlayer url="https://example.com/audio.mp3" mediaType="audio" onPlay={vi.fn()} />)
+
+    const audio = document.querySelector('audio')
+    expect(audio).not.toBeNull()
+    expect(audio!.className).toContain('hidden')
+  })
+
+  it('renders a <video> element for mediaType video, mounted but hidden until loaded', () => {
     render(<NativePlayer url="https://example.com/clip.mov" mediaType="video" onPlay={vi.fn()} />)
 
-    expect(document.querySelector('video')).not.toBeNull()
-    expect(document.querySelector('audio')).toBeNull()
+    const video = document.querySelector('video')
+    expect(video).not.toBeNull()
+    expect(video!.className).toContain('hidden')
+  })
+
+  it('reveals the media element and hides the fallback link once metadata loads', () => {
+    render(<NativePlayer url="https://example.com/clip.mov" mediaType="video" onPlay={vi.fn()} />)
+
+    fireEvent.loadedMetadata(document.querySelector('video')!)
+
+    expect(document.querySelector('video')!.className).not.toContain('hidden')
+    expect(screen.queryByRole('link')).toBeNull()
   })
 
   it('calls onPlay when the media element fires its play event', () => {
@@ -39,85 +51,45 @@ describe('NativePlayer', () => {
     expect(onPlay).toHaveBeenCalledTimes(1)
   })
 
-  // The core behavior for build step 54: media_type is often 'unknown'
-  // server-side (an unreliable Content-Type header, not proof the file
-  // can't play), so NativePlayer always attempts playback first and only
-  // falls back to the link-out UnknownPlayer when the element itself
-  // reports a real error.
-  it('falls back to the UnknownPlayer link when the media element errors', () => {
+  it('keeps showing the fallback link if the media element errors — no state to recover from', () => {
     const url = 'https://example.com/not-actually-playable'
     render(<NativePlayer url={url} mediaType="video" onPlay={vi.fn()} />)
 
     fireEvent.error(document.querySelector('video')!)
 
-    expect(document.querySelector('video')).toBeNull()
     const link = screen.getByRole('link') as HTMLAnchorElement
     expect(link.href).toBe(url)
   })
 
-  it('does not throw when pause() is called via ref after an error fallback', () => {
+  it('does not throw when pause() is called via ref before the media element has loaded', () => {
     const ref = createRef<PlayerHandle>()
     render(<NativePlayer ref={ref} url="https://example.com/clip.mov" mediaType="video" onPlay={vi.fn()} />)
-
-    fireEvent.error(document.querySelector('video')!)
 
     expect(() => ref.current?.pause()).not.toThrow()
   })
 
-  // Regression guard for a real reported bug (build step 54): a "direct"
-  // URL that's actually an HTML share page (e.g. a Google Photos share
-  // link) never fires a play error reliably on some browsers — onError
-  // alone left the fallback flaky/inconsistent. A bounded timeout is the
-  // deterministic backstop.
-  it('falls back after the load timeout elapses with no error or metadata event', () => {
-    const url = 'https://photos.app.goo.gl/abc123'
-    render(<NativePlayer url={url} mediaType="video" onPlay={vi.fn()} />)
+  // Build step 56: a Dropbox clip plays via its rewritten raw=1
+  // canonical_url, but the fallback link should point at the original,
+  // human-friendly share page instead of the raw stream URL —
+  // fallbackUrl is what lets those diverge.
+  it('uses fallbackUrl, not url, for the link when the two differ', () => {
+    const playableUrl = 'https://www.dropbox.com/scl/fi/abc/clip.mov?rlkey=xyz&raw=1'
+    const shareUrl = 'https://www.dropbox.com/scl/fi/abc/clip.mov?rlkey=xyz&dl=0'
+    render(<NativePlayer url={playableUrl} fallbackUrl={shareUrl} mediaType="video" onPlay={vi.fn()} />)
 
-    expect(document.querySelector('video')).not.toBeNull()
-
-    act(() => {
-      vi.advanceTimersByTime(LOAD_TIMEOUT_MS)
-    })
-
-    expect(document.querySelector('video')).toBeNull()
     const link = screen.getByRole('link') as HTMLAnchorElement
-    expect(link.href).toBe(url)
+    expect(link.href).toBe(shareUrl)
   })
 
-  it('does not fall back once real media metadata has loaded, even after the timeout would have elapsed', () => {
-    const url = 'https://example.com/clip.mov'
-    render(<NativePlayer url={url} mediaType="video" onPlay={vi.fn()} />)
-
+  it('resets to showing the fallback link again when the url prop changes', () => {
+    const { rerender } = render(
+      <NativePlayer url="https://example.com/clip-a.mov" mediaType="video" onPlay={vi.fn()} />,
+    )
     fireEvent.loadedMetadata(document.querySelector('video')!)
-
-    act(() => {
-      vi.advanceTimersByTime(LOAD_TIMEOUT_MS)
-    })
-
-    expect(document.querySelector('video')).not.toBeNull()
     expect(screen.queryByRole('link')).toBeNull()
-  })
 
-  // Requested follow-up: don't show a blank/broken-looking native player
-  // during the uncertain window — keep it mounted (so it keeps loading)
-  // but visually hidden until we know it actually works.
-  it('keeps the media element hidden until metadata loads, then reveals it', () => {
-    render(<NativePlayer url="https://example.com/clip.mov" mediaType="video" onPlay={vi.fn()} />)
+    rerender(<NativePlayer url="https://example.com/clip-b.mov" mediaType="video" onPlay={vi.fn()} />)
 
-    const video = document.querySelector('video')!
-    expect(video.className).toContain('hidden')
-
-    fireEvent.loadedMetadata(video)
-
-    expect(video.className).not.toContain('hidden')
-  })
-
-  it('never reveals the hidden media element when it falls back to the link instead', () => {
-    render(<NativePlayer url="https://example.com/not-actually-playable" mediaType="video" onPlay={vi.fn()} />)
-
-    fireEvent.error(document.querySelector('video')!)
-
-    expect(document.querySelector('video')).toBeNull()
     expect(screen.getByRole('link')).toBeInTheDocument()
   })
 })
