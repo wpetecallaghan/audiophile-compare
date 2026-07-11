@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { TextInput } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
-import { MIN_PASSWORD_LENGTH } from '@/lib/auth/password-rules'
+import { MIN_PASSWORD_LENGTH, isPasswordComplexEnough } from '@/lib/auth/password-rules'
 
 export default function ChangePasswordForm({ autoOpen = false }: { autoOpen?: boolean }) {
   const t = useTranslations('profile')
@@ -37,6 +37,10 @@ export default function ChangePasswordForm({ autoOpen = false }: { autoOpen?: bo
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       setError(t('passwordMinLength'))
+      return
+    }
+    if (!isPasswordComplexEnough(password)) {
+      setError(t('passwordComplexity'))
       return
     }
     if (password !== confirm) {

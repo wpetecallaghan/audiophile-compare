@@ -74,13 +74,13 @@ indirectly through the step tests.
 | `__tests__/supabase-client.test.ts` | 7 | Browser client creation, env vars |
 | `__tests__/supabase-server.test.ts` | 10 | Async client, cookie handling, env vars |
 | `components/__tests__/LoginWithPasswordForm.test.tsx` | 9 | signInWithPassword, error cases (invalid creds, unconfirmed email), redirect |
-| `components/__tests__/RegisterForm.test.tsx` | 8 | signUp, validation (length, match), success state, already-registered error |
+| `components/__tests__/RegisterForm.test.tsx` | 9 | signUp, validation (length, complexity — step 51, match), success state, already-registered error |
 | `components/__tests__/ForgotPasswordForm.test.tsx` | 5 | resetPasswordForEmail, success message, onBack callback |
 | `components/__tests__/SignOutButton.test.tsx` | 4 | signOut, window.location navigation, loading state |
 | `components/__tests__/ProfileForm.test.tsx` | 13 | PATCH /api/profile, trim, validation, success/error states |
 | `components/__tests__/TechniquePreferencesForm.test.tsx` | 13 | PATCH /api/profile/technique-preferences with only checked ids; renders all techniques checked by default; min-1 disables Save and shows the error; success/error states (step 45) |
 | `components/__tests__/ChangeEmailForm.test.tsx` | 4 | updateUser({ email }), confirmation message, loading state |
-| `components/__tests__/ChangePasswordForm.test.tsx` | 9 | updateUser({ password }), validation, autoOpen prop, loading state |
+| `components/__tests__/ChangePasswordForm.test.tsx` | 11 | updateUser({ password }), validation (length, complexity — step 51, match), autoOpen prop, loading state |
 | `components/media/__tests__/ABPlayer.test.tsx` | 4 | Renders A and B labels; hideClipA/hideClipB hide that slot entirely; a Google Drive clip renders an iframe embed and the sibling's pause is a harmless no-op |
 | `components/tests/__tests__/VoteForm.test.tsx` | 22 | Rendering, Other field visibility, validation, submission, pre-population, hasDeadClip |
 | `components/tests/__tests__/StepSnapshots.test.tsx` | 28 | Open/close, validation, POST, onSnapshotCreated, inline system creation |
@@ -88,6 +88,7 @@ indirectly through the step tests.
 | `components/systems/__tests__/CreateSystemForm.test.tsx` | 11 | POST /api/systems, validation, redirect, cancel |
 | `components/systems/__tests__/EditSystemForm.test.tsx` | 12 | PATCH /api/systems/[id], validation, redirect, cancel |
 | `components/systems/__tests__/SnapshotSection.test.tsx` | 27 | Display/edit mode, component rows, PATCH, router.refresh, delete confirm/cancel |
+| `lib/auth/__tests__/password-rules.test.ts` | 11 | Password complexity sliding by length (step 51) — 3-of-4 character classes under 20 chars, the `'password123'` regression case, the 20-char boundary, long all-digit/all-symbol strings rejected, a long plain-lowercase passphrase accepted |
 | `lib/clips/__tests__/detect-provider.test.ts` | 12 | YouTube / Vimeo / Google Drive / direct / unknown URL classification; a Drive folder link isn't misdetected as a file |
 | `lib/clips/__tests__/to-clip-data.test.ts` | 6 | embed_id and canonical_url derivation for each provider, including Google Drive |
 | `lib/clips/__tests__/find-shared-clips.test.ts` | 9 | Shared track finder; side A/B selection; no shared tracks |

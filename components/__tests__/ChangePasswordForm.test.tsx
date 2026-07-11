@@ -87,11 +87,23 @@ describe('ChangePasswordForm', () => {
       const user = userEvent.setup()
       render(<ChangePasswordForm autoOpen />)
 
-      await user.type(screen.getByLabelText('New password'), 'password1')
-      await user.type(screen.getByLabelText(/confirm new password/i), 'password2')
+      await user.type(screen.getByLabelText('New password'), 'Password1')
+      await user.type(screen.getByLabelText(/confirm new password/i), 'Password2')
       await user.click(screen.getByRole('button', { name: /update password/i }))
 
       expect(screen.getByText(/don.t match/i)).toBeInTheDocument()
+      expect(mockUpdateUser).not.toHaveBeenCalled()
+    })
+
+    it('shows error when password lacks character variety', async () => {
+      const user = userEvent.setup()
+      render(<ChangePasswordForm autoOpen />)
+
+      await user.type(screen.getByLabelText('New password'), 'newpassword1')
+      await user.type(screen.getByLabelText(/confirm new password/i), 'newpassword1')
+      await user.click(screen.getByRole('button', { name: /update password/i }))
+
+      expect(screen.getByText(/needs more variety/i)).toBeInTheDocument()
       expect(mockUpdateUser).not.toHaveBeenCalled()
     })
   })
@@ -107,12 +119,12 @@ describe('ChangePasswordForm', () => {
 
       render(<ChangePasswordForm autoOpen />)
 
-      await user.type(screen.getByLabelText('New password'), 'newpassword1')
-      await user.type(screen.getByLabelText(/confirm new password/i), 'newpassword1')
+      await user.type(screen.getByLabelText('New password'), 'NewPassword1')
+      await user.type(screen.getByLabelText(/confirm new password/i), 'NewPassword1')
       await user.click(screen.getByRole('button', { name: /update password/i }))
 
       await waitFor(() => {
-        expect(mockUpdateUser).toHaveBeenCalledWith({ password: 'newpassword1' })
+        expect(mockUpdateUser).toHaveBeenCalledWith({ password: 'NewPassword1' })
       })
     })
 
@@ -122,8 +134,8 @@ describe('ChangePasswordForm', () => {
 
       render(<ChangePasswordForm autoOpen />)
 
-      await user.type(screen.getByLabelText('New password'), 'newpassword1')
-      await user.type(screen.getByLabelText(/confirm new password/i), 'newpassword1')
+      await user.type(screen.getByLabelText('New password'), 'NewPassword1')
+      await user.type(screen.getByLabelText(/confirm new password/i), 'NewPassword1')
       await user.click(screen.getByRole('button', { name: /update password/i }))
 
       expect(await screen.findByText(/password updated/i)).toBeInTheDocument()
@@ -135,8 +147,8 @@ describe('ChangePasswordForm', () => {
 
       render(<ChangePasswordForm autoOpen />)
 
-      await user.type(screen.getByLabelText('New password'), 'newpassword1')
-      await user.type(screen.getByLabelText(/confirm new password/i), 'newpassword1')
+      await user.type(screen.getByLabelText('New password'), 'NewPassword1')
+      await user.type(screen.getByLabelText(/confirm new password/i), 'NewPassword1')
       await user.click(screen.getByRole('button', { name: /update password/i }))
 
       expect(await screen.findByRole('button', { name: /updating/i })).toBeDisabled()
@@ -148,8 +160,8 @@ describe('ChangePasswordForm', () => {
 
       render(<ChangePasswordForm autoOpen />)
 
-      await user.type(screen.getByLabelText('New password'), 'weakpass')
-      await user.type(screen.getByLabelText(/confirm new password/i), 'weakpass')
+      await user.type(screen.getByLabelText('New password'), 'Weakpass1')
+      await user.type(screen.getByLabelText(/confirm new password/i), 'Weakpass1')
       await user.click(screen.getByRole('button', { name: /update password/i }))
 
       expect(await screen.findByText(/at least 6/i)).toBeInTheDocument()

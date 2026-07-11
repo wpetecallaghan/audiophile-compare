@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { TextInput } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
-import { MIN_PASSWORD_LENGTH } from '@/lib/auth/password-rules'
+import { MIN_PASSWORD_LENGTH, isPasswordComplexEnough } from '@/lib/auth/password-rules'
 
 export default function RegisterForm() {
   const t = useTranslations('auth')
@@ -27,6 +27,10 @@ export default function RegisterForm() {
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       setError(t('passwordMinLength'))
+      return
+    }
+    if (!isPasswordComplexEnough(password)) {
+      setError(t('passwordComplexity'))
       return
     }
     if (password !== confirm) {

@@ -65,3 +65,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 48 | Monochrome favicon from a supplied portrait | [48-monochrome-favicon.md](48-monochrome-favicon.md) |
 | 49 | Format dates using the visiting browser's locale | [49-browser-locale-dates.md](49-browser-locale-dates.md) |
 | 50 | Fix false-positive "dead" clips from the URL health-check cron | [50-url-check-grace-period.md](50-url-check-grace-period.md) |
+| 51 | Minimum password complexity, sliding by length | [51-password-complexity.md](51-password-complexity.md) |

@@ -69,11 +69,25 @@ describe('RegisterForm', () => {
 
       await user.type(screen.getByLabelText(/full name/i), 'Pete')
       await user.type(screen.getByLabelText(/email address/i), 'a@b.com')
-      await user.type(screen.getByLabelText(/^password/i), 'password1')
-      await user.type(screen.getByLabelText(/confirm password/i), 'password2')
+      await user.type(screen.getByLabelText(/^password/i), 'Password1')
+      await user.type(screen.getByLabelText(/confirm password/i), 'Password2')
       await user.click(screen.getByRole('button', { name: /create account/i }))
 
       expect(screen.getByText(/don.t match/i)).toBeInTheDocument()
+      expect(mockSignUp).not.toHaveBeenCalled()
+    })
+
+    it('shows error when password lacks character variety', async () => {
+      const user = userEvent.setup()
+      render(<RegisterForm />)
+
+      await user.type(screen.getByLabelText(/full name/i), 'Pete')
+      await user.type(screen.getByLabelText(/email address/i), 'a@b.com')
+      await user.type(screen.getByLabelText(/^password/i), 'password123')
+      await user.type(screen.getByLabelText(/confirm password/i), 'password123')
+      await user.click(screen.getByRole('button', { name: /create account/i }))
+
+      expect(screen.getByText(/needs more variety/i)).toBeInTheDocument()
       expect(mockSignUp).not.toHaveBeenCalled()
     })
   })
@@ -91,14 +105,14 @@ describe('RegisterForm', () => {
 
       await user.type(screen.getByLabelText(/full name/i), 'Pete C')
       await user.type(screen.getByLabelText(/email address/i), 'pete@example.com')
-      await user.type(screen.getByLabelText(/^password/i), 'password123')
-      await user.type(screen.getByLabelText(/confirm password/i), 'password123')
+      await user.type(screen.getByLabelText(/^password/i), 'Password123')
+      await user.type(screen.getByLabelText(/confirm password/i), 'Password123')
       await user.click(screen.getByRole('button', { name: /create account/i }))
 
       await waitFor(() => {
         expect(mockSignUp).toHaveBeenCalledWith({
           email: 'pete@example.com',
-          password: 'password123',
+          password: 'Password123',
           options: expect.objectContaining({
             data: { full_name: 'Pete C' },
           }),
@@ -114,8 +128,8 @@ describe('RegisterForm', () => {
 
       await user.type(screen.getByLabelText(/full name/i), 'Pete')
       await user.type(screen.getByLabelText(/email address/i), 'pete@example.com')
-      await user.type(screen.getByLabelText(/^password/i), 'password123')
-      await user.type(screen.getByLabelText(/confirm password/i), 'password123')
+      await user.type(screen.getByLabelText(/^password/i), 'Password123')
+      await user.type(screen.getByLabelText(/confirm password/i), 'Password123')
       await user.click(screen.getByRole('button', { name: /create account/i }))
 
       expect(await screen.findByText(/check your inbox/i)).toBeInTheDocument()
@@ -131,8 +145,8 @@ describe('RegisterForm', () => {
 
       await user.type(screen.getByLabelText(/full name/i), 'Pete')
       await user.type(screen.getByLabelText(/email address/i), 'pete@example.com')
-      await user.type(screen.getByLabelText(/^password/i), 'password123')
-      await user.type(screen.getByLabelText(/confirm password/i), 'password123')
+      await user.type(screen.getByLabelText(/^password/i), 'Password123')
+      await user.type(screen.getByLabelText(/confirm password/i), 'Password123')
       await user.click(screen.getByRole('button', { name: /create account/i }))
 
       expect(await screen.findByText(/already registered/i)).toBeInTheDocument()
@@ -146,8 +160,8 @@ describe('RegisterForm', () => {
 
       await user.type(screen.getByLabelText(/full name/i), 'Pete')
       await user.type(screen.getByLabelText(/email address/i), 'pete@example.com')
-      await user.type(screen.getByLabelText(/^password/i), 'password123')
-      await user.type(screen.getByLabelText(/confirm password/i), 'password123')
+      await user.type(screen.getByLabelText(/^password/i), 'Password123')
+      await user.type(screen.getByLabelText(/confirm password/i), 'Password123')
       await user.click(screen.getByRole('button', { name: /create account/i }))
 
       expect(await screen.findByRole('button', { name: /creating account/i })).toBeDisabled()
