@@ -9,8 +9,11 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Text } from '@/components/ui/Text'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 import { STATUS_DEAD } from '@/lib/clips/check-url'
+import { FEED_PAGE_SIZE } from '@/lib/tests/feed-page-size'
+import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon } from '@/components/ui/icons'
+import { FooterPortal } from '@/components/ui/FooterPortal'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = FEED_PAGE_SIZE
 
 type Props = {
   searchParams: Promise<{ page?: string }>
@@ -150,50 +153,41 @@ export default async function HomePage({ searchParams }: Props) {
       ) : (
         <ul className="space-y-2">
           {feedTests.map(test => (
-            <FeedCard key={test.id} test={test} locale={locale} />
+            <FeedCard key={test.id} test={test} locale={locale} page={page} />
           ))}
         </ul>
       )}
 
-      {/* Pagination */}
+      {/* Pagination — portaled into the global footer's nav slot so it's
+          always visible without scrolling (see FooterPortal) */}
       {(hasPrev || hasNext) && (
-        <div className="flex items-center justify-between pt-2 gap-2">
-          <div className="flex items-center gap-3">
+        <FooterPortal>
+          <div className="flex items-center gap-2">
             {hasPrev && (
-              <Link href="/?page=1">
-                {t('firstPage')}
+              <Link href="/?page=1" variant="nav" aria-label={t('firstPage')}>
+                <ChevronsLeftIcon className="w-4 h-4" />
               </Link>
             )}
-            {hasPrev ? (
-              <Link
-                href={`/?page=${page - 1}`}
-              >
-                {t('previousPage')}
+            {hasPrev && (
+              <Link href={`/?page=${page - 1}`} variant="nav" aria-label={t('previousPage')}>
+                <ChevronLeftIcon className="w-4 h-4" />
               </Link>
-            ) : (
-              <span />
             )}
-          </div>
-          <Text as="span" size="xs">
-            {t('pageOf', { page, total: totalPages })}
-          </Text>
-          <div className="flex items-center gap-3">
-            {hasNext ? (
-              <Link
-                href={`/?page=${page + 1}`}
-              >
-                {t('nextPage')}
+            <Text as="span" size="xs">
+              {t('pageOf', { page, total: totalPages })}
+            </Text>
+            {hasNext && (
+              <Link href={`/?page=${page + 1}`} variant="nav" aria-label={t('nextPage')}>
+                <ChevronRightIcon className="w-4 h-4" />
               </Link>
-            ) : (
-              <span />
             )}
             {hasNext && (
-              <Link href={`/?page=${totalPages}`}>
-                {t('lastPage')}
+              <Link href={`/?page=${totalPages}`} variant="nav" aria-label={t('lastPage')}>
+                <ChevronsRightIcon className="w-4 h-4" />
               </Link>
             )}
           </div>
-        </div>
+        </FooterPortal>
       )}
 
     </PageShell>

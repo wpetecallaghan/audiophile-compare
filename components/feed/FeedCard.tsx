@@ -29,7 +29,15 @@ function statusBadge(
     : { text: t('statusBlind'),    status: 'blind' as const }
 }
 
-export default async function FeedCard({ test, locale }: { test: FeedTest; locale?: string }) {
+export default async function FeedCard({
+  test,
+  locale,
+  page,
+}: {
+  test: FeedTest
+  locale?: string
+  page: number
+}) {
   const t = await getTranslations('feed')
   const tCommon = await getTranslations('common')
   const badge = statusBadge(test.status, test.has_dead_clip, t)
@@ -38,7 +46,7 @@ export default async function FeedCard({ test, locale }: { test: FeedTest; local
 
   return (
     <RowCard
-      href={`/tests/${test.id}`}
+      href={`/tests/${test.id}?from=feed&page=${page}`}
       title={test.title}
       subtitle={
         <>

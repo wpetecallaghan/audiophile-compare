@@ -23,13 +23,18 @@ import { Text } from '@/components/ui/Text'
 import { formatSnapshotLine, type SnapshotSummary } from '@/lib/tests/format-snapshot-line'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 import { STATUS_DEAD, STATUS_DEGRADED } from '@/lib/clips/check-url'
+import { FEED_PAGE_SIZE } from '@/lib/tests/feed-page-size'
+import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon, ListIcon } from '@/components/ui/icons'
+import { FooterPortal } from '@/components/ui/FooterPortal'
 
 type Props = {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ from?: string; fromId?: string; page?: string }>
 }
 
-export default async function TestDetailPage({ params }: Props) {
+export default async function TestDetailPage({ params, searchParams }: Props) {
   const { id } = await params
+  const { from, fromId, page: pageParam } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   const t = await getTranslations('tests')
@@ -202,6 +207,67 @@ export default async function TestDetailPage({ params }: Props) {
   const snapshotB = canSeeSystemInfo ? normalizeSnapshot(test.snapshot_b) : null
   const snapshotLine = formatSnapshotLine(snapshotA, snapshotB)
 
+  // Item-to-item navigation (First/Previous/Next/Last/All) — reconstructs
+  // the exact ordered list of test ids the originating list page (feed,
+  // track, or system) already established, using the identical filter and
+  // .order(...) shape that page uses, then reads neighbors off by array
+  // position. No new comparison-based "search" logic — just the same
+  // order the parent already determined, reused here.
+  let navIds: string[] = []
+
+  if (from === 'feed') {
+    const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
+    const start = (page - 1) * FEED_PAGE_SIZE
+    const end = start + FEED_PAGE_SIZE - 1
+    const { data } = await supabase
+      .from('tests')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .range(start, end)
+    navIds = (data ?? []).map(t => t.id)
+  } else if (from === 'track' && fromId) {
+    const { data } = await supabase
+      .from('tests')
+      .select('id')
+      .eq('track_id', fromId)
+      .order('created_at', { ascending: false })
+    navIds = (data ?? []).map(t => t.id)
+  } else if (from === 'system' && fromId) {
+    const { data: snaps } = await supabase
+      .from('system_snapshots')
+      .select('id')
+      .eq('system_id', fromId)
+    const snapshotIds = (snaps ?? []).map(s => s.id)
+    if (snapshotIds.length > 0) {
+      const { data } = await supabase
+        .from('tests')
+        .select('id')
+        .or(`snapshot_a_id.in.(${snapshotIds.join(',')}),snapshot_b_id.in.(${snapshotIds.join(',')})`)
+        .or(`status.eq.revealed,creator_id.eq.${user?.id ?? '00000000-0000-0000-0000-000000000000'}`)
+        .order('created_at', { ascending: false })
+      navIds = (data ?? []).map(t => t.id)
+    }
+  }
+
+  const navIdx = navIds.indexOf(test.id)
+  const prevId  = navIdx > 0 ? navIds[navIdx - 1] : null
+  const nextId  = navIdx !== -1 && navIdx < navIds.length - 1 ? navIds[navIdx + 1] : null
+  const firstId = navIdx > 0 ? navIds[0] : null
+  const lastId  = navIdx !== -1 && navIdx < navIds.length - 1 ? navIds[navIds.length - 1] : null
+
+  const navCtxSuffix =
+    from === 'feed' ? `?from=feed&page=${pageParam ?? '1'}` :
+    (from === 'track' || from === 'system') && fromId ? `?from=${from}&fromId=${fromId}` :
+    ''
+
+  // "All" — back to whichever list this viewer came from. Reuses the same
+  // from/fromId/pageParam already resolved above; no extra query needed.
+  const navBackHref =
+    from === 'feed' ? `/?page=${pageParam ?? '1'}` :
+    from === 'track' && fromId ? `/tracks/${fromId}` :
+    from === 'system' && fromId ? `/systems/${fromId}` :
+    null
+
   return (
     <PageShell maxWidth="4xl" spacing="responsive">
 
@@ -361,6 +427,40 @@ export default async function TestDetailPage({ params }: Props) {
           {t('techniquePreferencesReminder')}{' '}
           <Link href="/profile" variant="inline">{tCommon('profileLink')}</Link>.
         </Callout>
+      )}
+
+      {/* Item-to-item navigation — portaled into the global footer's nav
+          slot so it's always visible without scrolling (see FooterPortal);
+          only rendered when we know which list to step through (see
+          navIds above) */}
+      {navBackHref && (
+        <FooterPortal>
+          <div className="flex items-center gap-3">
+            {firstId && (
+              <Link href={`/tests/${firstId}${navCtxSuffix}`} variant="nav" aria-label={t('nav.first')}>
+                <ChevronsLeftIcon className="w-4 h-4" />
+              </Link>
+            )}
+            {prevId && (
+              <Link href={`/tests/${prevId}${navCtxSuffix}`} variant="nav" aria-label={t('nav.previous')}>
+                <ChevronLeftIcon className="w-4 h-4" />
+              </Link>
+            )}
+            <Link href={navBackHref} variant="nav" aria-label={t('nav.all')}>
+              <ListIcon className="w-4 h-4" />
+            </Link>
+            {nextId && (
+              <Link href={`/tests/${nextId}${navCtxSuffix}`} variant="nav" aria-label={t('nav.next')}>
+                <ChevronRightIcon className="w-4 h-4" />
+              </Link>
+            )}
+            {lastId && (
+              <Link href={`/tests/${lastId}${navCtxSuffix}`} variant="nav" aria-label={t('nav.last')}>
+                <ChevronsRightIcon className="w-4 h-4" />
+              </Link>
+            )}
+          </div>
+        </FooterPortal>
       )}
 
     </PageShell>

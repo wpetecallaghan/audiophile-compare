@@ -260,7 +260,7 @@ export default async function SystemDetailPage({ params }: Props) {
                       return (
                         <RowCard
                           key={test.id}
-                          href={`/tests/${test.id}`}
+                          href={`/tests/${test.id}?from=system&fromId=${id}`}
                           title={test.title}
                           subtitle={
                             <>

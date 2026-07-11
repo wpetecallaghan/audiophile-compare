@@ -110,7 +110,7 @@ export default async function TrackDetailPage({ params }: Props) {
               return (
                 <RowCard
                   key={test.id}
-                  href={`/tests/${test.id}`}
+                  href={`/tests/${test.id}?from=track&fromId=${track.id}`}
                   title={test.title}
                   subtitle={
                     <Text size="xs">
