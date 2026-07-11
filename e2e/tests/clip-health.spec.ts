@@ -72,8 +72,7 @@ test.describe('Dead clip handling', () => {
 test.describe('Unsupported-playback clip handling', () => {
   test('blind view: shows a bare link with no "could not be identified" message', async ({ page }) => {
     const fixture = await seedCompleteTest(`unsupported-${Date.now()}`, {
-      clipAProvider: 'direct',
-      clipAMediaType: 'unknown',
+      clipAProvider: 'unknown',
     })
     await page.goto(routes.test(fixture.test.id))
 
@@ -88,8 +87,7 @@ test.describe('Unsupported-playback clip handling', () => {
 
   test('revealed view: the mapping badge\'s Before/After label links directly to the clip, with no separate link below', async ({ page }) => {
     const fixture = await seedCompleteTest(`unsupported-mapping-${Date.now()}`, {
-      clipAProvider: 'direct',
-      clipAMediaType: 'unknown',
+      clipAProvider: 'unknown',
     })
     await page.goto(routes.test(fixture.test.id))
 

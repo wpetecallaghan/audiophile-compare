@@ -69,12 +69,12 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
     )
   }
 
-  if (clip.provider === 'direct' && clip.media_type !== 'unknown') {
+  if (clip.provider === 'direct') {
     return (
       <NativePlayer
         ref={innerRef}
         url={clip.source_url}
-        mediaType={clip.media_type}
+        mediaType={clip.media_type === 'audio' ? 'audio' : 'video'}
         onPlay={onPlay}
       />
     )

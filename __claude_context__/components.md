@@ -133,7 +133,33 @@ export type PlayerHandle = {
   Before/After label instead, so the slot below would otherwise duplicate
   it. `ABPlayer` itself stays unaware of *why* — it only receives a
   boolean, the same "page.tsx decides, player components don't" boundary
-  `isCreator`/`isRevealed` already follow everywhere else.
+  `isCreator`/`isRevealed` already follow everywhere else. As of step 54,
+  `isUnsupportedClip` only returns true for `provider === 'unknown'` (a
+  URL that never parsed) — a `direct` clip is never hidden this way, even
+  with `media_type: 'unknown'`, since it always gets a real inline
+  playback attempt (see `NativePlayer` below).
+- **`NativePlayer` (`direct` clips, step 54)** always attempts playback
+  regardless of `media_type` — a server-resolved `'unknown'` media_type
+  reflects an unreliable/missing `Content-Type` header, not proof the
+  file can't play. If the rendered `<audio>`/`<video>` element fires
+  `onError`, it swaps in `UnknownPlayer`'s link-out in the same slot
+  instead of failing silently. `MediaPlayer.tsx` defaults an unresolved
+  `media_type` to `'video'` (not `'audio'`) when dispatching, since a
+  `<video>` element still plays audio-only files acceptably.
+  `onError` alone isn't reliable enough — some "direct" URLs actually
+  resolve to an HTML page (e.g. a Google Photos share link, found via a
+  real user report), and how quickly/reliably the browser reports that
+  as an error varies (confirmed flaky on mobile). `NativePlayer` also
+  runs a bounded `LOAD_TIMEOUT_MS` (3s) timer, cleared only by
+  `onLoadedMetadata` (proof real media data arrived — HTML can never
+  produce that event) — if neither error nor metadata happens in time,
+  it falls back anyway. This is what makes the fallback deterministic
+  rather than dependent on browser-specific error timing. The
+  `<audio>`/`<video>` element itself stays mounted but visually hidden
+  (`hidden` className) for that whole uncertain window — it needs to
+  stay mounted to keep loading, but isn't revealed until
+  `onLoadedMetadata` confirms it actually works, so a slow-to-resolve
+  clip never briefly shows a blank/broken-looking native player.
 - All player components use `forwardRef` + `useImperativeHandle`. Do not deviate from this structure:
 
 ```typescript
