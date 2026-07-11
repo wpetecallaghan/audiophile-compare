@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (46 files · 502 tests · all passing)
+## 4. Unit test inventory (47 files · 506 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -84,6 +84,7 @@ indirectly through the step tests.
 | `components/media/__tests__/ABPlayer.test.tsx` | 4 | Renders A and B labels; hideClipA/hideClipB hide that slot entirely; a Google Drive clip renders an iframe embed with the expected preview src |
 | `components/media/__tests__/MediaPlayer.test.tsx` | 4 | Dispatch logic (step 54): a direct clip with media_type unknown renders NativePlayer (a `<video>`), not a bare link; unresolved media_type defaults to `<video>` not `<audio>`; media_type audio renders `<audio>`; provider unknown still renders the bare link |
 | `components/media/players/__tests__/NativePlayer.test.tsx` | 9 | Renders `<audio>`/`<video>` per mediaType; onPlay fires on the element's play event; falls back to UnknownPlayer's link when the element fires onError (step 54); pause() via ref doesn't throw after that fallback; falls back after a bounded 3s load timeout when neither onError nor onLoadedMetadata ever fires (a Google Photos share link resolving to an HTML page, found via real user report — onError alone was flaky); does not fall back once onLoadedMetadata has fired, even past the timeout; the media element stays visually hidden until onLoadedMetadata fires, then reveals; never reveals when falling back to the link instead |
+| `components/media/players/__tests__/YouTubePlayer.test.tsx` | 4 | `playerVars.playsinline` is `1` — keeps embeds inline on iOS Safari instead of forcing native fullscreen (step 55); onStateChange with PLAYING calls onPlay; pause() via ref calls the SDK's pauseVideo(); the SDK target container carries the classes (`absolute inset-0 w-full h-full`) the IFrame API needs to size the iframe it replaces it with responsively |
 | `components/media/players/__tests__/GoogleDrivePlayer.test.tsx` | 3 | Play detection via focus/blur heuristic (step 53): onPlay fires when focus moves into the iframe, doesn't fire for an unrelated window blur; pause() force-remounts the iframe (no real pause API exists) |
 | `components/tests/__tests__/VoteForm.test.tsx` | 22 | Rendering, Other field visibility, validation, submission, pre-population, hasDeadClip |
 | `components/tests/__tests__/StepSnapshots.test.tsx` | 28 | Open/close, validation, POST, onSnapshotCreated, inline system creation |

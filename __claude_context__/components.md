@@ -180,14 +180,25 @@ const MyPlayer = forwardRef<PlayerHandle, Props>(function MyPlayer(props, ref) {
 ```
 - **`google-drive` (step 34) is the one exception to "always fully
   controllable."** `GoogleDrivePlayer` still follows the `forwardRef` +
-  `useImperativeHandle` structure above (for type consistency), but its
-  `pause()` is a documented no-op and it never calls `onPlay` — Google
-  doesn't publish a postMessage/SDK API for its `/preview` embed, unlike
-  YouTube's IFrame API or Vimeo's Player.js. Playing a Drive clip won't
-  auto-pause a concurrently-playing sibling, and vice versa (the pause
-  call just silently does nothing, the same graceful no-op `UnknownPlayer`
-  already exercises today). This is a real, accepted limitation, not a bug
-  to fix later.
+  `useImperativeHandle` structure above (for type consistency), but
+  Google doesn't publish a postMessage/SDK API for its `/preview` embed,
+  unlike YouTube's IFrame API or Vimeo's Player.js, so both playback
+  control and sizing are approximated rather than exact:
+  - `pause()` force-remounts the iframe via a key bump (step 53) — the
+    only way to actually halt playback without a control SDK. Losing the
+    sibling's playback position is an accepted trade-off.
+  - Play detection polls `document.activeElement` (step 53) rather than
+    a real event, since neither `window.blur` nor `focusin` reliably
+    fires for a cross-origin iframe gaining focus more than once — see
+    `GoogleDrivePlayer.tsx`'s comments for the full investigation.
+  - The embed always **crops** the video to fill its iframe box, rather
+    than letterboxing a non-matching aspect ratio the way YouTube's and
+    Vimeo's players do (step 55, found via a real mobile report).
+    Confirmed via loading the `/preview` URL directly with no wrapper CSS
+    at two different container shapes — it cropped both times, so this
+    is Drive's own cross-origin rendering, not something our CSS
+    controls. Accepted as a real, unfixable-from-our-side limitation, not
+    a bug to chase.
 
 ---
 

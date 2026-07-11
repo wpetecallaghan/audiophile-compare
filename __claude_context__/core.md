@@ -110,7 +110,7 @@ components/
       NativePlayer.tsx
       YouTubePlayer.tsx
       VimeoPlayer.tsx
-      GoogleDrivePlayer.tsx                  ← Client: iframe only, pause() is a documented no-op (no embed-control SDK)
+      GoogleDrivePlayer.tsx                  ← Client: iframe only, no embed-control SDK; pause() force-remounts (step 53), always crops to fill its box (step 55)
       UnknownPlayer.tsx
   feed/FeedCard.tsx                         ← Server: single test card for feed
   SiteHeader.tsx                            ← Server: global header; reads auth
@@ -208,9 +208,9 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-Steps 1–54 complete: core app (1–29, 40–54) plus the forum-ingestion
-pipeline (30–39) through a real production import. Current unit suite: 46
-files / 502 tests passing (`npm run test`); integration suite (`npm run
+Steps 1–55 complete: core app (1–29, 40–55) plus the forum-ingestion
+pipeline (30–39) through a real production import. Current unit suite: 47
+files / 506 tests passing (`npm run test`); integration suite (`npm run
 test:integration`, testing.md §11): 17/17 passing against real staging.
 
 Full step-by-step detail, one file per step: `build-history/index.md`

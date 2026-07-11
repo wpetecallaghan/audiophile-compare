@@ -40,6 +40,11 @@ const YouTubePlayer = forwardRef<PlayerHandle, Props>(function YouTubePlayer(
         videoId,
         playerVars: {
           origin: window.location.origin,
+          // Without this, iOS Safari forces the embed into native
+          // fullscreen on play instead of staying inline in the page —
+          // the confirmed cause of a mobile UX report that the embed
+          // frame made play/pause hard to reach (build step 55).
+          playsinline: 1,
         },
         events: {
           onStateChange(event) {
@@ -65,7 +70,15 @@ const YouTubePlayer = forwardRef<PlayerHandle, Props>(function YouTubePlayer(
 
   return (
     <div className="relative w-full max-w-full aspect-video overflow-hidden">
-      <div ref={containerRef} className="absolute inset-0" />
+      {/* w-full h-full matters: the YouTube IFrame API preserves this
+          div's className on the <iframe> it replaces it with, but without
+          an explicit width/height, YouTube's own default 640x360 HTML
+          attributes win over inset-0's stretch (per CSS's sizing rules
+          for absolutely positioned replaced elements) — the confirmed
+          cause of a real report that the embed didn't shrink to fit on
+          mobile (build step 55). Matches GoogleDrivePlayer.tsx's iframe,
+          which already includes these for the same reason. */}
+      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
     </div>
   )
 })

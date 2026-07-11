@@ -69,3 +69,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 52 | Componentize repeated page-level DOM/styling | [52-componentize-page-layout.md](52-componentize-page-layout.md) |
 | 53 | Fix Google Drive clips not pausing each other | [53-google-drive-pause-fix.md](53-google-drive-pause-fix.md) |
 | 54 | Play direct-link clips inline, with graceful fallback | [54-inline-direct-clip-playback.md](54-inline-direct-clip-playback.md) |
+| 55 | YouTube clips stay inline on mobile (`playsinline`) | [55-youtube-playsinline.md](55-youtube-playsinline.md) |

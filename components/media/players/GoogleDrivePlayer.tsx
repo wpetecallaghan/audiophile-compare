@@ -40,6 +40,15 @@ type Props = {
 //   other provider's clean pause/resume, accepted given the platform
 //   constraint (see build-history/53-google-drive-pause-fix.md).
 //
+// A third, unfixable-from-here platform gap (build step 55, found via a
+// real mobile report): Drive's /preview widget crops the video to fill
+// whatever box its iframe is given, rather than letterboxing a
+// non-matching aspect ratio the way YouTube's and Vimeo's players do.
+// Confirmed by loading the /preview URL directly, with no wrapper CSS at
+// all, at two different container shapes — it cropped both times, so
+// this is Drive's own cross-origin rendering, not something our CSS
+// controls. Accepted as a known limitation; no fix exists on our side.
+//
 // Still forwards a PlayerHandle ref, for type consistency with every
 // other player (components.md §5). See build-history.md step 34,
 // decision 3 for the original no-op rationale this step revises.
