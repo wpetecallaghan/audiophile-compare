@@ -2,6 +2,7 @@
   "common": {
     "cancel": "Cancel",
     "networkError": "Network error — please try again",
+    "somethingWentWrong": "Something went wrong",
     "importedBadge": "Imported",
     "viewOriginalPost": "View original post",
     "claimContact": "Think this is yours? Contact wpete.callaghan@gmail.com to claim it.",

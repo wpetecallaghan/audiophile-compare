@@ -6,6 +6,7 @@ import { getTranslations } from 'next-intl/server'
 import { Badge } from '@/components/ui/Badge'
 import { Heading } from '@/components/ui/Heading'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
+import { STATUS_DEAD } from '@/lib/clips/check-url'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -100,7 +101,7 @@ export default async function TrackDetailPage({ params }: Props) {
               // app/tests/[id]/page.tsx's identical check for why both
               // columns are OR'd together.
               const isImported = !!(test.source_url || test.source_ref)
-              const hasDeadClip = test.clips.some(c => c.url_status === 'dead')
+              const hasDeadClip = test.clips.some(c => c.url_status === STATUS_DEAD)
               const badge = hasDeadClip
                 ? { status: 'broken' as const, text: t('statusBroken') }
                 : test.status === 'revealed'

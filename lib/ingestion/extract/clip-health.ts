@@ -1,5 +1,5 @@
 import { detectProvider } from '@/lib/clips/detect-provider'
-import { checkDirectUrl } from '@/lib/clips/check-url'
+import { checkDirectUrl, STATUS_DEAD, STATUS_OK } from '@/lib/clips/check-url'
 
 export type ClipHealthStatus = 'ok' | 'missing' | 'dead' | 'unplayable' | 'unverifiable'
 
@@ -61,12 +61,12 @@ export async function checkClipHealth(url: string): Promise<ClipHealthStatus> {
   if (detected.provider !== 'direct') return 'ok'
 
   const checked = await checkDirectUrl(detected)
-  if (checked.url_status === 'dead') return 'dead'
+  if (checked.url_status === STATUS_DEAD) return 'dead'
   // 'degraded' (timeout / 5xx) is deliberately left as passable, matching
   // decision 12's original leniency for a possibly-transient condition —
   // this tightening only refines what counts as a genuine 'ok', not what
   // counts as 'dead'.
-  if (checked.url_status === 'ok' && checked.media_type === 'unknown') return 'unplayable'
+  if (checked.url_status === STATUS_OK && checked.media_type === 'unknown') return 'unplayable'
   return 'ok'
 }
 

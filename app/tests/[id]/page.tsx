@@ -20,6 +20,7 @@ import { Heading } from '@/components/ui/Heading'
 import { Badge } from '@/components/ui/Badge'
 import { formatSnapshotLine, type SnapshotSummary } from '@/lib/tests/format-snapshot-line'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
+import { STATUS_DEAD, STATUS_DEGRADED } from '@/lib/clips/check-url'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -151,7 +152,7 @@ export default async function TestDetailPage({ params }: Props) {
   const clipB = toClipData(rawB)
 
   // Clip health — dead blocks voting; degraded is a lighter-touch note only
-  const hasDeadClip = rawA.url_status === 'dead' || rawB.url_status === 'dead'
+  const hasDeadClip = rawA.url_status === STATUS_DEAD || rawB.url_status === STATUS_DEAD
 
   // Once revealed, a clip that can't be embedded gets its link folded into
   // MappingBadge's Before/After label instead of a separate box below —
@@ -291,22 +292,22 @@ export default async function TestDetailPage({ params }: Props) {
       {/* Clip health warnings — safe to say which label is affected without
           leaking clip_mapping before/after identity, since url_status lives
           on the raw clip row, independent of the mapping */}
-      {rawA.url_status === 'dead' && (
+      {rawA.url_status === STATUS_DEAD && (
         <Callout tone="warning" className="text-sm text-amber-800 dark:text-amber-200">
           {t('clipHealth.deadWarning', { label: 'A' })}
         </Callout>
       )}
-      {rawA.url_status === 'degraded' && (
+      {rawA.url_status === STATUS_DEGRADED && (
         <Callout tone="info" className="text-sm text-blue-800 dark:text-blue-200">
           {t('clipHealth.degradedWarning', { label: 'A' })}
         </Callout>
       )}
-      {rawB.url_status === 'dead' && (
+      {rawB.url_status === STATUS_DEAD && (
         <Callout tone="warning" className="text-sm text-amber-800 dark:text-amber-200">
           {t('clipHealth.deadWarning', { label: 'B' })}
         </Callout>
       )}
-      {rawB.url_status === 'degraded' && (
+      {rawB.url_status === STATUS_DEGRADED && (
         <Callout tone="info" className="text-sm text-blue-800 dark:text-blue-200">
           {t('clipHealth.degradedWarning', { label: 'B' })}
         </Callout>
@@ -317,10 +318,10 @@ export default async function TestDetailPage({ params }: Props) {
         <div className="flex flex-wrap gap-3">
           {!isRevealed && <RevealButton testId={test.id} />}
           {voteCount === 0 && <DeleteTestButton testId={test.id} />}
-          {voteCount === 0 && rawA.url_status === 'dead' && (
+          {voteCount === 0 && rawA.url_status === STATUS_DEAD && (
             <ReplaceClipUrlButton clipId={rawA.id} label="A" />
           )}
-          {voteCount === 0 && rawB.url_status === 'dead' && (
+          {voteCount === 0 && rawB.url_status === STATUS_DEAD && (
             <ReplaceClipUrlButton clipId={rawB.id} label="B" />
           )}
         </div>

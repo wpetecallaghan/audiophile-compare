@@ -33,6 +33,8 @@ function SnapshotSelector({
   onChange: (s: Snapshot) => void
   onSnapshotCreated: (systemId: string, snap: Snapshot) => void
 }) {
+  const tCommon = useTranslations('common')
+  const tSnapshots = useTranslations('snapshots')
   const [addingForSystemId, setAddingForSystemId] = useState<string | null>(null)
   const [newLabel, setNewLabel] = useState('')
   const [newNotes, setNewNotes] = useState('')
@@ -83,7 +85,7 @@ function SnapshotSelector({
       setNewLabel('')
       setNewNotes('')
     } catch {
-      setCreateError('Network error — please try again')
+      setCreateError(tCommon('networkError'))
     } finally {
       setCreating(false)
     }
@@ -154,7 +156,7 @@ function SnapshotSelector({
                   onClick={() => handleSubmit(system.id)}
                   disabled={creating || !newLabel.trim()}
                 >
-                  {creating ? 'Adding…' : 'Add snapshot'}
+                  {creating ? tSnapshots('adding') : 'Add snapshot'}
                 </Button>
                 <Button
                   type="button"
@@ -163,7 +165,7 @@ function SnapshotSelector({
                   onClick={cancelAdding}
                   disabled={creating}
                 >
-                  Cancel
+                  {tCommon('cancel')}
                 </Button>
               </div>
             </div>
@@ -181,6 +183,8 @@ function SnapshotSelector({
 export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCreated, onSystemCreated }: Props) {
   const t = useTranslations('tests.snapshotsStep')
   const tw = useTranslations('tests.wizard')
+  const tCommon = useTranslations('common')
+  const tSnapshots = useTranslations('snapshots')
   const [snapshotA, setSnapshotA] = useState<Snapshot | null>(draft.snapshotA)
   const [snapshotB, setSnapshotB] = useState<Snapshot | null>(draft.snapshotB)
 
@@ -232,7 +236,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
       setNewSystemName('')
       setNewSystemDesc('')
     } catch {
-      setSystemCreateError('Network error — please try again')
+      setSystemCreateError(tCommon('networkError'))
     } finally {
       setCreatingSystem(false)
     }
@@ -263,7 +267,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
           onClick={handleSystemSubmit}
           disabled={creatingSystem || !newSystemName.trim()}
         >
-          {creatingSystem ? 'Adding…' : 'Add system'}
+          {creatingSystem ? tSnapshots('adding') : 'Add system'}
         </Button>
         <Button
           type="button"
@@ -272,7 +276,7 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
           onClick={cancelAddingSystem}
           disabled={creatingSystem}
         >
-          Cancel
+          {tCommon('cancel')}
         </Button>
       </div>
     </div>

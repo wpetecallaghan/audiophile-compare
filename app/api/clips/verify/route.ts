@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { detectProvider } from '@/lib/clips/detect-provider'
-import { checkDirectUrl } from '@/lib/clips/check-url'
+import { checkDirectUrl, STATUS_OK } from '@/lib/clips/check-url'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     provider:      detected.provider,
     media_type:    detected.media_type,
-    url_status:    'ok',
+    url_status:    STATUS_OK,
     canonical_url: detected.canonical_url,
     embed_id:      detected.embed_id,
     duration_ms:   null,

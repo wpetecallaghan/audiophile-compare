@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { STATUS_DEAD } from '@/lib/clips/check-url'
 
 type VoteInput = {
   technique_id: string
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
 
   // Defense in depth — the UI already hides the vote form when a clip is
   // dead, but a direct API call could bypass that
-  if (clips.some(c => c.url_status === 'dead')) {
+  if (clips.some(c => c.url_status === STATUS_DEAD)) {
     return NextResponse.json(
       { error: 'One or more chosen clips are currently unreachable' },
       { status: 409 },

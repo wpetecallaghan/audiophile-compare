@@ -23,6 +23,7 @@ type Props = {
 // unlike a clip URL swap.
 export default function EditForumLinkButton({ testId, currentLink }: Props) {
   const t = useTranslations('tests.forumLink')
+  const tCommon = useTranslations('common')
   const router = useRouter()
 
   const [open, setOpen]   = useState(false)
@@ -42,7 +43,7 @@ export default function EditForumLinkButton({ testId, currentLink }: Props) {
     const json = await res.json()
 
     if (!res.ok) {
-      setError(json.error ?? 'Something went wrong')
+      setError(json.error ?? tCommon('somethingWentWrong'))
       setSaving(false)
       return
     }

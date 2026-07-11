@@ -10,6 +10,7 @@ type Props = {
 
 export default function DeleteTestButton({ testId }: Props) {
   const t = useTranslations('tests.delete')
+  const tCommon = useTranslations('common')
   const router = useRouter()
 
   async function handleDelete() {
@@ -17,7 +18,7 @@ export default function DeleteTestButton({ testId }: Props) {
     const json = await res.json()
 
     if (!res.ok) {
-      return { error: json.error ?? 'Something went wrong' }
+      return { error: json.error ?? tCommon('somethingWentWrong') }
     }
 
     // The test no longer exists — leave its page rather than refresh it

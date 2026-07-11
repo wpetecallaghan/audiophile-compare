@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
 import { ClipInput } from '@/components/clips/ClipInput'
+import { STATUS_DEAD } from '@/lib/clips/check-url'
 
 type Props = {
   draft: TestDraft
@@ -37,8 +38,8 @@ export default function StepClips({ draft, onComplete }: Props) {
 
   // Both clips must be verified and neither can be dead to proceed
   const canContinue =
-    verifiedA !== null && verifiedA.url_status !== 'dead' &&
-    verifiedB !== null && verifiedB.url_status !== 'dead'
+    verifiedA !== null && verifiedA.url_status !== STATUS_DEAD &&
+    verifiedB !== null && verifiedB.url_status !== STATUS_DEAD
 
   return (
     <div className="space-y-6">

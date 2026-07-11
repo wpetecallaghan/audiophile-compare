@@ -11,6 +11,8 @@ import { Callout } from '@/components/ui/Callout'
 
 type Preview = { systems: number; tests: number; tracks: number; comments: number; votes: number }
 
+const CLAIM_ENDPOINT = '/api/admin/claim'
+
 // build-history-ingestion.md step 39 — the admin-only form calling
 // POST /api/admin/claim. Two-step: preview (a read-only count, decision
 // 9) must run before the destructive call becomes available, and that
@@ -40,7 +42,7 @@ export default function ClaimPlaceholderForm() {
     setPreview(null)
     setResult(null)
     try {
-      const res = await fetch('/api/admin/claim', {
+      const res = await fetch(CLAIM_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -63,7 +65,7 @@ export default function ClaimPlaceholderForm() {
   }
 
   async function handleClaim(): Promise<{ error?: string } | void> {
-    const res = await fetch('/api/admin/claim', {
+    const res = await fetch(CLAIM_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

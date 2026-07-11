@@ -13,6 +13,8 @@ type Scope = 'votes' | 'content' | 'full'
 
 type Preview = { votes: number; tests: number; systems: number }
 
+const ERASE_ENDPOINT = '/api/admin/erase-user-data'
+
 // build-history-ingestion.md step 38 — the admin-only form calling
 // POST /api/admin/erase-user-data. Two-step: preview (a read-only count,
 // decision 8's "preview before destroy") must run before the destructive
@@ -36,7 +38,7 @@ export default function EraseUserDataForm() {
     setPreview(null)
     setResult(null)
     try {
-      const res = await fetch('/api/admin/erase-user-data', {
+      const res = await fetch(ERASE_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: userId.trim(), scope, preview: true }),
@@ -55,7 +57,7 @@ export default function EraseUserDataForm() {
   }
 
   async function handleErase(): Promise<{ error?: string } | void> {
-    const res = await fetch('/api/admin/erase-user-data', {
+    const res = await fetch(ERASE_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: userId.trim(), scope, preview: false }),

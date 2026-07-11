@@ -6,6 +6,7 @@ import { getTranslations } from 'next-intl/server'
 import { buttonVariants } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
+import { STATUS_DEAD } from '@/lib/clips/check-url'
 
 const PAGE_SIZE = 20
 
@@ -107,7 +108,7 @@ export default async function HomePage({ searchParams }: Props) {
       snapshot_a: canSeeSystemInfo && rawA ? { label: rawA.label, system: sysA ?? null } : null,
       snapshot_b: canSeeSystemInfo && rawB ? { label: rawB.label, system: sysB ?? null } : null,
       is_imported: isImported,
-      has_dead_clip: t.clips.some(c => c.url_status === 'dead'),
+      has_dead_clip: t.clips.some(c => c.url_status === STATUS_DEAD),
     }
   })
 

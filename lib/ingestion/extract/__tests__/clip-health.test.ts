@@ -3,7 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { checkDirectUrl } from '@/lib/clips/check-url'
 import { isRealPostLink, checkClipHealth, checkClipStatus } from '../clip-health'
 
-vi.mock('@/lib/clips/check-url', () => ({ checkDirectUrl: vi.fn() }))
+vi.mock('@/lib/clips/check-url', () => ({
+  checkDirectUrl: vi.fn(),
+  STATUS_OK: 'ok',
+  STATUS_DEGRADED: 'degraded',
+  STATUS_DEAD: 'dead',
+}))
 
 const YOUTUBE_URL = 'https://www.youtube.com/watch?v=aaaaaaaaaaa'
 const DIRECT_URL = 'https://example.com/recording.mp3'

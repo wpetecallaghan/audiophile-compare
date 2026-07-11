@@ -10,6 +10,7 @@ type Props = {
 
 export default function RevealButton({ testId }: Props) {
   const t = useTranslations('tests.reveal')
+  const tCommon = useTranslations('common')
   const router = useRouter()
 
   async function handleReveal() {
@@ -17,7 +18,7 @@ export default function RevealButton({ testId }: Props) {
     const json = await res.json()
 
     if (!res.ok) {
-      return { error: json.error ?? 'Something went wrong' }
+      return { error: json.error ?? tCommon('somethingWentWrong') }
     }
 
     // Refresh the page — the server component will re-fetch with revealed status

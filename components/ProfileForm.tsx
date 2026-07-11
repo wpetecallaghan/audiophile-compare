@@ -14,6 +14,7 @@ type Props = {
 
 export default function ProfileForm({ initialDisplayName }: Props) {
   const t = useTranslations('profile')
+  const tCommon = useTranslations('common')
   const [displayName, setDisplayName] = useState(initialDisplayName)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -37,7 +38,7 @@ export default function ProfileForm({ initialDisplayName }: Props) {
       }
       setSuccess(true)
     } catch {
-      setError('Network error — please try again')
+      setError(tCommon('networkError'))
     } finally {
       setSubmitting(false)
     }

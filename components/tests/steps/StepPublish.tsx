@@ -17,6 +17,7 @@ type Props = {
 
 export default function StepPublish({ draft, onBack }: Props) {
   const t = useTranslations('tests.publishStep')
+  const tCommon = useTranslations('common')
   const [title, setTitle]         = useState(draft.title)
   const [forumLink, setForumLink] = useState('')
   const [error, setError]         = useState<string | null>(null)
@@ -58,7 +59,7 @@ export default function StepPublish({ draft, onBack }: Props) {
 
     const json = await res.json()
     if (!res.ok) {
-      setError(json.error ?? 'Something went wrong')
+      setError(json.error ?? tCommon('somethingWentWrong'))
       setLoading(false)
       return
     }

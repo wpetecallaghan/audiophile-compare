@@ -13,6 +13,7 @@ import { buttonVariants } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
 import { getTranslations } from 'next-intl/server'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
+import { STATUS_DEAD } from '@/lib/clips/check-url'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -151,7 +152,7 @@ export default async function SystemDetailPage({ params }: Props) {
         created_at: t.created_at,
         track,
         outcome: computeOutcome(t, snapshot.id, votesByTest),
-        hasDeadClip: t.clips.some(c => c.url_status === 'dead'),
+        hasDeadClip: t.clips.some(c => c.url_status === STATUS_DEAD),
       }
     })
 

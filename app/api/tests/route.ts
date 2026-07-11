@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { isValidForumLink } from '@/lib/tests/validate-forum-link'
+import { STATUS_OK } from '@/lib/clips/check-url'
 
 type ClipInput = {
   source_url: string
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
         source_url: clip_a.source_url,
         provider:   clip_a.provider,
         media_type: clip_a.media_type,
-        url_status: 'ok',
+        url_status: STATUS_OK,
         // canonical_url and embed_id aren't columns in the schema —
         // source_url holds the original; provider detection is re-run on display
       },
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
         source_url: clip_b.source_url,
         provider:   clip_b.provider,
         media_type: clip_b.media_type,
-        url_status: 'ok',
+        url_status: STATUS_OK,
       },
     ])
     .select('id, label')

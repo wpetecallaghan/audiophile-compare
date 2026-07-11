@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Callout } from '@/components/ui/Callout'
 import { FormMessage } from '@/components/ui/FormMessage'
 import { ClipInput } from '@/components/clips/ClipInput'
+import { STATUS_DEAD } from '@/lib/clips/check-url'
 
 type Props = {
   clipId: string
@@ -21,6 +22,7 @@ type Props = {
 export default function ReplaceClipUrlButton({ clipId, label }: Props) {
   const t = useTranslations('tests.replaceClip')
   const tClips = useTranslations('tests.clipsStep')
+  const tCommon = useTranslations('common')
   const router = useRouter()
 
   const [open, setOpen]         = useState(false)
@@ -60,7 +62,7 @@ export default function ReplaceClipUrlButton({ clipId, label }: Props) {
     const json = await res.json()
 
     if (!res.ok) {
-      setError(json.error ?? 'Something went wrong')
+      setError(json.error ?? tCommon('somethingWentWrong'))
       setSaving(false)
       return
     }
@@ -86,7 +88,7 @@ export default function ReplaceClipUrlButton({ clipId, label }: Props) {
         <div className="flex gap-3">
           <Button
             onClick={handleSave}
-            disabled={!verified || verified.url_status === 'dead' || saving}
+            disabled={!verified || verified.url_status === STATUS_DEAD || saving}
           >
             {saving ? t('saving') : t('saveButton')}
           </Button>

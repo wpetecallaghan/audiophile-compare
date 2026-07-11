@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { E2E_PREFIX } from './constants'
 import { createPlaceholderAuthor } from '@/lib/ingestion/create-placeholder-author'
+import { STATUS_OK, type UrlStatus } from '@/lib/clips/check-url'
 
 // ---------------------------------------------------------------------------
 // Admin client — bypasses RLS; use only in test setup/teardown
@@ -142,7 +143,7 @@ export async function seedClip(
   testId: string,
   label: 'A' | 'B',
   sourceUrl: string,
-  urlStatus: 'ok' | 'degraded' | 'dead' = 'ok',
+  urlStatus: UrlStatus = STATUS_OK,
   provider: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown' = 'youtube',
   mediaType: 'audio' | 'video' | 'unknown' = 'video',
 ): Promise<SeededClip> {
@@ -182,18 +183,21 @@ export type SeedTestFixture = {
 const YOUTUBE_A = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
 const YOUTUBE_B = 'https://www.youtube.com/watch?v=9bZkp7q19f0'
 
+// Default seeded-track artist name, reused across every fixture builder below
+const DEFAULT_TEST_ARTIST = 'Test Artist'
+
 export async function seedCompleteTest(
   suffix: string,
   opts: {
-    clipAStatus?: 'ok' | 'degraded' | 'dead'
-    clipBStatus?: 'ok' | 'degraded' | 'dead'
+    clipAStatus?: UrlStatus
+    clipBStatus?: UrlStatus
     clipAProvider?: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
     clipBProvider?: 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
     clipAMediaType?: 'audio' | 'video' | 'unknown'
     clipBMediaType?: 'audio' | 'video' | 'unknown'
   } = {},
 ): Promise<SeedTestFixture> {
-  const track = await seedTrack('Test Artist', `Track ${suffix}`)
+  const track = await seedTrack(DEFAULT_TEST_ARTIST, `Track ${suffix}`)
   const systemA = await seedSystem(`System A ${suffix}`)
   const systemB = await seedSystem(`System B ${suffix}`)
   const snapshotA = await seedSnapshot(systemA.id, `Snapshot A ${suffix}`)
@@ -201,13 +205,13 @@ export async function seedCompleteTest(
   const test = await seedTest(track.id, snapshotA.id, snapshotB.id, `Test ${suffix}`)
   const clipA = await seedClip(
     test.id, 'A', YOUTUBE_A,
-    opts.clipAStatus ?? 'ok',
+    opts.clipAStatus ?? STATUS_OK,
     opts.clipAProvider ?? 'youtube',
     opts.clipAMediaType ?? 'video',
   )
   const clipB = await seedClip(
     test.id, 'B', YOUTUBE_B,
-    opts.clipBStatus ?? 'ok',
+    opts.clipBStatus ?? STATUS_OK,
     opts.clipBProvider ?? 'youtube',
     opts.clipBMediaType ?? 'video',
   )
@@ -238,7 +242,7 @@ export async function seedPlaceholderOwnedTest(suffix: string): Promise<SeedTest
     externalUsername: PLACEHOLDER_FIXTURE_USERNAME,
   })
 
-  const track = await seedTrack('Test Artist', `Placeholder Track ${suffix}`, placeholderUserId)
+  const track = await seedTrack(DEFAULT_TEST_ARTIST, `Placeholder Track ${suffix}`, placeholderUserId)
   const systemA = await seedSystem(`Placeholder System A ${suffix}`, placeholderUserId)
   const systemB = await seedSystem(`Placeholder System B ${suffix}`, placeholderUserId)
   const snapshotA = await seedSnapshot(systemA.id, `Snapshot A ${suffix}`)
@@ -269,7 +273,7 @@ export async function seedPlaceholderOwnedTest(suffix: string): Promise<SeedTest
 // ---------------------------------------------------------------------------
 
 export async function seedClaimedTest(suffix: string): Promise<SeedTestFixture> {
-  const track = await seedTrack('Test Artist', `Claimed Track ${suffix}`)
+  const track = await seedTrack(DEFAULT_TEST_ARTIST, `Claimed Track ${suffix}`)
   const systemA = await seedSystem(`Claimed System A ${suffix}`)
   const systemB = await seedSystem(`Claimed System B ${suffix}`)
   const snapshotA = await seedSnapshot(systemA.id, `Snapshot A ${suffix}`)

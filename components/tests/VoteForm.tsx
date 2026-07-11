@@ -49,6 +49,7 @@ export default function VoteForm({
 }: Props) {
   const router = useRouter()
   const tr = useTranslations('tests.vote')
+  const tCommon = useTranslations('common')
 
   const initialState: Record<string, TechVote> = {}
   for (const t of techniques) {
@@ -116,7 +117,7 @@ export default function VoteForm({
 
       router.refresh()
     } catch {
-      setError('Network error. Please try again.')
+      setError(tCommon('networkError'))
     } finally {
       setSubmitting(false)
     }

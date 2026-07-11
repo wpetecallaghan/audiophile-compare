@@ -74,6 +74,7 @@ export default function SnapshotSection({
   const router = useRouter()
   const t = useTranslations('snapshots')
   const tDelete = useTranslations('snapshots.delete')
+  const tCommon = useTranslations('common')
   const hasRevealedTests = wins + losses + draws > 0
 
   async function handleDelete() {
@@ -83,7 +84,7 @@ export default function SnapshotSection({
     const json = await res.json()
 
     if (!res.ok) {
-      return { error: json.error ?? 'Something went wrong' }
+      return { error: json.error ?? tCommon('somethingWentWrong') }
     }
 
     router.refresh()
@@ -159,7 +160,7 @@ export default function SnapshotSection({
       setEditing(false)
       router.refresh()
     } catch {
-      setError('Network error — please try again')
+      setError(t('networkError'))
     } finally {
       setSubmitting(false)
     }

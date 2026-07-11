@@ -12,7 +12,12 @@ import type { ScrapedPost } from '../../scrape/parse-thread-page'
 import type { Candidate } from '../candidate'
 
 vi.mock('ai', () => ({ generateObject: vi.fn() }))
-vi.mock('@/lib/clips/check-url', () => ({ checkDirectUrl: vi.fn() }))
+vi.mock('@/lib/clips/check-url', () => ({
+  checkDirectUrl: vi.fn(),
+  STATUS_OK: 'ok',
+  STATUS_DEGRADED: 'degraded',
+  STATUS_DEAD: 'dead',
+}))
 
 const THREAD_REF = 'lejonklou-forum:thread-3233'
 const YOUTUBE_A = 'https://www.youtube.com/watch?v=aaaaaaaaaaa'

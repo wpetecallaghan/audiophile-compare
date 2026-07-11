@@ -4,6 +4,7 @@ import type { VerifiedClip } from '@/lib/types/test-creation'
 import { Button } from '@/components/ui/Button'
 import { TextInput } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
+import { STATUS_DEAD, STATUS_DEGRADED } from '@/lib/clips/check-url'
 
 // Extracted in step 27 from StepClips.tsx once the "replace a dead clip's
 // URL" flow needed the exact same URL input + Verify button + inline
@@ -12,7 +13,7 @@ import { FormMessage } from '@/components/ui/FormMessage'
 
 // Status message shown after verification
 function VerificationBadge({ result }: { result: VerifiedClip }) {
-  if (result.url_status === 'dead') {
+  if (result.url_status === STATUS_DEAD) {
     return (
       <FormMessage tone="error">
         This URL could not be reached. Check the link and try again.
@@ -23,7 +24,7 @@ function VerificationBadge({ result }: { result: VerifiedClip }) {
     <FormMessage tone="success">
       Verified — {result.provider}
       {result.media_type !== 'unknown' && `, ${result.media_type}`}
-      {result.url_status === 'degraded' && ' (server responded slowly — may be intermittent)'}
+      {result.url_status === STATUS_DEGRADED && ' (server responded slowly — may be intermittent)'}
     </FormMessage>
   )
 }

@@ -13,6 +13,7 @@ type Props = {
 
 export default function TechniquePreferencesForm({ techniques, initialEnabledIds }: Props) {
   const t = useTranslations('profile')
+  const tCommon = useTranslations('common')
   const [checked, setChecked] = useState<Set<string>>(new Set(initialEnabledIds))
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +47,7 @@ export default function TechniquePreferencesForm({ techniques, initialEnabledIds
       }
       setSuccess(true)
     } catch {
-      setError('Network error — please try again')
+      setError(tCommon('networkError'))
     } finally {
       setSubmitting(false)
     }

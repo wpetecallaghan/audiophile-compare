@@ -38,6 +38,7 @@ type Props = {
 export default function CrossCheckSelector({ systemId, snapshots }: Props) {
   const router = useRouter()
   const t = useTranslations('crosscheck')
+  const tCommon = useTranslations('common')
 
   const [snapshotAId, setSnapshotAId] = useState('')
   const [snapshotBId, setSnapshotBId] = useState('')
@@ -73,7 +74,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
         const data: SharedTrack[] = await res.json()
         if (!cancelled) setResults(data)
       } catch {
-        if (!cancelled) setFetchError('Network error — please try again')
+        if (!cancelled) setFetchError(tCommon('networkError'))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -122,7 +123,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
 
       router.push(`/tests/${(body as { testId: string }).testId}`)
     } catch {
-      setCreateError('Network error — please try again')
+      setCreateError(tCommon('networkError'))
     } finally {
       setCreating(null)
     }

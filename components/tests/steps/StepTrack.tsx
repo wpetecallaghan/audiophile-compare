@@ -18,6 +18,7 @@ type Props = {
 export default function StepTrack({ draft, onComplete }: Props) {
   const t = useTranslations('tests.trackStep')
   const tw = useTranslations('tests.wizard')
+  const tCommon = useTranslations('common')
   const [query, setQuery]       = useState('')
   const [results, setResults]   = useState<Track[]>([])
   const [selected, setSelected] = useState<Track | null>(draft.track)
@@ -123,7 +124,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
               {t('createButton')}
             </Button>
             <Button variant="secondary" onClick={() => setCreating(false)}>
-              Cancel
+              {tCommon('cancel')}
             </Button>
           </div>
         </div>

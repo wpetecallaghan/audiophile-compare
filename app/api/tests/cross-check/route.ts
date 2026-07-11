@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { STATUS_OK } from '@/lib/clips/check-url'
 
 type CrossCheckBody = {
   track_id: string
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
         source_url: clip_a_source_url,
         provider:   clip_a_provider   || 'unknown',
         media_type: clip_a_media_type || 'unknown',
-        url_status: 'ok',
+        url_status: STATUS_OK,
       },
       {
         test_id:    test.id,
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
         source_url: clip_b_source_url,
         provider:   clip_b_provider   || 'unknown',
         media_type: clip_b_media_type || 'unknown',
-        url_status: 'ok',
+        url_status: STATUS_OK,
       },
     ])
     .select('id, label')
