@@ -5,6 +5,13 @@ description: Build step 45 — Per-user listening technique preferences.
 
 # ✅ 45 — Per-user listening technique preferences
 
+**Removed in step 57.** Voting was narrowed to Tune Method only — with a
+single active technique, there was nothing left to choose a subset of, so
+this feature's UI/route/component were deleted (`user_technique_preferences`
+itself and `claim_placeholder`'s handling of it were kept, dormant). This
+file is left as a historical record of the original design; see
+`57-tune-method-only.md`.
+
 **The gap this closes:** every blind test offered a voter all 6 active
 `listening_techniques` — a global list, no per-user customization existed
 anywhere in the schema. This step lets a user choose, from their profile,

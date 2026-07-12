@@ -13,5 +13,4 @@ export const ROLE = {
   button: 'button',
   link: 'link',
   heading: 'heading',
-  checkbox: 'checkbox',
 } as const

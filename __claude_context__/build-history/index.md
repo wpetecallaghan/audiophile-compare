@@ -71,3 +71,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 54 | Play direct-link clips inline, with graceful fallback | [54-inline-direct-clip-playback.md](54-inline-direct-clip-playback.md) |
 | 55 | YouTube clips stay inline on mobile (`playsinline`) | [55-youtube-playsinline.md](55-youtube-playsinline.md) |
 | 56 | Play Dropbox-hosted clips inline via the `raw=1` link | [56-dropbox-raw-url.md](56-dropbox-raw-url.md) |
+| 57 | Voting narrowed to Tune Method only; step 45's technique preferences removed | [57-tune-method-only.md](57-tune-method-only.md) |

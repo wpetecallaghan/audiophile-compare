@@ -286,33 +286,6 @@ On save: `PATCH /api/systems/[id]/snapshots/[snapshotId]`, then `router.refresh(
 Display mode always reads from props (not local state) so the new server values flow in
 correctly after `router.refresh()`.
 
-### `TechniquePreferencesForm` — reusing the selected-card pattern for a multi-select (step 45)
-
-No shared `Checkbox` UI component exists in this codebase — every "pick
-one/many from a list" UI (`VoteForm`'s technique radios, `StepSnapshots`'
-snapshot picker above) is a raw `<input>` styled inline via a wrapping
-`<label>`, not a component. `TechniquePreferencesForm.tsx` (a top-level
-component, alongside `ProfileForm.tsx`, not under `components/tests/`)
-follows `StepSnapshots`' exact selected-card styling — a `<label>` wrapping
-the input plus a name/description block, with `bg-blue-50 dark:bg-blue-900/20
-ring-1 ring-blue-300 dark:ring-blue-700` when selected — but `type="checkbox"`
-with no `name` grouping, since more than one can be checked. Deliberately no
-new shared `Checkbox` component was introduced for this single use site,
-consistent with this repo's no-speculative-abstraction stance
-(`repeated-string-constants.md`).
-
-State/submit shape otherwise mirrors `ProfileForm.tsx` exactly: local
-`submitting`/`error`/`success` state, `fetch(..., { method: 'PATCH' })`, no
-`router.refresh()`. **Each form section on the profile page needs its own
-distinctly-worded action button** — `ChangeEmailForm`'s "Send confirmation"
-and `ChangePasswordForm`'s "Update password" already establish this;
-`ProfileForm`'s generic `saveButton`/`saving` ("Save"/"Saving…") is the one
-exception, and reusing those same keys for a second form on the same page
-breaks `getByRole('button', { name: 'Save' })` in E2E tests once two
-differently-scoped "Save"-prefixed buttons exist on one page (Playwright's
-default name matching is substring-based) — `TechniquePreferencesForm` uses
-its own `techniquesSaveButton`/`techniquesSaving` keys instead.
-
 ### `EditForumLinkButton` — creator-only field edit, deliberately outside the reveal/vote-gated creator-controls block (step 46)
 
 Mirrors `ReplaceClipUrlButton.tsx`'s open/toggle/`router.refresh()` shape
@@ -325,14 +298,19 @@ that block disappears once a test is revealed *and* has votes, which
 would contradict this field's own requirement (editable any time,
 regardless of reveal or vote status). Gated on `isCreator` alone.
 
-Applied the `TechniquePreferencesForm` lesson above proactively: its own
-i18n keys (`tests.forumLink.saveButton` = "Save forum link", not a reused
-generic "Save") from the start, since `ReplaceClipUrlButton`'s own
+**Each form section that can render alongside another needs its own
+distinctly-worded action button** — `ChangeEmailForm`'s "Send confirmation"
+and `ChangePasswordForm`'s "Update password" establish this;
+`ProfileForm`'s generic `saveButton`/`saving` ("Save"/"Saving…") is the one
+exception. Applied proactively here: its own i18n keys
+(`tests.forumLink.saveButton` = "Save forum link", not a reused generic
+"Save") from the start, since `ReplaceClipUrlButton`'s own
 `tests.replaceClip.saveButton` = "Save" *can* legitimately be open on
 screen at the same time (both render independently for the creator, one
 inside the creator-controls block, this one outside it) — reusing "Save"
-again would have risked the identical Playwright substring-match
-ambiguity, not just a hypothetical one.
+again would have risked a Playwright substring-match ambiguity in
+`getByRole('button', { name: 'Save' })` (default name matching is
+substring-based), not just a hypothetical one.
 
 ---
 
@@ -824,11 +802,11 @@ import { Section } from '@/components/ui/Section'
   <Text tone="body">{t('whyBody1')}</Text>
 </Section>
 <Section>{/* no heading prop when the section's own child already renders one */}
-  <h2 className="text-sm font-semibold">{t('techniquesHeading')}</h2>
-  <TechniquePreferencesForm ... />
+  <h2 className="text-sm font-semibold">{t('changeEmailHeading')}</h2>
+  <ChangeEmailForm />
 </Section>
 ```
-`profile.tsx`'s two `text-sm font-semibold` raw `<h2>`s are a genuinely
+`profile.tsx`'s `text-sm font-semibold` raw `<h2>` is a genuinely
 smaller size than `Heading level={2}` — same judgment call as
 `ChangePasswordForm.tsx`'s disclosure heading in §12, left raw rather than
 forced.

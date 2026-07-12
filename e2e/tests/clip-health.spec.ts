@@ -76,7 +76,14 @@ test.describe('Unsupported-playback clip handling', () => {
     })
     await page.goto(routes.test(fixture.test.id))
 
-    const link = page.getByRole(ROLE.link, { name: m.tests.openClipLink })
+    // Scoped to clip A's own section — since "Always show direct link in
+    // tests" every clip (not just unsupported ones) renders its own
+    // "Open link directly" companion link (see MediaPlayer.tsx), so a
+    // page-wide locator now matches clip B's link too. The heading and its
+    // MediaPlayer are siblings inside the same wrapper div (ABPlayer.tsx),
+    // so scoping to the heading's parent reaches only clip A's link.
+    const clipASection = page.getByRole(ROLE.heading, { name: 'Clip A', level: 2 }).locator('..')
+    const link = clipASection.getByRole(ROLE.link, { name: m.tests.openClipLink })
     await expect(link).toBeVisible()
     await expect(link).toHaveAttribute('href', fixture.clipA.source_url)
     await expect(page.getByText(/could not be identified/i)).not.toBeVisible()
@@ -93,7 +100,11 @@ test.describe('Unsupported-playback clip handling', () => {
 
     await page.getByRole(ROLE.button, { name: m.tests.reveal.button }).click()
     await page.getByRole(ROLE.button, { name: m.tests.reveal.confirmButton }).click()
-    await expect(page.getByText(m.tests.revealedStatus).first()).toBeVisible({ timeout: 5_000 })
+    // exact: true — TallyDisplay's ownVoteOnlyNote copy contains the
+    // lowercase substring "revealed" too ("...until this test is
+    // revealed."); a non-exact match can hit that instead of the actual
+    // status eyebrow / MappingBadge label.
+    await expect(page.getByText(m.tests.revealedStatus, { exact: true }).first()).toBeVisible({ timeout: 5_000 })
 
     // Clip A's slot in the player is gone — no heading, no player, no link
     await expect(page.getByRole(ROLE.heading, { name: 'Clip A' })).not.toBeVisible()

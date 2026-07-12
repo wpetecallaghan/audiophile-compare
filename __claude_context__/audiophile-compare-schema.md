@@ -531,23 +531,55 @@ Votes with `technique.is_other = true` must have `other_description` populated.
 The `Other` technique is excluded from cross-test analytics — it is qualitative
 only, displayed as a list of descriptions rather than a percentage bar.
 
-**Per-user preferences (step 45):** a user can narrow which active
-techniques they're offered when voting, via `user_technique_preferences`
-(min 1, enforced client- and server-side — see `api-conventions.md`
-Rule 5). No rows for a user means "never customized — every active
-technique enabled," not "zero enabled"; a save always writes the user's
-complete current selection (delete-all-then-insert-all), so this is never
-ambiguous. `Other` has no special exemption — it's includable/excludable
-like any other technique.
+**Only Tune Method is active (step 57).** Tune Method — as documented by
+Linn ("Tune Dem") and Lejonklou (who adapted and taught it under the
+"Tune Method" name) — asks a narrower, more reliable question than the
+other techniques: can you follow the tune/melody, not judge tone, detail,
+or overall character. Both sources single it out as the method that most
+reliably reveals real differences, and Lejonklou notes it's normally hard
+to do in a blind test *unless* the listener controls the music, volume,
+and switching — exactly the self-paced format this site offers.
 
-A technique a user already voted on for a *specific* test stays offered
-on that test even if they later disable it elsewhere, so an existing vote
-never becomes invisible/unreachable in the vote form — new votes on other
-tests only ever offer the current preference set. This mirrors (and, for
-the per-user case, closes) a pre-existing gap in `is_active`: a globally
-deactivated technique's past votes persist untouched in the DB/tally but
-silently disappear from the editable form, with no equivalent "still show
-it on this test" fix — left as-is, out of scope for step 45.
+The more specific, on-point reason this site restricts itself to Tune
+Method exclusively — not just one option among several — traces to the
+actual forum discussion (Lejonklou's own forum, "Building a dedicated
+service for listening tests") where this restriction was decided: a clip,
+especially one recorded on a phone, strips away the qualities techniques
+like tonal balance or soundstage depend on, leaving only something
+judgeable "on a fundamental level" — Tune Method's own territory. See
+`app/about/page.tsx`'s `tuneMethodBody3` (`messages/en.json`) and the
+linked forum thread on that page itself.
+
+`20260712170000_deactivate_non_tune_method_techniques.sql` set
+`is_active = false` on the other five rows (PRaT, Tonal / Frequency
+balance, Soundstage & imaging, General preference, Other). Deactivating
+rather than deleting: every existing vote and every test's historical
+per-technique results breakdown (`computeTally`/`TallyDisplay`) are
+untouched — only what a *new* vote can be cast under changed.
+`app/tests/[id]/page.tsx`'s technique fetch and `POST /api/votes`'
+active-technique check (defense in depth, mirroring the dead-clip check)
+both filter on `is_active`, generically — not hardcoded to "Tune Method"
+by name — so reactivating a row is enough to offer it again.
+
+**The seeded description was also corrected (step 57 follow-up,
+`20260712174500_correct_tune_method_description.sql`).** The original seed
+row's description ("Assesses rhythmic coherence, pace, and timing —
+whether the music flows naturally") conflated Tune Method with PRaT's own
+description — a real inconsistency once the About page's fuller
+explanation (sourced from Linn/Lejonklou, see `app/about/page.tsx`'s
+`tuneMethodBody1-3` in `messages/en.json`) was written accurately. Now
+reads "Assesses how easily you can follow the tune — not tone, detail, or
+overall character", matching the About page.
+
+**The per-user technique preferences feature (step 45) was removed in
+step 57** — with only one active technique, "choose which techniques
+you're offered" had nothing left to offer a choice between (min 1,
+and there was only 1). `user_technique_preferences` itself, and
+`claim_placeholder`'s reassignment/collision handling for it, are left
+in place — the table has real user data and is cheap to keep dormant —
+but its UI (`TechniquePreferencesForm.tsx`), API route (`PATCH
+/api/profile/technique-preferences`), and profile-page section were
+deleted; see `build-history/57-tune-method-only.md`.
 
 ### `forum_link` vs `source_url` (step 46) — do not conflate
 

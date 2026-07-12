@@ -7,10 +7,12 @@ description: Build step 48 — grayscale favicon generated from a supplied portr
 
 **What changed:** `app/favicon.ico` was replaced with a grayscale
 conversion of a supplied 120×120 illustrated portrait (`peteavatar.png`,
-kept in the repo root as the source asset). No application code changed —
-`app/layout.tsx` has no `<link rel="icon">` metadata, so `app/favicon.ico`
-(the Next.js App Router file convention) is the only favicon surface that
-exists.
+originally kept in the repo root as the source asset; deleted later once
+`app/favicon.ico` was generated and verified — nothing in the build
+references the source file itself, only the generated `.ico`). No
+application code changed — `app/layout.tsx` has no `<link rel="icon">`
+metadata, so `app/favicon.ico` (the Next.js App Router file convention)
+is the only favicon surface that exists.
 
 **Conversion approach — no new dependency.** `sharp`/ImageMagick aren't
 installed and weren't worth adding for a one-off asset conversion.

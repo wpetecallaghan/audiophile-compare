@@ -7,14 +7,9 @@
  */
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
-import {
-  seedCompleteTest,
-  getTechniqueIdByName,
-  setTechniquePreferences,
-  resetTechniquePreferences,
-  type SeedTestFixture,
-} from '../helpers/admin'
+import { seedCompleteTest, type SeedTestFixture } from '../helpers/admin'
 import { ROLE } from '../helpers/constants'
+import { waitForServerState } from '../helpers/wait-for-server-state'
 import m from '../../messages/en.json'
 
 const FORUM_LINK_URL = 'https://forum.example.com/thread/e2e-voting-test'
@@ -71,10 +66,10 @@ test.describe('Voting flow', () => {
     await context.close()
   })
 
-  test('cast a vote: select clip A for the first technique → Save votes', async ({ page }) => {
+  test('cast a vote: select clip A → Save votes', async ({ page }) => {
     await page.goto(routes.test(fixture.test.id))
 
-    // Select clip A for the first available technique
+    // Only Tune Method is offered — select clip A on it
     const radioA = page.locator(`input[type="radio"][value="${fixture.clipA.id}"]`).first()
     await radioA.check()
 
@@ -123,78 +118,41 @@ test.describe('Voting flow', () => {
     // re-renders with isRevealed=true from a real server round-trip is a
     // reliable signal; the next test in this file depends on the reveal
     // having genuinely completed by the time this test finishes.
+    //
+    // exact: true on the revealedStatus check below — TallyDisplay's
+    // ownVoteOnlyNote copy ("...until this test is revealed.") contains the
+    // same word lowercase, which a non-exact getByText match can hit
+    // instead of the real status eyebrow, silently defeating the hardening
+    // above. .first() still matters even with exact: true — once genuinely
+    // revealed, MappingBadge's own "Revealed" label is a second legitimate
+    // exact match alongside the status eyebrow.
     await expect(revealButton).not.toBeVisible({ timeout: 5_000 })
-    await expect(page.getByText(m.tests.revealedStatus).first()).toBeVisible()
+    await expect(page.getByText(m.tests.revealedStatus, { exact: true }).first()).toBeVisible()
   })
 
   test('after reveal: system/snapshot info is visible to a non-creator too', async ({ browser }) => {
     // Runs after the previous test has revealed fixture.test — canSeeSystemInfo
     // = isRevealed || isCreator is now true for anyone, not just the creator.
+    //
+    // waitForServerState, not a single goto + toBeVisible: the previous
+    // test's write (via the creator's own session) is reliably NOT yet
+    // visible to this brand-new, independent session for roughly a couple
+    // of seconds against real staging (confirmed directly — see that
+    // helper's own comment). expect(...).toBeVisible()'s retrying only
+    // re-inspects the DOM already on the page; it never re-fetches, so it
+    // can't ride out this lag on its own.
     const context = await browser.newContext({ storageState: undefined })
     const page = await context.newPage()
+    const url = routes.test(fixture.test.id)
 
-    await page.goto(routes.test(fixture.test.id))
-
-    await expect(
-      page.getByText(`${fixture.systemA.name} · ${fixture.snapshotA.label}`),
-    ).toBeVisible()
+    await waitForServerState(page, url, () =>
+      page.getByText(`${fixture.systemA.name} · ${fixture.snapshotA.label}`).isVisible(),
+    )
     await expect(
       page.getByText(`${fixture.systemB.name} · ${fixture.snapshotB.label}`),
     ).toBeVisible()
 
     await context.close()
-  })
-})
-
-test.describe('Technique preferences applied to voting (build step 45)', () => {
-  let techFixture: SeedTestFixture
-
-  test.beforeAll(async () => {
-    techFixture = await seedCompleteTest(`vote-techniques-${Date.now()}`)
-  })
-
-  // The real E2E test user is one persistent, shared identity across every
-  // spec file — see e2e/helpers/admin.ts's own comment on why any test
-  // touching technique preferences must reset them afterward.
-  test.afterEach(async () => {
-    await resetTechniquePreferences()
-  })
-
-  test('vote form only offers enabled techniques, and a technique already voted on for this test stays offered even after being disabled elsewhere', async ({ page }) => {
-    const tuneMethodId = await getTechniqueIdByName('Tune Method')
-    const pratId = await getTechniqueIdByName('PRaT')
-
-    await setTechniquePreferences([tuneMethodId, pratId])
-    await page.goto(routes.test(techFixture.test.id))
-
-    // Narrowed correctly — only the two enabled techniques are offered
-    await expect(page.getByText('Tune Method')).toBeVisible()
-    await expect(page.getByText('PRaT')).toBeVisible()
-    await expect(page.getByText('Tonal / Frequency balance')).not.toBeVisible()
-
-    // Vote using PRaT specifically, scoped to its own radio group by the
-    // technique-id-keyed input name VoteForm renders
-    // (`technique-${t.id}`) — the same clip value appears in every
-    // technique's radio group, so this can't be selected by value alone.
-    await page.locator(`input[name="technique-${pratId}"][value="${techFixture.clipA.id}"]`).check()
-    await page.getByRole(ROLE.button, { name: m.tests.vote.saveButton }).click()
-    await expect(page.getByText(/%/).first()).toBeVisible({ timeout: 5_000 })
-
-    // Now disable PRaT — the technique this session just voted with on
-    // this specific test — leaving only Tune Method enabled.
-    await setTechniquePreferences([tuneMethodId])
-    await page.reload()
-
-    // The decision-1 fix: PRaT's block stays offered here specifically,
-    // because existingVotes for this test includes it, even though it's
-    // no longer in the current preference set. Scoped to the vote form
-    // itself, not the whole page — a cast vote means canSeeTally is now
-    // true too, and TallyDisplay (a sibling of the form, not inside it)
-    // renders its own "PRaT" technique label alongside the tally bar.
-    const voteForm = page.locator('form')
-    await expect(voteForm.getByText('Tune Method')).toBeVisible()
-    await expect(voteForm.getByText('PRaT')).toBeVisible()
-    await expect(voteForm.getByText('Tonal / Frequency balance')).not.toBeVisible()
   })
 })
 
@@ -243,22 +201,37 @@ test.describe('Forum discussion link (build step 46)', () => {
     await revealButton.click()
     await page.getByRole(ROLE.button, { name: m.tests.reveal.confirmButton }).click()
     await expect(revealButton).not.toBeVisible({ timeout: 5_000 })
-    await expect(page.getByText(m.tests.revealedStatus).first()).toBeVisible()
+    // exact: true — see 'creator can reveal the test' above.
+    await expect(page.getByText(m.tests.revealedStatus, { exact: true }).first()).toBeVisible()
   })
 
   test('non-creator can see the forum link once revealed', async ({ browser }) => {
+    // waitForServerState — see the previous describe block's "after reveal"
+    // test for why a single goto + toBeVisible can't ride out the write's
+    // visibility lag to this independent session.
     const context = await browser.newContext({ storageState: undefined })
     const page = await context.newPage()
-    await page.goto(routes.test(linkFixture.test.id))
-    await expect(page.getByRole(ROLE.link, { name: m.tests.forumLink.label })).toBeVisible()
+    const url = routes.test(linkFixture.test.id)
+
+    await waitForServerState(page, url, () =>
+      page.getByRole(ROLE.link, { name: m.tests.forumLink.label }).isVisible(),
+    )
     await context.close()
   })
 
   test('creator can still edit the forum link after reveal and after a vote exists', async ({ page }) => {
     const updatedUrl = 'https://forum.example.com/thread/e2e-updated'
-    await page.goto(routes.test(linkFixture.test.id))
+    const url = routes.test(linkFixture.test.id)
 
-    await page.getByRole(ROLE.button, { name: m.tests.forumLink.editButton }).click()
+    // Same lag as above — this is a fresh navigation in the creator's own
+    // session, not a router.refresh() continuing from the previous test's
+    // own write, so it's just as exposed: currentLink (test.forum_link)
+    // can still read back null here, showing "+ Add forum link" instead of
+    // "Edit forum link" until the previous test's write becomes visible.
+    const editButton = page.getByRole(ROLE.button, { name: m.tests.forumLink.editButton })
+    await waitForServerState(page, url, () => editButton.isVisible())
+
+    await editButton.click()
     await page.getByLabel(m.tests.forumLink.label).fill(updatedUrl)
     await page.getByRole(ROLE.button, { name: m.tests.forumLink.saveButton }).click()
 

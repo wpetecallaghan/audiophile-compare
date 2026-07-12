@@ -203,13 +203,6 @@ itself to chain `.select().single()` after every mutating query and treat
 a missing row as failure — **never trust an absent `error` to mean a row
 actually changed; check what you asked to change is actually returned.**
 
-**A clean example of this rule applied from the start (step 45):**
-`PATCH /api/profile/technique-preferences` does a delete-then-insert
-against `user_technique_preferences`, both covered by one
-`for all using (user_id = auth.uid())` policy — no `security definer`
-RPC needed, since (unlike `ingest_test`/`claim_placeholder`/
-`erase_user_*`) this route only ever touches the caller's own rows.
-
 **A policy's own name can be misleading — check the actual SQL (step
 46):** `"tests: creator update (reveal only)"` sounds column-restricted,
 but its definition is just `for update using (creator_id = auth.uid())`
@@ -240,12 +233,18 @@ separate path — it doesn't change `DELETE /api/tests/[id]`'s own behavior,
 which still refuses a voted-on test exactly as before for any normal,
 self-service caller.
 
-### Rule 7 — clip health rules (step 27)
+### Rule 7 — clip health rules (step 27); active-technique rule (step 57)
 
 - `POST /api/votes` re-checks every chosen clip's `url_status` and returns
   409 if any is `dead` — defense in depth behind the UI, which already
   hides the vote form when `hasDeadClip` is true. `degraded` never blocks
   voting (may be transient).
+- `POST /api/votes` also re-checks every submitted `technique_id` is
+  currently `is_active` and returns 400 otherwise — same defense-in-depth
+  reasoning: the UI (`app/tests/[id]/page.tsx`'s technique fetch) already
+  only offers active techniques, but a direct API call could bypass that.
+  Generic on `is_active`, not hardcoded to "Tune Method" by name — see
+  `audiophile-compare-schema.md`'s "listening_techniques governance".
 - `PATCH /api/clips/[id]` — creator only (via the clip's parent test); 409
   if the test has any vote. Trusts the client-supplied verified fields
   (`source_url`/`provider`/`media_type`/`url_status`) the same way

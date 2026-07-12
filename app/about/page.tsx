@@ -17,6 +17,21 @@ export default async function AboutPage() {
         <Text tone="body">{t('whyBody2')}</Text>
       </Section>
 
+      <Section heading={t('tuneMethodHeading')}>
+        <Text tone="body">{t('tuneMethodBody1')}</Text>
+        <Text tone="body">{t('tuneMethodBody2')}</Text>
+        <Text tone="body">{t('tuneMethodBody3')}</Text>
+        <Text tone="body">{t('tuneMethodBody4')}</Text>
+        <Link
+          href="https://www.lejonklou.com/forum/viewtopic.php?p=78529#p78529"
+          variant="inline"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {t('tuneMethodSourceLink')}
+        </Link>
+      </Section>
+
       <Section heading={t('listenersHeading')}>
         <Text tone="body">{t('listenersBody1')}</Text>
         <Text tone="body">{t('listenersBody2')}</Text>

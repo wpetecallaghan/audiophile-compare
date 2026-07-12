@@ -141,8 +141,7 @@ export default function VoteForm({
           {isUpdate ? tr('updateHeading') : tr('castHeading')}
         </Heading>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-          Choose which clip you preferred for each technique. You can vote on
-          any or all of them.
+          {tr('subheading')}
         </p>
       </div>
 

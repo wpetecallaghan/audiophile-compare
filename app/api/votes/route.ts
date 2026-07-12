@@ -76,6 +76,23 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Defense in depth — the UI already only ever offers active techniques
+  // (app/tests/[id]/page.tsx filters on is_active), but a direct API call
+  // could bypass that and vote under a deactivated technique
+  const techniqueIds = [...new Set(votes.map(v => v.technique_id))]
+  const { data: activeTechniques } = await supabase
+    .from('listening_techniques')
+    .select('id')
+    .eq('is_active', true)
+    .in('id', techniqueIds)
+
+  if (!activeTechniques || activeTechniques.length !== techniqueIds.length) {
+    return NextResponse.json(
+      { error: 'One or more techniques are not currently active' },
+      { status: 400 },
+    )
+  }
+
   // Upsert — UNIQUE (test_id, user_id, technique_id) allows re-voting
   const rows = votes.map(v => ({
     test_id,
