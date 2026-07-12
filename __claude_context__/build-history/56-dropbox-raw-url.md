@@ -139,6 +139,19 @@ No E2E changes — no existing fixture uses `provider: 'direct'`
 URL-string computation and prop wiring, same reasoning as step 54 for
 preferring unit tests here.
 
+## Follow-up (step 59)
+
+This step's `media_type: 'unknown'` placeholder for Dropbox
+(`lib/clips/detect-provider.ts`, comment: "HEAD misreports Content-Type
+even for raw=1 — resolved client-side") — the general principle step 54
+established for Google Photos, reused here — turned out to also block a
+naive content-type-based clip-health check: a broken Dropbox link and a
+real working one are both plausibly `'unknown'`/misreported at HEAD
+time, so content-type can't distinguish them. Step 59 found a different,
+reliable signal instead (which host the response ultimately redirects
+to) rather than trying to fix content-type detection itself — see
+`build-history/59-dropbox-cron-health-check.md`.
+
 ## Verified
 
 - `npx tsc --noEmit` — clean (pre-existing, unrelated errors in

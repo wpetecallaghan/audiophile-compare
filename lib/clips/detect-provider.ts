@@ -61,7 +61,7 @@ function extractGoogleDriveId(url: URL): string | null {
 // iframe needed — matched by hostname only (not a specific path shape,
 // unlike Drive's file-vs-folder distinction) since the rewrite is a safe
 // no-op for any Dropbox URL that isn't actually a file link.
-function isDropboxUrl(url: URL): boolean {
+export function isDropboxUrl(url: URL): boolean {
   return url.hostname === 'www.dropbox.com' || url.hostname === 'dropbox.com'
 }
 

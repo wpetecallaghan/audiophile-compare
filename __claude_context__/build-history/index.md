@@ -73,3 +73,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 56 | Play Dropbox-hosted clips inline via the `raw=1` link | [56-dropbox-raw-url.md](56-dropbox-raw-url.md) |
 | 57 | Voting narrowed to Tune Method only; step 45's technique preferences removed | [57-tune-method-only.md](57-tune-method-only.md) |
 | 58 | Extend the URL health-check cron to cover Google Drive clips | [58-google-drive-cron-health-check.md](58-google-drive-cron-health-check.md) |
+| 59 | Fix the Dropbox clip-health blind spot | [59-dropbox-cron-health-check.md](59-dropbox-cron-health-check.md) |

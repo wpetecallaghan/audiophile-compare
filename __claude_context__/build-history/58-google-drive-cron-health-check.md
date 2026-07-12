@@ -52,7 +52,7 @@ query):
   fabricated one returns `404`. `fetch` follows redirects by default, so
   `checkDirectUrl` already sees the true final status.
 - **Dropbox — a different, pre-existing gap, deliberately not fixed
-  here.** A real staging Dropbox link with a corrupted `rlkey` (simulating
+  here — addressed in step 59.** A real staging Dropbox link with a corrupted `rlkey` (simulating
   a broken/revoked share) returned `200` with Dropbox's generic web-app
   shell (`content-type: text/html`), not a `404`. `checkDirectUrl`'s
   dead/ok decision is based purely on HTTP status code — it never
@@ -67,7 +67,9 @@ query):
   *any* `direct` clip) — a materially larger, riskier change than a query
   filter, touching every existing `direct` clip's classification
   (Dropbox, Google Photos, any other direct host). **Flagged as a known
-  follow-up, not addressed in this step.**
+  follow-up, not addressed in this step** — the actual signal that turned
+  out to work is different from content-type entirely; see
+  `build-history/59-dropbox-cron-health-check.md`.
 
 **One documented tension, flagged but not reconciled here:**
 `lib/ingestion/extract/clip-health.ts` (the forum-ingestion pipeline, a

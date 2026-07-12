@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (47 files · 511 tests · all passing)
+## 4. Unit test inventory (50 files · 535 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -93,6 +93,7 @@ indirectly through the step tests.
 | `components/systems/__tests__/SnapshotSection.test.tsx` | 27 | Display/edit mode, component rows, PATCH, router.refresh, delete confirm/cancel |
 | `lib/auth/__tests__/password-rules.test.ts` | 11 | Password complexity sliding by length (step 51) — 3-of-4 character classes under 20 chars, the `'password123'` regression case, the 20-char boundary, long all-digit/all-symbol strings rejected, a long plain-lowercase passphrase accepted |
 | `lib/clips/__tests__/detect-provider.test.ts` | 16 | YouTube / Vimeo / Google Drive / direct / unknown URL classification; a Drive folder link isn't misdetected as a file; Dropbox share links (step 56) rewrite dl=0/absent-dl to raw=1 preserving rlkey and other params, idempotent for an already-raw=1 URL, and handles bare dropbox.com as well as www |
+| `lib/clips/__tests__/check-url.test.ts` | 11 | `checkDirectUrl` (step 59, `global.fetch` mocked — first coverage of this file): 200 with audio/video/no content-type resolves media_type correctly; 404 → dead; 500 → degraded; timeout → degraded; network error → dead; a Dropbox 200 redirected to a `*.dropboxusercontent.com` CDN host → ok; a Dropbox 200 that never left dropbox.com → dead; a Dropbox 404/5xx unaffected by the new check; the redirect-host check is gated to Dropbox only (a non-Dropbox 200 from an unrelated host is still trusted) |
 | `lib/clips/__tests__/is-unsupported.test.ts` | 3 | `isUnsupportedClip` (step 54 simplification): true only for provider unknown; false for direct regardless of media_type; false for every embeddable provider |
 | `lib/clips/__tests__/to-clip-data.test.ts` | 6 | embed_id and canonical_url derivation for each provider, including Google Drive |
 | `lib/clips/__tests__/find-shared-clips.test.ts` | 9 | Shared track finder; side A/B selection; no shared tracks |
