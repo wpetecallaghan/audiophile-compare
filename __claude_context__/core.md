@@ -91,12 +91,20 @@ app/
   tracks/page.tsx
   tracks/[id]/page.tsx
   version/page.tsx                          ← Admin-only: deployed commit info
+  loading.tsx                               ← Step 60; every route above that does a real Supabase
+                                               fetch has a sibling loading.tsx rendering
+                                               <PageLoading maxWidth=.../> (about/login/register
+                                               skipped — negligible fetch, see build-history/60)
 
 components/
   ui/
     Button.tsx                               ← cva-based; variant (primary/secondary) × size (standard/compact)
     Badge.tsx                                ← cva-based; status (win/loss/draw/blind/revealed)
-    Link.tsx                                 ← cva-based; wraps next/link; variant (nav/card/inline) × size (inline only)
+    Link.tsx                                 ← cva-based; wraps next/link; variant (nav/card/inline) × size (inline only);
+                                                Client (step 60) — active:opacity-60 tap feedback +
+                                                useTransition-based pending state (not useLinkStatus;
+                                                see step 60, React 18-only)
+    PageLoading.tsx                          ← Step 60; server; <PageShell> + spinner, used by every route's loading.tsx
     Heading.tsx                              ← cva-based; wraps h1/h2; level (1/2)
     FieldLabel.tsx                           ← cva-based; wraps label; tone (standard/muted)
     TextField.tsx                            ← cva-based; TextInput/TextArea/Select share fieldVariants; size (standard/compact)
@@ -208,9 +216,9 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-Steps 1–59 complete: core app (1–29, 40–59) plus the forum-ingestion
-pipeline (30–39) through a real production import. Current unit suite: 50
-files / 535 tests passing (`npm run test`); integration suite (`npm run
+Steps 1–60 complete: core app (1–29, 40–60) plus the forum-ingestion
+pipeline (30–39) through a real production import. Current unit suite: 51
+files / 542 tests passing (`npm run test`); integration suite (`npm run
 test:integration`, testing.md §11): 17/17 passing against real staging.
 
 Full step-by-step detail, one file per step: `build-history/index.md`

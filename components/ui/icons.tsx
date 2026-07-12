@@ -49,3 +49,11 @@ export function ListIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+export function SpinnerIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M12 2a10 10 0 0 1 10 10" />
+    </svg>
+  )
+}

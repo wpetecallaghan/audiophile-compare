@@ -1,6 +1,7 @@
 {
   "common": {
     "cancel": "Cancel",
+    "loading": "Loading…",
     "networkError": "Network error — please try again",
     "somethingWentWrong": "Something went wrong",
     "importedBadge": "Imported",
