@@ -230,6 +230,19 @@ Other candidates for this tier, not yet added:
 - Protected route access patterns at the API boundary, for other routes
 - Form submission workflows end-to-end through API routes
 
+**`app/api/cron/check-urls/route.ts` was considered for this tier (step
+58) and deliberately rejected**, despite being header-secret-authenticated
+the same way `ingest`/`erase-user-data`/`claim` are: unlike those three,
+whose `.rpc()` calls only touch the rows the test itself creates, this
+route's query is deliberately unscoped ("regardless of test status," step
+10) — it HEAD-checks *every* checkable clip in the database. Confirmed
+directly: invoking it against real staging checked 103 real clips in
+~65 seconds, several times over this config's 30s `testTimeout` and broad
+enough to mutate every real clip's `url_status` on every
+`npm run test:integration` run. Stays manually-verified instead — see
+`build-history/58-google-drive-cron-health-check.md` for how it was
+verified before shipping.
+
 ---
 
 ## 8. E2E environment variables

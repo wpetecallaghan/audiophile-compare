@@ -40,6 +40,18 @@ not folded into extraction.
    acceptable UX. Drive gets the identical treatment — no Drive API key,
    no Google Cloud project, no custom verification logic.
 
+   **Revisited at step 58**, following a real production report of a test
+   whose two Drive files had been deleted but showed no "Broken" badge
+   anywhere: the "shows its own broken state in-iframe" reasoning only
+   covers a visitor who opens the test page directly — it does nothing
+   for the feed/track/system list surfaces, whose badge is driven purely
+   by `clips.url_status`, which a never-checked provider can never reach
+   `'dead'` in. Unlike YouTube/Vimeo, Drive's `/preview` endpoint's HTTP
+   status *does* distinguish reachable from gone, so step 58 added
+   `google-drive` to the cron's checked providers — see
+   `build-history/58-google-drive-cron-health-check.md`. Decisions 1, 3,
+   4, and 5 below are unaffected.
+
 3. **Real, load-bearing constraint: Drive's `/preview` iframe has no
    public JS SDK for programmatic control — no play-event detection, no
    `pause()` capability.** Unlike YouTube (IFrame API) and Vimeo

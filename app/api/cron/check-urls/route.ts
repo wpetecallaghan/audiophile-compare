@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { detectProvider } from '@/lib/clips/detect-provider'
+import type { ClipProvider } from '@/lib/clips/detect-provider'
 import { checkDirectUrl } from '@/lib/clips/check-url'
 import type { UrlStatus } from '@/lib/clips/check-url'
 import { nextUrlStatus } from '@/lib/clips/next-url-status'
@@ -9,8 +10,9 @@ import { nextUrlStatus } from '@/lib/clips/next-url-status'
 // GET /api/cron/check-urls
 //
 // Vercel Cron job — runs daily at 02:00 UTC (configured in vercel.json).
-// Checks the reachability of every clip with provider='direct' and updates
-// url_status and media_type in the database where the value has changed.
+// Checks the reachability of every clip with a checkable provider and
+// updates url_status and media_type in the database where the value has
+// changed.
 //
 // Uses the service role client because this route runs without a user session.
 // Protected by CRON_SECRET — Vercel passes this automatically as
@@ -23,12 +25,15 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient()
 
-  // Only direct URLs can be meaningfully checked with a HEAD request.
-  // YouTube and Vimeo return 200 regardless of whether the specific video exists.
+  // 'direct' and 'google-drive' are the only providers whose embed
+  // endpoint's HTTP status actually distinguishes reachable from gone
+  // (step 58) — YouTube and Vimeo stay excluded because their embed pages
+  // return 200 regardless of whether the specific video exists.
+  const CHECKED_PROVIDERS: ClipProvider[] = ['direct', 'google-drive']
   const { data: clips, error } = await supabase
     .from('clips')
     .select('id, source_url, url_status, media_type')
-    .eq('provider', 'direct')
+    .in('provider', CHECKED_PROVIDERS)
 
   if (error) {
     return NextResponse.json({ error: 'Failed to fetch clips' }, { status: 500 })
@@ -39,6 +44,12 @@ export async function GET(request: NextRequest) {
 
   for (const clip of clips ?? []) {
     const detected = detectProvider(clip.source_url)
+    // checkDirectUrl is provider-agnostic despite its name — it just HEADs
+    // detected.canonical_url, which detectProvider already resolves to a
+    // Drive clip's /preview URL. Safe to reuse for google-drive: Drive's
+    // /preview page is always served as text/html, which resolves to
+    // media_type 'unknown' below, so the never-downgrade guard skips it
+    // and a Drive clip's real media_type is never overwritten.
     const result = await checkDirectUrl(detected)
     checked++
 

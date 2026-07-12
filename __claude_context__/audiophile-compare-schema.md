@@ -317,15 +317,22 @@ rather than trusting an absent `error` to mean a row actually changed (see
 values (`20260707191616_clips_google_drive_provider.sql`). Drive share
 links (`drive.google.com/file/d/{id}/...`) have a stable, confirmed
 embeddable form (`/file/d/{id}/preview` — verified directly: `200`, no
-`X-Frame-Options`/`frame-ancestors` blocking third-party embedding) and
-get the exact same treatment YouTube/Vimeo already do: no health
-verification (an unreachable embed just shows its own broken state
-in-iframe), never touched by the step 10 cron (which only checks
-`provider = 'direct'`). **Google Photos and iCloud shared links remain
-`unknown` by design, not as a remaining gap** — neither has an equivalent
-public, stable, embeddable URL for third-party use. See `components.md`
-§5 for the one real limitation: Drive's embed has no control SDK, so
-`GoogleDrivePlayer`'s `pause()` is a documented no-op.
+`X-Frame-Options`/`frame-ancestors` blocking third-party embedding).
+Originally given the exact same treatment YouTube/Vimeo get (no health
+verification, never touched by the step 10 cron) — **revised at step
+58**: unlike YouTube/Vimeo, Drive's `/preview` endpoint's HTTP status
+genuinely distinguishes reachable from gone (`200` vs `404`), so the
+cron now also HEAD-checks `provider = 'google-drive'` clips the same way
+it does `direct` ones; see `build-history/58-google-drive-cron-health-check.md`.
+**iCloud shared links remain `unknown` by design, not as a remaining
+gap** — no equivalent public, stable, embeddable URL for third-party
+use. (Google Photos share links *are* handled, despite having no
+iframe-embeddable form either — see `lib/clips/resolve-google-photos.ts`:
+classified as `provider = 'direct'`, resolved at render time via an
+Open Graph video URL scrape and served through a same-origin proxy
+route; not covered by a dedicated build-history step file yet.) See
+`components.md` §5 for the one real limitation: Drive's embed has no
+control SDK, so `GoogleDrivePlayer`'s `pause()` is a documented no-op.
 
 ### Placeholder authors (step 30)
 
