@@ -928,3 +928,50 @@ the position math or the JSX above:
 in `messages/en.json` (`tests.nav.*`, `tracks.nav.*`) with entity-specific
 copy ("First test" vs. "First track"), not a shared `common.nav.*` —
 consistent with §10's "each surface gets its own wording" precedent.
+
+---
+
+## 15. Page transition crossfade — View Transitions API (build step 63)
+
+`Link.tsx` (§12) wraps its intercepted navigation in
+`document.startViewTransition()` when the browser supports it, so the
+outgoing page crossfades into the incoming `loading.tsx` skeleton (§ Step
+60 file layout) instead of the hard cut that pattern otherwise produces.
+Feature-detected per click (`typeof document.startViewTransition ===
+'function'`) — no call-site changes needed elsewhere, every `<Link
+variant="nav|card|inline" />` gets this automatically. Silently falls back
+to the pre-existing plain `startTransition(() => router.push(href))` on
+browsers without it (Firefox, older Safari) — never a hard requirement.
+
+**Not React's own `<ViewTransition>` component** — that's a React 19
+canary API, and this project is pinned to React 18 (same constraint §
+Step 60 hit with `useLinkStatus`). `document.startViewTransition()` is a
+plain browser API with no React version dependency.
+
+**The resolve lives in a root-mounted provider, not in `Link` itself.**
+`ViewTransitionResolverProvider` (`components/ui/ViewTransitionResolver.tsx`,
+wrapped around the app in `app/layout.tsx`) watches `usePathname()` +
+`useSearchParams()` and resolves whatever `resolve` callback `Link.tsx`
+last registered via `useRegisterViewTransition()` once the route settles.
+This is deliberate, not incidental complexity: the clicked `Link` is
+routinely the very thing that unmounts once its own navigation completes
+(a card link into the page it's replacing), so tracking the resolve in the
+`Link`'s own local state — the first thing tried — silently breaks for
+exactly that case (see `build-history/63-view-transition-page-crossfade.md`
+for the real `TimeoutError` this produced). Keyed off pathname **and**
+searchParams, not pathname alone, since this app has same-pathname/
+different-searchParams navigations (`/tests/[id]?from=feed&page=1`'s
+pagination-origin query params) that a pathname-only watcher would miss.
+`Link.tsx` also carries a `VIEW_TRANSITION_FALLBACK_MS` (1.5s) safety timer
+for the one case the route watcher structurally can't see settle — a link
+back to the current URL.
+
+`useRegisterViewTransition()` returns `null`, rather than throwing, when
+no provider is mounted — `Link.tsx`'s `&& registerViewTransition` guard
+means it degrades to plain navigation instead of crashing if ever rendered
+outside the root layout (unit tests, in particular).
+
+**CSS:** the crossfade duration (`0.36s`) and a `prefers-reduced-motion`
+override live in `app/globals.css` as plain `::view-transition-*`
+selectors — global, not per-component, since the transition is between two
+whole pages, not a scoped element.

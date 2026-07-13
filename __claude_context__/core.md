@@ -104,7 +104,14 @@ components/
     Link.tsx                                 ← cva-based; wraps next/link; variant (nav/card/inline) × size (inline only);
                                                 Client (step 60) — active:opacity-60 tap feedback +
                                                 useTransition-based pending state (not useLinkStatus;
-                                                see step 60, React 18-only)
+                                                see step 60, React 18-only); step 63 wraps navigation in
+                                                document.startViewTransition() when supported, resolved via
+                                                ViewTransitionResolver.tsx
+    ViewTransitionResolver.tsx                ← Step 63; client; root-mounted provider (see app/layout.tsx)
+                                                resolving a pending view transition once usePathname()/
+                                                useSearchParams() show the route has actually settled —
+                                                not tracked in Link.tsx itself, since the clicked Link
+                                                often unmounts before its own navigation completes
     PageLoading.tsx                          ← Step 60; server; <PageShell> + spinner, used by every route's loading.tsx
     Heading.tsx                              ← cva-based; wraps h1/h2; level (1/2)
     FieldLabel.tsx                           ← cva-based; wraps label; tone (standard/muted)
@@ -221,9 +228,9 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-Steps 1–62 complete: core app (1–29, 40–62) plus the forum-ingestion
-pipeline (30–39) through a real production import. Current unit suite: 52
-files / 548 tests passing (`npm run test`); integration suite (`npm run
+Steps 1–63 complete: core app (1–29, 40–63) plus the forum-ingestion
+pipeline (30–39) through a real production import. Current unit suite: 53
+files / 556 tests passing (`npm run test`); integration suite (`npm run
 test:integration`, testing.md §11): 17/17 passing against real staging.
 
 Full step-by-step detail, one file per step: `build-history/index.md`

@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
+import { ViewTransitionResolverProvider } from "@/components/ui/ViewTransitionResolver";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 
@@ -34,11 +35,13 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden h-dvh flex flex-col overflow-hidden`}
       >
         <NextIntlClientProvider messages={messages}>
-          <SiteHeader />
-          <div className="flex-1 overflow-y-auto">
-            {children}
-          </div>
-          <SiteFooter />
+          <ViewTransitionResolverProvider>
+            <SiteHeader />
+            <div className="flex-1 overflow-y-auto">
+              {children}
+            </div>
+            <SiteFooter />
+          </ViewTransitionResolverProvider>
         </NextIntlClientProvider>
       </body>
     </html>

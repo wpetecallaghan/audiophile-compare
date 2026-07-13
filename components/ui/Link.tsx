@@ -6,6 +6,12 @@ import NextLink from 'next/link'
 import { useRouter } from 'next/navigation'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from './cn'
+import { useRegisterViewTransition } from './ViewTransitionResolver'
+
+// Safety-net delay before a pending view transition resolves itself, for
+// navigations the route watcher can't see settle (e.g. a link back to the
+// current URL) — see build-history/63-view-transition-page-crossfade.md.
+const VIEW_TRANSITION_FALLBACK_MS = 1500
 
 // Three link roles — see components.md §12 and build-history.md step 21 for
 // the audit behind them. Wraps next/link's Link (not a plain <a>) so
@@ -53,6 +59,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(
   ) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
+    const registerViewTransition = useRegisterViewTransition()
 
     // No native useLinkStatus here — this project is pinned to React 18
     // (see build history), and useLinkStatus calls React 19's
@@ -75,9 +82,44 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(
         return
       }
       event.preventDefault()
-      startTransition(() => {
-        router.push(href)
-      })
+
+      // Browser-native crossfade between the outgoing page and the
+      // loading.tsx skeleton, instead of the hard cut. Falls back silently
+      // where unsupported (Firefox, older Safari). The resolve is handed to
+      // the root-level ViewTransitionResolverProvider rather than tracked
+      // locally — this Link itself is often the thing that unmounts when
+      // the navigation it triggered completes (e.g. a card link into the
+      // page it's replacing), so local state would never get to fire it.
+      if (
+        typeof document.startViewTransition === 'function' &&
+        registerViewTransition
+      ) {
+        document.startViewTransition(
+          () =>
+            new Promise<void>((resolve) => {
+              let settled = false
+              const finish = () => {
+                if (settled) return
+                settled = true
+                resolve()
+              }
+              // Safety net so a stalled transition can't reach the
+              // browser's own timeout/rejection.
+              const fallback = setTimeout(finish, VIEW_TRANSITION_FALLBACK_MS)
+              registerViewTransition(() => {
+                clearTimeout(fallback)
+                finish()
+              })
+              startTransition(() => {
+                router.push(href)
+              })
+            }),
+        )
+      } else {
+        startTransition(() => {
+          router.push(href)
+        })
+      }
     }
 
     return (
