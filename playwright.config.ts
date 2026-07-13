@@ -11,6 +11,10 @@ if (fs.existsSync(envLocalPath)) {
 }
 
 export const AUTH_FILE = path.join(__dirname, 'playwright/.auth/user.json')
+// Step 64 — a second, admin-privileged session (E2E_ADMIN_USER_EMAIL,
+// must be listed in ADMIN_EMAILS) saved by global-setup.ts alongside the
+// regular user's.
+export const ADMIN_AUTH_FILE = path.join(__dirname, 'playwright/.auth/admin.json')
 
 export default defineConfig({
   testDir: './e2e/tests',
@@ -44,13 +48,24 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: AUTH_FILE,
       },
-      testIgnore: ['**/public-feed.spec.ts'],
+      testIgnore: ['**/public-feed.spec.ts', '**/admin-clip-override.spec.ts'],
     },
     {
       // No cookies — for testing unauthenticated behaviour
       name: 'unauthenticated',
       use: { ...devices['Desktop Chrome'] },
       testMatch: ['**/public-feed.spec.ts'],
+    },
+    {
+      // Step 64 — an ADMIN_EMAILS-listed session, scoped to the one spec
+      // that needs it (same testMatch-scoping pattern as `unauthenticated`
+      // above), so the admin session doesn't run the whole suite twice.
+      name: 'admin',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: ADMIN_AUTH_FILE,
+      },
+      testMatch: ['**/admin-clip-override.spec.ts'],
     },
   ],
 
