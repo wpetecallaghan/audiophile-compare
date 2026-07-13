@@ -215,6 +215,7 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 | Build history / orientation on any step | `build-history/index.md`, then load only the specific step file(s) you need |
 | Forum ingestion pipeline work (steps 30, 31, 33+) | `build-history-ingestion/index.md`, then the specific step file(s) (detailed plan) + `deferred-features.md` (original architecture rationale) |
 | Import provenance UI (step 32) | `build-history/32-import-provenance-ui.md` directly — UI work, not pipeline infrastructure, so it isn't in `build-history-ingestion/` |
+| Open bugs / dev-environment quirks (check before re-investigating) | `known-issues.md` |
 
 ---
 

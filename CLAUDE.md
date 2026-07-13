@@ -44,3 +44,4 @@ All detailed context is in `__claude_context__/`. Read `core.md` first for the f
 | Forum ingestion pipeline (scraper, extraction, commit, rollback, erasure) | `build-history-ingestion/index.md`, then the specific step file |
 | Deferred features (ingestion, storage, mobile) | `deferred-features.md` |
 | Writing or reviewing code (app or test) that repeats a string or numeric literal | `repeated-string-constants.md` |
+| Open bugs / dev-environment quirks (check before re-investigating) | `known-issues.md` |
