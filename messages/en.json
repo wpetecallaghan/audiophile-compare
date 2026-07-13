@@ -291,7 +291,14 @@
     "statusRevealed": "Revealed",
     "statusBlind": "Blind",
     "statusBroken": "Broken",
-    "anonymous": "Anonymous"
+    "anonymous": "Anonymous",
+    "nav": {
+      "first": "First track",
+      "previous": "Previous track",
+      "next": "Next track",
+      "last": "Last track",
+      "all": "Back to list"
+    }
   },
   "crosscheck": {
     "heading": "Cross-check",

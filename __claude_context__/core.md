@@ -167,6 +167,9 @@ lib/
     is-admin-email.ts                       ← isAdminEmail(); ADMIN_EMAILS allowlist check for /version
                                                (unrelated to lib/supabase/admin.ts's service-role client —
                                                "admin" here means privileged user, not DB access level)
+  nav/
+    get-adjacent-ids.ts                     ← getAdjacentIds(); AdjacentIds type — First/Previous/Next/Last
+                                               position math shared by tests/[id] and tracks/[id] footer nav
   types/
     test-creation.ts                        ← TestDraft, Snapshot, SystemWithSnapshots types
   youtube-api.ts                            ← Singleton YouTube IFrame API loader
@@ -216,9 +219,9 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-Steps 1–60 complete: core app (1–29, 40–60) plus the forum-ingestion
-pipeline (30–39) through a real production import. Current unit suite: 51
-files / 542 tests passing (`npm run test`); integration suite (`npm run
+Steps 1–61 complete: core app (1–29, 40–61) plus the forum-ingestion
+pipeline (30–39) through a real production import. Current unit suite: 52
+files / 548 tests passing (`npm run test`); integration suite (`npm run
 test:integration`, testing.md §11): 17/17 passing against real staging.
 
 Full step-by-step detail, one file per step: `build-history/index.md`

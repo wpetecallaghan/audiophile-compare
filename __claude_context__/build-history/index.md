@@ -75,3 +75,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 58 | Extend the URL health-check cron to cover Google Drive clips | [58-google-drive-cron-health-check.md](58-google-drive-cron-health-check.md) |
 | 59 | Fix the Dropbox clip-health blind spot | [59-dropbox-cron-health-check.md](59-dropbox-cron-health-check.md) |
 | 60 | Instant tap feedback (`Link`) + route-level `loading.tsx` skeletons | [60-instant-tap-feedback-loading-states.md](60-instant-tap-feedback-loading-states.md) |
+| 61 | Track detail item-to-item navigation + shared `getAdjacentIds()` helper | [61-track-detail-navigation.md](61-track-detail-navigation.md) |

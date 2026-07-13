@@ -26,6 +26,7 @@ import { STATUS_DEAD, STATUS_DEGRADED } from '@/lib/clips/check-url'
 import { FEED_PAGE_SIZE } from '@/lib/tests/feed-page-size'
 import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon, ListIcon } from '@/components/ui/icons'
 import { FooterPortal } from '@/components/ui/FooterPortal'
+import { getAdjacentIds } from '@/lib/nav/get-adjacent-ids'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -237,11 +238,7 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
     }
   }
 
-  const navIdx = navIds.indexOf(test.id)
-  const prevId  = navIdx > 0 ? navIds[navIdx - 1] : null
-  const nextId  = navIdx !== -1 && navIdx < navIds.length - 1 ? navIds[navIdx + 1] : null
-  const firstId = navIdx > 0 ? navIds[0] : null
-  const lastId  = navIdx !== -1 && navIdx < navIds.length - 1 ? navIds[navIds.length - 1] : null
+  const { prevId, nextId, firstId, lastId } = getAdjacentIds(navIds, test.id)
 
   const navCtxSuffix =
     from === 'feed' ? `?from=feed&page=${pageParam ?? '1'}` :

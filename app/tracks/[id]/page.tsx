@@ -7,8 +7,14 @@ import { Heading } from '@/components/ui/Heading'
 import { PageShell } from '@/components/ui/PageShell'
 import { RowCard } from '@/components/ui/RowCard'
 import { Text } from '@/components/ui/Text'
+import { Link } from '@/components/ui/Link'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 import { STATUS_DEAD } from '@/lib/clips/check-url'
+import { getAdjacentIds } from '@/lib/nav/get-adjacent-ids'
+import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon, ListIcon } from '@/components/ui/icons'
+import { FooterPortal } from '@/components/ui/FooterPortal'
+
+const TRACKS_LIST_HREF = '/tracks'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -54,11 +60,28 @@ export default async function TrackDetailPage({ params }: Props) {
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   )
 
+  // Item-to-item navigation (First/Previous/Next/Last/All) — reconstructs
+  // the exact ordered list of track ids the /tracks list page already
+  // establishes, using the identical .order(...) shape that page uses
+  // (app/tracks/page.tsx), then reads neighbors off by array position.
+  // Unlike tests/[id], there's only one place tracks/[id] is ever linked
+  // from — the flat, unpaginated /tracks list — so no from/fromId
+  // searchParams branching is needed; this is always the same order.
+  const { data: navData } = await supabase
+    .from('tracks')
+    .select('id')
+    .order('artist')
+    .order('title')
+  const navIds = (navData ?? []).map(row => row.id)
+  const { prevId, nextId, firstId, lastId } = getAdjacentIds(navIds, track.id)
+
+  const navBackHref = TRACKS_LIST_HREF
+
   return (
     <PageShell maxWidth="4xl">
       {/* Breadcrumb */}
       <nav className="text-xs text-gray-500 dark:text-gray-400">
-        <NextLink href="/tracks" className="hover:underline">
+        <NextLink href={TRACKS_LIST_HREF} className="hover:underline">
           Tracks
         </NextLink>
         {' / '}
@@ -133,6 +156,36 @@ export default async function TrackDetailPage({ params }: Props) {
           </ul>
         )}
       </div>
+
+      {/* Item-to-item navigation — portaled into the global footer's nav
+          slot so it's always visible without scrolling (see FooterPortal). */}
+      <FooterPortal>
+        <div className="flex items-center gap-3">
+          {firstId && (
+            <Link href={`/tracks/${firstId}`} variant="nav" aria-label={t('nav.first')}>
+              <ChevronsLeftIcon className="w-4 h-4" />
+            </Link>
+          )}
+          {prevId && (
+            <Link href={`/tracks/${prevId}`} variant="nav" aria-label={t('nav.previous')}>
+              <ChevronLeftIcon className="w-4 h-4" />
+            </Link>
+          )}
+          <Link href={navBackHref} variant="nav" aria-label={t('nav.all')}>
+            <ListIcon className="w-4 h-4" />
+          </Link>
+          {nextId && (
+            <Link href={`/tracks/${nextId}`} variant="nav" aria-label={t('nav.next')}>
+              <ChevronRightIcon className="w-4 h-4" />
+            </Link>
+          )}
+          {lastId && (
+            <Link href={`/tracks/${lastId}`} variant="nav" aria-label={t('nav.last')}>
+              <ChevronsRightIcon className="w-4 h-4" />
+            </Link>
+          )}
+        </div>
+      </FooterPortal>
     </PageShell>
   )
 }

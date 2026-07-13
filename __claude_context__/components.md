@@ -859,3 +859,72 @@ subtitle lines) that don't fit the single-`subtitle`-slot shape; forcing
 them in would either drop content or require a shape mismatched to every
 other caller. Left as raw JSX pending a future `Byline` component (see the
 catalog) rather than bent to fit.
+
+---
+
+## 14. Item-to-item footer navigation — `FooterPortal` (First/Previous/All/Next/Last, build step 61)
+
+`tests/[id]/page.tsx` and `tracks/[id]/page.tsx` both let a viewer step to
+the next/previous sibling record without going back to the list first,
+via a persistent First/Previous/All/Next/Last control row in the global
+footer. This pattern first shipped on `tests/[id]` in an earlier commit
+("Add navigation between tests", `c0dbc31`) that predates this file ever
+documenting it — step 61 (which added the `tracks/[id]` version) writes it
+up properly for both call sites here instead of leaving the gap.
+
+**The plumbing:** `SiteFooter` (`components/SiteFooter.tsx`) renders a
+persistent slot identified by `footer-nav-slot.ts`'s `FOOTER_NAV_SLOT_ID`.
+`<FooterPortal>` (`components/ui/FooterPortal.tsx`, client — needs
+`useEffect`/`createPortal`) portals its children into that slot once
+mounted. Because the slot lives in the global layout outside the
+scrollable page content, the nav controls stay visible without scrolling —
+and because the portal only mounts client-side after the page's own async
+data has resolved, a route's `loading.tsx` skeleton correctly shows no nav
+placeholder (verified for both `tests/[id]/loading.tsx` and
+`tracks/[id]/loading.tsx`).
+
+**The five-control shape**, always in this order — First
+(`ChevronsLeftIcon`) / Previous (`ChevronLeftIcon`) / All (`ListIcon`,
+unconditional, links back to the originating list) / Next
+(`ChevronRightIcon`) / Last (`ChevronsRightIcon`) — each rendered as
+`<Link variant="nav" aria-label={t('nav.*')} />` (`components/ui/Link.tsx`),
+icons from `components/ui/icons.tsx`:
+```tsx
+<FooterPortal>
+  <div className="flex items-center gap-3">
+    {firstId && <Link href={`/tracks/${firstId}`} variant="nav" aria-label={t('nav.first')}><ChevronsLeftIcon className="w-4 h-4" /></Link>}
+    {prevId && <Link href={`/tracks/${prevId}`} variant="nav" aria-label={t('nav.previous')}><ChevronLeftIcon className="w-4 h-4" /></Link>}
+    <Link href={navBackHref} variant="nav" aria-label={t('nav.all')}><ListIcon className="w-4 h-4" /></Link>
+    {nextId && <Link href={`/tracks/${nextId}`} variant="nav" aria-label={t('nav.next')}><ChevronRightIcon className="w-4 h-4" /></Link>}
+    {lastId && <Link href={`/tracks/${lastId}`} variant="nav" aria-label={t('nav.last')}><ChevronsRightIcon className="w-4 h-4" /></Link>}
+  </div>
+</FooterPortal>
+```
+First/Previous/Next/Last are conditionally rendered — a `null` from the
+position helper hides that control entirely rather than disabling it.
+
+**The position math** — `getAdjacentIds(ids, currentId)`
+(`lib/nav/get-adjacent-ids.ts`, added step 61): a pure, unit-tested helper
+(`lib/nav/__tests__/get-adjacent-ids.test.ts`) shared by both call sites,
+taking a same-order id list and the current id and returning
+`{ prevId, nextId, firstId, lastId }`. Originally duplicated inline on
+`tests/[id]` alone; extracted once a second call site (`tracks/[id]`) needed
+the identical formula, same "found duplicated, so componentize/extract"
+precedent as §13's `RowCard`.
+
+**Where the two call sites differ** — only in how `ids` is built, never in
+the position math or the JSX above:
+- `tests/[id]/page.tsx`: a test can be reached from three different origin
+  lists (`from=feed|track|system` searchParams), so it re-runs that
+  origin's exact query/order to reconstruct `ids`, and `navBackHref` can be
+  `null` for an unrecognized `from` — the whole nav block is conditionally
+  rendered on `navBackHref` being truthy.
+- `tracks/[id]/page.tsx`: exactly one origin — the flat, unpaginated
+  `/tracks` list (`.order('artist').order('title')`) — so no `from`/
+  `fromId` searchParams are needed, and `navBackHref` is always `/tracks`;
+  the nav block renders unconditionally.
+
+**Translation convention:** each entity gets its own `<entity>.nav.*` block
+in `messages/en.json` (`tests.nav.*`, `tracks.nav.*`) with entity-specific
+copy ("First test" vs. "First track"), not a shared `common.nav.*` —
+consistent with §10's "each surface gets its own wording" precedent.
