@@ -129,10 +129,16 @@ clips (
   url_status  text NOT NULL DEFAULT 'ok',  -- 'ok' | 'degraded' | 'dead'
   duration_ms int,
   created_at  timestamptz DEFAULT now(),
+  admin_override    text,       -- step 64: 'ok' | 'dead' | NULL — admin correction, takes
+                                 -- precedence over url_status wherever "is this clip
+                                 -- broken" is decided; the cron never reads/writes this
+  admin_override_by uuid REFERENCES users(id),   -- step 64
+  admin_override_at timestamptz,                 -- step 64
   CONSTRAINT clips_label_check    CHECK (label IN ('A', 'B')),
   CONSTRAINT clips_provider_check CHECK (provider IN ('youtube', 'vimeo', 'google-drive', 'direct', 'unknown')),
   CONSTRAINT clips_media_check    CHECK (media_type IN ('audio', 'video', 'unknown')),
-  CONSTRAINT clips_status_check   CHECK (url_status IN ('ok', 'degraded', 'dead'))
+  CONSTRAINT clips_status_check   CHECK (url_status IN ('ok', 'degraded', 'dead')),
+  CONSTRAINT clips_admin_override_check CHECK (admin_override IN ('ok', 'dead'))
 )
 
 -- SECURITY-CRITICAL: maps clip labels to before/after identity
@@ -310,6 +316,37 @@ also now defends against this class of bug directly: it chains
 `.select().single()` after the update and treats a missing row as failure,
 rather than trusting an absent `error` to mean a row actually changed (see
 `api-conventions.md` Rule 5).
+
+### Admin clip-health override (step 64)
+
+Corrects a false positive or false negative from the step 10 cron —
+concretely, either a real one-off host quirk (step 50's Cloudflare
+bot-mitigation class of bug) or the structural blind spot step 27 already
+documented (a YouTube/Vimeo embed always returns `200` regardless of
+whether the specific video exists, so the cron can never mark it dead
+itself). Per-clip, not per-test — a test has two clips (A/B), and both
+motivating cases are inherently per-clip.
+
+`clips.admin_override` (`'ok' | 'dead' | NULL`, deliberately binary — no
+`'degraded'`, since the two admin actions are "mark broken"/"mark not
+broken") plus `admin_override_by`/`admin_override_at` for accountability.
+`lib/clips/effective-url-status.ts`'s `effectiveUrlStatus(urlStatus,
+adminOverride)` (`adminOverride ?? urlStatus`) is used everywhere a raw
+`url_status` check used to decide "is this clip broken" — the four
+per-label warnings and vote-gating on the test detail page, the
+feed/track/system "Broken" badges, and `POST /api/votes`'s 409 check. The
+cron (`app/api/cron/check-urls/route.ts`) is untouched and keeps writing
+`url_status` daily, completely oblivious to any override; clearing the
+override (`NULL`) instantly reverts to whatever the cron last measured, no
+grace period either way.
+
+`PATCH /api/admin/clips/[id]/override` — gated by session +
+`isAdminEmail(user.email)` (Rule 8), not clip/test ownership, since any
+admin can correct any clip. Uses the admin/service-role client (bypasses
+RLS, no policy change needed). Not gated by vote count or reveal status —
+this corrects a signal about link health, not what was actually tested,
+unlike `PATCH /api/clips/[id]`'s `voteCount === 0` rule for replacing a
+clip's URL outright.
 
 ### Google Drive clip provider (step 34)
 
@@ -655,7 +692,7 @@ const { data } = await supabase
     id, title, status, created_at,
     creator:users!creator_id(display_name),
     track:tracks(artist, title, album, passage_note),
-    clips(id, label, source_url, provider, media_type, url_status)
+    clips(id, label, source_url, provider, media_type, url_status, admin_override)
   `)
   .eq('id', testId)
   .single()

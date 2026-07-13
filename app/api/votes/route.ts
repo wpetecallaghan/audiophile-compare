@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { STATUS_DEAD } from '@/lib/clips/check-url'
+import { STATUS_DEAD, type UrlStatus } from '@/lib/clips/check-url'
+import { effectiveUrlStatus } from '@/lib/clips/effective-url-status'
 
 type VoteInput = {
   technique_id: string
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
   const chosenClipIds = [...new Set(votes.map(v => v.chosen_clip_id))]
   const { data: clips } = await supabase
     .from('clips')
-    .select('id, url_status')
+    .select('id, url_status, admin_override')
     .eq('test_id', test_id)
     .in('id', chosenClipIds)
 
@@ -68,8 +69,9 @@ export async function POST(request: NextRequest) {
   }
 
   // Defense in depth — the UI already hides the vote form when a clip is
-  // dead, but a direct API call could bypass that
-  if (clips.some(c => c.url_status === STATUS_DEAD)) {
+  // dead, but a direct API call could bypass that. Honors an admin
+  // override (step 64) the same way the UI's own hasDeadClip does.
+  if (clips.some(c => effectiveUrlStatus(c.url_status as UrlStatus, c.admin_override as UrlStatus | null) === STATUS_DEAD)) {
     return NextResponse.json(
       { error: 'One or more chosen clips are currently unreachable' },
       { status: 409 },

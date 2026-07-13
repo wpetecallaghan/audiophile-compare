@@ -1,17 +1,26 @@
 import type { Browser, BrowserContext } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 
-// Signs in a brand-new, independent session for the E2E test user via
-// Supabase's Admin API. Admin-issued links can't carry a PKCE code_verifier
-// (only a client-initiated signInWithOtp call sets one up), so they verify
-// via token_hash against /auth/confirm rather than the `code` flow used by
+// Signs in a brand-new, independent session for an E2E user via Supabase's
+// Admin API. Admin-issued links can't carry a PKCE code_verifier (only a
+// client-initiated signInWithOtp call sets one up), so they verify via
+// token_hash against /auth/confirm rather than the `code` flow used by
 // real user sign-ins — see app/auth/confirm/route.ts.
 //
 // The returned context's session is independent of playwright/.auth/user.json
 // — use this (instead of that shared storageState) for any test that signs
 // out or otherwise invalidates its session, so it doesn't take down every
 // other authenticated test in the run.
-export async function createAuthenticatedContext(browser: Browser, rawBaseURL: string): Promise<BrowserContext> {
+//
+// email defaults to E2E_TEST_USER_EMAIL (every existing call site's
+// behavior, unchanged) — global-setup.ts also calls this with
+// E2E_ADMIN_USER_EMAIL (step 64) to save a second, admin-privileged
+// session alongside the regular one.
+export async function createAuthenticatedContext(
+  browser: Browser,
+  rawBaseURL: string,
+  email: string = process.env.E2E_TEST_USER_EMAIL!,
+): Promise<BrowserContext> {
   // Strip any trailing slash — string concatenation below (`${baseURL}/...`)
   // would otherwise produce double-slash URLs that Next.js normalizes away,
   // making the waitForURL target never match the real landing URL.
@@ -25,7 +34,7 @@ export async function createAuthenticatedContext(browser: Browser, rawBaseURL: s
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: 'magiclink',
-    email: process.env.E2E_TEST_USER_EMAIL!,
+    email,
     options: { redirectTo: `${baseURL}/auth/confirm` },
   })
 

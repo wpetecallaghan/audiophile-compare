@@ -10,8 +10,10 @@ export default async function globalSetup() {
   // target never match the real landing URL.
   const baseURL = (process.env.E2E_BASE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
   const email = process.env.E2E_TEST_USER_EMAIL
+  const adminEmail = process.env.E2E_ADMIN_USER_EMAIL
 
   if (!email) throw new Error('E2E_TEST_USER_EMAIL is not set')
+  if (!adminEmail) throw new Error('E2E_ADMIN_USER_EMAIL is not set')
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set')
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
 
@@ -19,13 +21,24 @@ export default async function globalSetup() {
   fs.mkdirSync(authDir, { recursive: true })
 
   const browser = await chromium.launch()
-  const context = await createAuthenticatedContext(browser, baseURL)
 
+  const context = await createAuthenticatedContext(browser, baseURL)
   // Save session cookies so every authenticated test starts pre-signed-in
   await context.storageState({
     path: path.join(authDir, 'user.json'),
   })
 
+  // Step 64 — a second, admin-privileged session (E2E_ADMIN_USER_EMAIL
+  // must be listed in the target environment's ADMIN_EMAILS) for
+  // admin-clip-override.spec.ts, which runs under its own `admin`
+  // Playwright project (see playwright.config.ts) rather than the
+  // default `authenticated` one.
+  const adminContext = await createAuthenticatedContext(browser, baseURL, adminEmail)
+  await adminContext.storageState({
+    path: path.join(authDir, 'admin.json'),
+  })
+
   await browser.close()
   console.log(`[E2E setup] Auth session saved for ${email}`)
+  console.log(`[E2E setup] Admin auth session saved for ${adminEmail}`)
 }

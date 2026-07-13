@@ -57,6 +57,7 @@ GitHub staging  → Vercel Preview     → Supabase audiophile-staging
 ```
 app/
   api/                                      ← Route Handlers (server only)
+    admin/clips/[id]/override/route.ts      ← Step 64; PATCH; admin-only clip-health override
     clips/verify/route.ts
     cron/check-urls/route.ts                ← Daily URL health check; CRON_SECRET protected
     profile/route.ts
@@ -152,6 +153,7 @@ components/
     RevealButton.tsx                        ← Client
     MappingBadge.tsx                        ← Server
     CrossCheckSelector.tsx                  ← Client
+    AdminClipOverrideControl.tsx            ← Client; step 64; admin-only, isAdminEmail-gated (not isCreator)
     steps/
       StepTrack.tsx
       StepSnapshots.tsx
@@ -166,6 +168,7 @@ lib/
   clips/
     detect-provider.ts                      ← Pure URL classification (no I/O)
     check-url.ts                            ← HEAD request for direct URLs
+    effective-url-status.ts                 ← Step 64; effectiveUrlStatus() — admin_override ?? url_status
     to-clip-data.ts                         ← Converts verified URL to ClipData shape
     find-shared-clips.ts                    ← Shared track finder for cross-check
   votes/
@@ -229,9 +232,15 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 ## 6. Build status
 
 Steps 1–63 complete: core app (1–29, 40–63) plus the forum-ingestion
-pipeline (30–39) through a real production import. Current unit suite: 53
-files / 556 tests passing (`npm run test`); integration suite (`npm run
+pipeline (30–39) through a real production import. Current unit suite: 54
+files / 559 tests passing (`npm run test`); integration suite (`npm run
 test:integration`, testing.md §11): 17/17 passing against real staging.
+
+Step 64 (admin override for clip-health false positives/negatives) is
+code-complete locally — migration, route, UI, unit test, integration
+test, and e2e spec all written — but not yet applied/verified against
+real staging (migration push, the `E2E_ADMIN_USER_EMAIL` fixture account,
+and `ADMIN_EMAILS` are pending; see `build-history/64-admin-clip-override.md`).
 
 Full step-by-step detail, one file per step: `build-history/index.md`
 (core app) and `build-history-ingestion/index.md` (forum ingestion

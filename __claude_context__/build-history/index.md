@@ -78,3 +78,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 61 | Track detail item-to-item navigation + shared `getAdjacentIds()` helper | [61-track-detail-navigation.md](61-track-detail-navigation.md) |
 | 62 | Sign out via a server route instead of the browser Supabase SDK (PageSpeed fix) | [62-signout-server-route.md](62-signout-server-route.md) |
 | 63 | View transition crossfade on internal navigation, replacing the hard-cut `loading.tsx` swap | [63-view-transition-page-crossfade.md](63-view-transition-page-crossfade.md) |
+| 64 | 🚧 Admin override for clip-health false positives/negatives (code-complete, pending staging verification) | [64-admin-clip-override.md](64-admin-clip-override.md) |

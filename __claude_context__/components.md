@@ -748,6 +748,18 @@ gap from before `messages/en.json` was the rule for all user-facing
 text (step 15) — left as-is rather than fixed in passing, since that gap
 isn't this step's job to close.
 
+**`AdminClipOverrideControl.tsx` (step 64) — admin-only, separate from "Creator controls":**
+Renders once per clip (A and B) in its own section on the test detail page,
+gated by `isAdminEmail(user?.email)` directly rather than `isCreator` — any
+admin viewing any test needs this, not just the test's own creator, unlike
+the `RevealButton`/`DeleteTestButton`/`ReplaceClipUrlButton` row just below
+it (creator-only). Shows the clip's raw cron `url_status` alongside any
+active `admin_override` so an admin can tell a warning is currently
+masked/forced, plus whichever of "Mark broken" / "Mark not broken" /
+"Clear override" isn't the current state — same fetch-then-`router.refresh()`
+shape as `ReplaceClipUrlButton.tsx`. See `audiophile-compare-schema.md`'s
+"Admin clip-health override" section for the data model.
+
 See `build-history/22-componentize-form-elements.md` for the full audit behind these five
 components (exact occurrence counts, and the bugs found and fixed along
 the way — a missing dark-mode variant on an info box, a stray `green-700`,

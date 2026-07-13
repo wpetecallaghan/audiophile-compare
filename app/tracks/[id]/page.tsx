@@ -9,7 +9,8 @@ import { RowCard } from '@/components/ui/RowCard'
 import { Text } from '@/components/ui/Text'
 import { Link } from '@/components/ui/Link'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
-import { STATUS_DEAD } from '@/lib/clips/check-url'
+import { STATUS_DEAD, type UrlStatus } from '@/lib/clips/check-url'
+import { effectiveUrlStatus } from '@/lib/clips/effective-url-status'
 import { getAdjacentIds } from '@/lib/nav/get-adjacent-ids'
 import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon, ListIcon } from '@/components/ui/icons'
 import { FooterPortal } from '@/components/ui/FooterPortal'
@@ -31,7 +32,7 @@ export default async function TrackDetailPage({ params }: Props) {
       tests(
         id, title, status, created_at, source_url, source_ref,
         creator:users!creator_id(display_name),
-        clips(url_status)
+        clips(url_status, admin_override)
       )
     `)
     .eq('id', id)
@@ -53,7 +54,7 @@ export default async function TrackDetailPage({ params }: Props) {
     creator:
       | { display_name: string | null }
       | { display_name: string | null }[]
-    clips: { url_status: string }[]
+    clips: { url_status: string; admin_override: UrlStatus | null }[]
   }
 
   const tests = (track.tests as TestRow[]).sort(
@@ -124,7 +125,7 @@ export default async function TrackDetailPage({ params }: Props) {
               // app/tests/[id]/page.tsx's identical check for why both
               // columns are OR'd together.
               const isImported = !!(test.source_url || test.source_ref)
-              const hasDeadClip = test.clips.some(c => c.url_status === STATUS_DEAD)
+              const hasDeadClip = test.clips.some(c => effectiveUrlStatus(c.url_status as UrlStatus, c.admin_override) === STATUS_DEAD)
               const badge = hasDeadClip
                 ? { status: 'broken' as const, text: t('statusBroken') }
                 : test.status === 'revealed'

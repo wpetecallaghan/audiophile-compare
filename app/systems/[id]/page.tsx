@@ -15,7 +15,8 @@ import { RowCard } from '@/components/ui/RowCard'
 import { Text } from '@/components/ui/Text'
 import { getTranslations } from 'next-intl/server'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
-import { STATUS_DEAD } from '@/lib/clips/check-url'
+import { STATUS_DEAD, type UrlStatus } from '@/lib/clips/check-url'
+import { effectiveUrlStatus } from '@/lib/clips/effective-url-status'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -81,7 +82,7 @@ export default async function SystemDetailPage({ params }: Props) {
     snapshot_a_id: string
     snapshot_b_id: string
     track: { artist: string; title: string } | { artist: string; title: string }[]
-    clips: { id: string; label: string; url_status: string }[]
+    clips: { id: string; label: string; url_status: string; admin_override: UrlStatus | null }[]
   }
 
   let allTests: TestRow[] = []
@@ -98,7 +99,7 @@ export default async function SystemDetailPage({ params }: Props) {
         id, title, status, created_at,
         snapshot_a_id, snapshot_b_id,
         track:tracks(artist, title),
-        clips(id, label, url_status)
+        clips(id, label, url_status, admin_override)
       `)
       .or(
         `snapshot_a_id.in.(${snapshotIds.join(',')}),snapshot_b_id.in.(${snapshotIds.join(',')})`,
@@ -154,7 +155,7 @@ export default async function SystemDetailPage({ params }: Props) {
         created_at: t.created_at,
         track,
         outcome: computeOutcome(t, snapshot.id, votesByTest),
-        hasDeadClip: t.clips.some(c => c.url_status === STATUS_DEAD),
+        hasDeadClip: t.clips.some(c => effectiveUrlStatus(c.url_status as UrlStatus, c.admin_override) === STATUS_DEAD),
       }
     })
 

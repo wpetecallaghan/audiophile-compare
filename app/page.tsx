@@ -8,7 +8,8 @@ import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Text } from '@/components/ui/Text'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
-import { STATUS_DEAD } from '@/lib/clips/check-url'
+import { STATUS_DEAD, type UrlStatus } from '@/lib/clips/check-url'
+import { effectiveUrlStatus } from '@/lib/clips/effective-url-status'
 import { FEED_PAGE_SIZE } from '@/lib/tests/feed-page-size'
 import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon } from '@/components/ui/icons'
 import { FooterPortal } from '@/components/ui/FooterPortal'
@@ -39,7 +40,7 @@ export default async function HomePage({ searchParams }: Props) {
         track:tracks(artist, title),
         snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
         snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name)),
-        clips(url_status)
+        clips(url_status, admin_override)
       `,
       { count: 'exact' },
     )
@@ -61,7 +62,7 @@ export default async function HomePage({ searchParams }: Props) {
     track: { artist: string; title: string } | { artist: string; title: string }[] | null
     snapshot_a: { label: string; system: { name: string } | { name: string }[] | null } | { label: string; system: { name: string } | { name: string }[] | null }[] | null
     snapshot_b: { label: string; system: { name: string } | { name: string }[] | null } | { label: string; system: { name: string } | { name: string }[] | null }[] | null
-    clips: { url_status: string }[]
+    clips: { url_status: string; admin_override: UrlStatus | null }[]
   }>
 
   // Normalise Supabase joined relations — singular FK joins may come back as
@@ -113,7 +114,7 @@ export default async function HomePage({ searchParams }: Props) {
       snapshot_a: canSeeSystemInfo && rawA ? { label: rawA.label, system: sysA ?? null } : null,
       snapshot_b: canSeeSystemInfo && rawB ? { label: rawB.label, system: sysB ?? null } : null,
       is_imported: isImported,
-      has_dead_clip: t.clips.some(c => c.url_status === STATUS_DEAD),
+      has_dead_clip: t.clips.some(c => effectiveUrlStatus(c.url_status as UrlStatus, c.admin_override) === STATUS_DEAD),
     }
   })
 

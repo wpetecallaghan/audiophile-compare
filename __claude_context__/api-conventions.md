@@ -233,12 +233,13 @@ separate path — it doesn't change `DELETE /api/tests/[id]`'s own behavior,
 which still refuses a voted-on test exactly as before for any normal,
 self-service caller.
 
-### Rule 7 — clip health rules (step 27); active-technique rule (step 57)
+### Rule 7 — clip health rules (step 27); active-technique rule (step 57); admin override (step 64)
 
-- `POST /api/votes` re-checks every chosen clip's `url_status` and returns
-  409 if any is `dead` — defense in depth behind the UI, which already
-  hides the vote form when `hasDeadClip` is true. `degraded` never blocks
-  voting (may be transient).
+- `POST /api/votes` re-checks every chosen clip's *effective* status
+  (`effectiveUrlStatus(url_status, admin_override)`, step 64) and returns
+  409 if it's `dead` — defense in depth behind the UI, which already hides
+  the vote form when `hasDeadClip` is true. `degraded` never blocks voting
+  (may be transient).
 - `POST /api/votes` also re-checks every submitted `technique_id` is
   currently `is_active` and returns 400 otherwise — same defense-in-depth
   reasoning: the UI (`app/tests/[id]/page.tsx`'s technique fetch) already
@@ -272,14 +273,20 @@ if (!isAdminEmail(user.email)) notFound()              // page — 404, not 403:
 // or: return NextResponse.json({ error: 'Not found' }, { status: 404 })     // route — this route exists to a non-admin
 ```
 
-Three real callers: `app/version/page.tsx` (read-only deployment info),
+Four real callers: `app/version/page.tsx` (read-only deployment info),
 `app/admin/erase-user-data/page.tsx` / `app/api/admin/erase-user-data/
 route.ts` (step 38 — calls `erase_user_votes`/`erase_user_content`/
 `erase_user_account` via the admin client, then `admin.auth.admin.
-deleteUser()` for a full account erasure), and `app/admin/claim/
+deleteUser()` for a full account erasure), `app/admin/claim/
 page.tsx` / `app/api/admin/claim/route.ts` (step 39 — calls
 `claim_placeholder` via the admin client, then `admin.auth.admin.
-deleteUser()` for the now-merged placeholder identity).
+deleteUser()` for the now-merged placeholder identity), and
+`app/api/admin/clips/[id]/override/route.ts` (step 64 — a plain
+admin-client `.update()` on `clips.admin_override`/`admin_override_by`/
+`admin_override_at`, no Postgres function needed; the only one of the
+four not surfaced as its own dedicated `/admin/*` page — it's an inline
+control on the test detail page instead, since it applies per-clip on an
+existing page rather than needing a standalone workflow).
 
 ### Rule 9 — system/snapshot identity is never disclosed until revealed (step 43)
 

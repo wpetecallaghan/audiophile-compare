@@ -185,6 +185,15 @@
       "deadWarning": "Clip {label} is currently unreachable.",
       "degradedWarning": "Clip {label} may be temporarily unreachable — this can be intermittent."
     },
+    "adminOverride": {
+      "cronStatus": "Clip {label} — cron status: {status}",
+      "overrideActive": "Admin override: {status}",
+      "noOverride": "No override",
+      "markBroken": "Mark broken",
+      "markOk": "Mark not broken",
+      "clear": "Clear override",
+      "saving": "Saving…"
+    },
     "replaceClip": {
       "button": "Replace Clip {label} URL",
       "saveButton": "Save",

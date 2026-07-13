@@ -147,6 +147,13 @@ where to find each key.
 # Dedicated test user (must exist in the staging Supabase project)
 E2E_TEST_USER_EMAIL=e2e-tests@example.com
 
+# Dedicated admin test user (step 64) — must exist in the staging Supabase
+# project AND be listed in that environment's ADMIN_EMAILS. A separate
+# account from E2E_TEST_USER_EMAIL, not the same one made an admin — the
+# regular test user must stay a non-admin for negative-case assertions
+# (profile.spec.ts, admin-clip-override.spec.ts) to mean anything.
+E2E_ADMIN_USER_EMAIL=e2e-admin@example.com
+
 # Base URL for the running app during E2E runs
 E2E_BASE_URL=http://localhost:3000
 

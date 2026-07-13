@@ -22,7 +22,10 @@ import { PageShell } from '@/components/ui/PageShell'
 import { Text } from '@/components/ui/Text'
 import { formatSnapshotLine, type SnapshotSummary } from '@/lib/tests/format-snapshot-line'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
-import { STATUS_DEAD, STATUS_DEGRADED } from '@/lib/clips/check-url'
+import { STATUS_DEAD, STATUS_DEGRADED, type UrlStatus } from '@/lib/clips/check-url'
+import { effectiveUrlStatus } from '@/lib/clips/effective-url-status'
+import AdminClipOverrideControl from '@/components/tests/AdminClipOverrideControl'
+import { isAdminEmail } from '@/lib/admin/is-admin-email'
 import { FEED_PAGE_SIZE } from '@/lib/tests/feed-page-size'
 import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon, ListIcon } from '@/components/ui/icons'
 import { FooterPortal } from '@/components/ui/FooterPortal'
@@ -50,7 +53,7 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
       creator_id,
       creator:users!creator_id(display_name, is_placeholder),
       track:tracks(artist, title, album, passage_note),
-      clips(id, label, source_url, provider, media_type, url_status),
+      clips(id, label, source_url, provider, media_type, url_status, admin_override),
       snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
       snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name))
     `)
@@ -64,6 +67,7 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
   const isCreator  = user?.id === test.creator_id
   const isRevealed = test.status === 'revealed'
   const canSeeSystemInfo = isRevealed || isCreator
+  const isAdmin = isAdminEmail(user?.email)
 
   // "Was this test ever imported" — step 47. Independent of the current
   // creator's is_placeholder status (which flips to false once claimed):
@@ -130,6 +134,7 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
     provider: string
     media_type: string
     url_status: string
+    admin_override: UrlStatus | null
   }>
 
   const rawA = clips.find(c => c.label === 'A')
@@ -142,8 +147,15 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
   // since a listener often shares before/after clips from the same source).
   const [clipA, clipB] = await Promise.all([toClipData(rawA), toClipData(rawB)])
 
+  // effectiveStatus honors an admin override (step 64) over the cron's own
+  // url_status — used for every "is this clip broken" decision below
+  // (warnings, badges, vote gating, Replace URL), so a correction applies
+  // consistently everywhere a raw url_status check used to be made.
+  const effA = effectiveUrlStatus(rawA.url_status as UrlStatus, rawA.admin_override)
+  const effB = effectiveUrlStatus(rawB.url_status as UrlStatus, rawB.admin_override)
+
   // Clip health — dead blocks voting; degraded is a lighter-touch note only
-  const hasDeadClip = rawA.url_status === STATUS_DEAD || rawB.url_status === STATUS_DEAD
+  const hasDeadClip = effA === STATUS_DEAD || effB === STATUS_DEAD
 
   // Once revealed, a clip that can't be embedded gets its link folded into
   // MappingBadge's Before/After label instead of a separate box below —
@@ -347,26 +359,48 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
 
       {/* Clip health warnings — safe to say which label is affected without
           leaking clip_mapping before/after identity, since url_status lives
-          on the raw clip row, independent of the mapping */}
-      {rawA.url_status === STATUS_DEAD && (
+          on the raw clip row, independent of the mapping. Uses the
+          effective (override-aware) status, not the raw cron value. */}
+      {effA === STATUS_DEAD && (
         <Callout tone="warning" className="text-sm text-amber-800 dark:text-amber-200">
           {t('clipHealth.deadWarning', { label: 'A' })}
         </Callout>
       )}
-      {rawA.url_status === STATUS_DEGRADED && (
+      {effA === STATUS_DEGRADED && (
         <Callout tone="info" className="text-sm text-blue-800 dark:text-blue-200">
           {t('clipHealth.degradedWarning', { label: 'A' })}
         </Callout>
       )}
-      {rawB.url_status === STATUS_DEAD && (
+      {effB === STATUS_DEAD && (
         <Callout tone="warning" className="text-sm text-amber-800 dark:text-amber-200">
           {t('clipHealth.deadWarning', { label: 'B' })}
         </Callout>
       )}
-      {rawB.url_status === STATUS_DEGRADED && (
+      {effB === STATUS_DEGRADED && (
         <Callout tone="info" className="text-sm text-blue-800 dark:text-blue-200">
           {t('clipHealth.degradedWarning', { label: 'B' })}
         </Callout>
+      )}
+
+      {/* Admin controls (step 64) — any admin, not just the test's own
+          creator, can correct a clip's health status when the cron gets
+          it wrong. Independent of isCreator/voteCount/isRevealed — this
+          corrects a signal, not what was tested. */}
+      {isAdmin && (
+        <div className="flex flex-wrap gap-3">
+          <AdminClipOverrideControl
+            clipId={rawA.id}
+            label="A"
+            urlStatus={rawA.url_status as UrlStatus}
+            adminOverride={rawA.admin_override}
+          />
+          <AdminClipOverrideControl
+            clipId={rawB.id}
+            label="B"
+            urlStatus={rawB.url_status as UrlStatus}
+            adminOverride={rawB.admin_override}
+          />
+        </div>
       )}
 
       {/* Creator controls */}
@@ -374,10 +408,10 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
         <div className="flex flex-wrap gap-3">
           {!isRevealed && <RevealButton testId={test.id} />}
           {voteCount === 0 && <DeleteTestButton testId={test.id} />}
-          {voteCount === 0 && rawA.url_status === STATUS_DEAD && (
+          {voteCount === 0 && effA === STATUS_DEAD && (
             <ReplaceClipUrlButton clipId={rawA.id} label="A" />
           )}
-          {voteCount === 0 && rawB.url_status === STATUS_DEAD && (
+          {voteCount === 0 && effB === STATUS_DEAD && (
             <ReplaceClipUrlButton clipId={rawB.id} label="B" />
           )}
         </div>

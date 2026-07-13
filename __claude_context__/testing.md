@@ -64,7 +64,7 @@ indirectly through the step tests.
 
 ---
 
-## 4. Unit test inventory (53 files · 556 tests · all passing)
+## 4. Unit test inventory (54 files · 559 tests · all passing)
 
 | File | Tests | What it covers |
 |---|---|---|
@@ -94,6 +94,7 @@ indirectly through the step tests.
 | `lib/auth/__tests__/password-rules.test.ts` | 11 | Password complexity sliding by length (step 51) — 3-of-4 character classes under 20 chars, the `'password123'` regression case, the 20-char boundary, long all-digit/all-symbol strings rejected, a long plain-lowercase passphrase accepted |
 | `lib/clips/__tests__/detect-provider.test.ts` | 16 | YouTube / Vimeo / Google Drive / direct / unknown URL classification; a Drive folder link isn't misdetected as a file; Dropbox share links (step 56) rewrite dl=0/absent-dl to raw=1 preserving rlkey and other params, idempotent for an already-raw=1 URL, and handles bare dropbox.com as well as www |
 | `lib/clips/__tests__/check-url.test.ts` | 11 | `checkDirectUrl` (step 59, `global.fetch` mocked — first coverage of this file): 200 with audio/video/no content-type resolves media_type correctly; 404 → dead; 500 → degraded; timeout → degraded; network error → dead; a Dropbox 200 redirected to a `*.dropboxusercontent.com` CDN host → ok; a Dropbox 200 that never left dropbox.com → dead; a Dropbox 404/5xx unaffected by the new check; the redirect-host check is gated to Dropbox only (a non-Dropbox 200 from an unrelated host is still trusted) |
+| `lib/clips/__tests__/effective-url-status.test.ts` | 3 | `effectiveUrlStatus` (step 64): passes the raw status through unchanged for every status when there's no admin override; an `'ok'` override forces ok regardless of the raw status; a `'dead'` override forces dead regardless of the raw status |
 | `lib/clips/__tests__/is-unsupported.test.ts` | 3 | `isUnsupportedClip` (step 54 simplification): true only for provider unknown; false for direct regardless of media_type; false for every embeddable provider |
 | `lib/clips/__tests__/to-clip-data.test.ts` | 6 | embed_id and canonical_url derivation for each provider, including Google Drive |
 | `lib/clips/__tests__/find-shared-clips.test.ts` | 9 | Shared track finder; side A/B selection; no shared tracks |
@@ -135,10 +136,11 @@ indirectly through the step tests.
 - Staging/preview deployments sit behind Vercel SSO Deployment Protection —
   `VERCEL_AUTOMATION_BYPASS_SECRET` (§9) lets the automated browser through.
 
-**Test data rules (all three are mandatory):**
+**Test data rules (all four are mandatory):**
 1. A dedicated `E2E_TEST_USER_EMAIL` account must exist in the staging Supabase project (create once via dashboard — Authentication → Users → Invite user).
 2. Every record created by a test is prefixed `[E2E]` (e.g. `[E2E] Lejonklou Sagatun`, `[E2E] Power cable comparison`).
 3. `global-teardown.ts` deletes all `[E2E]`-prefixed records after every run using the admin client (bypasses RLS).
+4. A dedicated `E2E_ADMIN_USER_EMAIL` account (step 64) — same one-time creation as #1, plus listed in the target environment's `ADMIN_EMAILS`. Must be a separate account from `E2E_TEST_USER_EMAIL`, never the same account added to `ADMIN_EMAILS` — several specs assert the regular test user is *not* an admin.
 
 **Placeholder-owned fixtures** (`seedPlaceholderOwnedTest` in `e2e/helpers/admin.ts`, added for
 `import-provenance.spec.ts`): exercises the real `create-placeholder-author.ts`, not a duplicate,
@@ -198,6 +200,7 @@ test'` test for the canonical two-line pattern.
 | `delete.spec.ts` | Creator deletes a zero-vote test (redirects home); Delete hidden once a vote exists; owner deletes an unreferenced snapshot; Delete hidden when a test references the snapshot; owner deletes a snapshot-less system (redirects to systems list); Delete hidden when the system has a snapshot |
 | `clip-health.spec.ts` | Dead clip shows a warning and player still renders; vote form replaced with an explanatory message; creator replaces a dead clip's URL, clearing the warning; "Broken" badge shown on the track and system detail pages; unsupported-playback clip shows a bare link in blind view with no "could not be identified" message; once revealed, its Before/After label in the mapping badge links directly to it with no separate link below |
 | `profile.spec.ts` | Profile page loads; update display name; save disabled when name cleared; non-admin user does not see the Admin section (step 41) |
+| `admin-clip-override.spec.ts` | Runs under the `admin` project (`E2E_ADMIN_USER_EMAIL` session, step 64): admin forces a healthy clip to broken (warning + vote-block appear despite the cron's own status being unchanged); clearing the override reverts; admin forces a cron-reported dead clip to not-broken (warning + vote-block disappear); the override controls are absent for a non-admin, including the test's own creator (`test.use({ storageState: AUTH_FILE })` inside the same file to run one block under the regular session) |
 | `import-provenance.spec.ts` | Placeholder-owned content shows the "Imported" badge on the test detail page, feed card, and track's test row; test detail page also shows a working "view original post" link (`target="_blank"`) and the claim-contact text; system detail page shows the badge and claim-contact text; an ordinarily-owned test shows none of this; a claimed test (step 47, `seedClaimedTest`) still shows the original-post link and the imported badge, but not the claim-contact text |
 | `date-formatting.spec.ts` | Dates render using the visiting browser's locale (step 49) — a test detail page date shows `dd/mm/yyyy` under a `test.use({ locale: 'en-GB' })` context and `m/d/yyyy` under `'en-US'`, using `setTestCreatedAt` to force an unambiguous fixed date (day > 12) regardless of what day the suite runs |
 | `zz-sign-out.spec.ts` | Sign out clears the session; header reverts to unauthenticated. Runs last — see file for why |
@@ -230,6 +233,21 @@ corrected precedent as step 38's, calling `claim_placeholder` directly
 via `.rpc(...)`, its route's unauthenticated paths manually `curl`-
 verified separately (see §11).
 
+A fourth was added in step 64
+(`app/api/admin/clips/[id]/override/__tests__/route.integration.test.ts`)
+— same session-auth-can't-be-faked reasoning as steps 38/39's, but there's
+no Postgres function here (`PATCH /api/admin/clips/[id]/override` is a
+plain admin-client `.update()`, the same shape `PATCH /api/clips/[id]`
+already uses), so this file exercises that plain update directly instead
+of an `.rpc()` call: sets `admin_override`/`admin_override_by`/
+`admin_override_at` together and clears all three together; confirms the
+`clips_admin_override_check` CHECK constraint rejects a value outside
+`ok`/`dead`; confirms an anon-key write is silently blocked by the
+existing creator-only RLS update policy (verified by re-reading with the
+admin client, not by trusting an absent error — Rule 5's trap). The
+route's own session/`isAdminEmail` gating is manually `curl`-verified
+separately, not covered here (same precedent as steps 38/39).
+
 Other candidates for this tier, not yet added:
 - Protected route access patterns at the API boundary, for other routes
 - Form submission workflows end-to-end through API routes
@@ -254,6 +272,7 @@ verified before shipping.
 ```bash
 SUPABASE_SERVICE_ROLE_KEY=<staging service role key>
 E2E_TEST_USER_EMAIL=e2e-tests@example.com
+E2E_ADMIN_USER_EMAIL=e2e-admin@example.com      # step 64 — must also be listed in ADMIN_EMAILS; a separate account from E2E_TEST_USER_EMAIL
 E2E_BASE_URL=http://localhost:3000              # local dev
 # E2E_BASE_URL=https://your-preview.vercel.app # CI / staging
 VERCEL_AUTOMATION_BYPASS_SECRET=<protection bypass secret>  # required if E2E_BASE_URL is Vercel-protected
