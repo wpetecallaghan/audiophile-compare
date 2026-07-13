@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
 import { linkVariants } from '@/components/ui/Link'
 import { cn } from '@/components/ui/cn'
@@ -12,8 +11,7 @@ export default function SignOutButton() {
 
   async function handleSignOut() {
     setSigningOut(true)
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await fetch('/auth/signout', { method: 'POST' })
     window.location.href = '/'
   }
 

@@ -2,11 +2,12 @@
  * zz-sign-out.spec.ts
  *
  * Sign-out clears the E2E test user's session via Supabase's *global* sign-out
- * scope (components/SignOutButton.tsx calls supabase.auth.signOut() with no
- * scope, which defaults to 'global') — this revokes every session for that
- * account, not just the browser tab that clicked it. That includes the
- * shared session in playwright/.auth/user.json every other authenticated
- * test relies on, regardless of which context triggers the sign-out.
+ * scope (components/SignOutButton.tsx POSTs to app/auth/signout/route.ts,
+ * which calls supabase.auth.signOut() server-side with no scope, defaulting
+ * to 'global') — this revokes every session for that account, not just the
+ * browser tab that clicked it. That includes the shared session in
+ * playwright/.auth/user.json every other authenticated test relies on,
+ * regardless of which context triggers the sign-out.
  *
  * The `zz-` prefix is deliberate: with workers: 1 (serial, alphabetical file
  * order), it guarantees this test runs after every other authenticated spec,

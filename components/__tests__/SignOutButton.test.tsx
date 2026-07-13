@@ -1,23 +1,23 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SignOutButton from '../SignOutButton'
 
 // --- Mocks ---
 
-const mockSignOut = vi.fn()
-vi.mock('@/lib/supabase/client', () => ({
-  createClient: vi.fn(() => ({
-    auth: { signOut: mockSignOut },
-  })),
-}))
+let mockFetch: ReturnType<typeof vi.fn>
 
 // --- Tests ---
 
 describe('SignOutButton', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockSignOut.mockResolvedValue({})
+    mockFetch = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', mockFetch)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   // ---------------------------------------------------------------------------
@@ -36,14 +36,14 @@ describe('SignOutButton', () => {
   // ---------------------------------------------------------------------------
 
   describe('Sign-out behaviour', () => {
-    it('calls supabase.auth.signOut() when clicked', async () => {
+    it('POSTs to /auth/signout when clicked', async () => {
       const user = userEvent.setup()
       render(<SignOutButton />)
 
       await user.click(screen.getByRole('button', { name: 'Sign out' }))
 
       await waitFor(() => {
-        expect(mockSignOut).toHaveBeenCalledOnce()
+        expect(mockFetch).toHaveBeenCalledWith('/auth/signout', { method: 'POST' })
       })
     })
 
@@ -60,8 +60,8 @@ describe('SignOutButton', () => {
 
     it('shows "Signing out…" and disables the button while in flight', async () => {
       const user = userEvent.setup()
-      let resolve: () => void
-      mockSignOut.mockReturnValue(new Promise<void>(r => { resolve = r }))
+      let resolve: (value: { ok: boolean }) => void
+      mockFetch.mockReturnValue(new Promise<{ ok: boolean }>(r => { resolve = r }))
 
       render(<SignOutButton />)
 
@@ -70,7 +70,7 @@ describe('SignOutButton', () => {
       expect(screen.getByRole('button', { name: 'Signing out\u2026' })).toBeDisabled()
 
       // Clean up
-      resolve!()
+      resolve!({ ok: true })
     })
   })
 })

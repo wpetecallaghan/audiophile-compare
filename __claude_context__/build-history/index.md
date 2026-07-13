@@ -76,3 +76,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 59 | Fix the Dropbox clip-health blind spot | [59-dropbox-cron-health-check.md](59-dropbox-cron-health-check.md) |
 | 60 | Instant tap feedback (`Link`) + route-level `loading.tsx` skeletons | [60-instant-tap-feedback-loading-states.md](60-instant-tap-feedback-loading-states.md) |
 | 61 | Track detail item-to-item navigation + shared `getAdjacentIds()` helper | [61-track-detail-navigation.md](61-track-detail-navigation.md) |
+| 62 | Sign out via a server route instead of the browser Supabase SDK (PageSpeed fix) | [62-signout-server-route.md](62-signout-server-route.md) |
