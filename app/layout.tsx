@@ -6,6 +6,7 @@ import SiteFooter from "@/components/SiteFooter";
 import { ViewTransitionResolverProvider } from "@/components/ui/ViewTransitionResolver";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -43,6 +44,7 @@ export default async function RootLayout({
             <SiteFooter />
           </ViewTransitionResolverProvider>
         </NextIntlClientProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

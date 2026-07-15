@@ -23,6 +23,7 @@
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "@types/youtube": "^0.3.0",
+    "@vercel/speed-insights": "^2.0.0",
     "@vimeo/player": "^2.30.4",
     "ai": "^7.0.17",
     "class-variance-authority": "^0.7.1",
