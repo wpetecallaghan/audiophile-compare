@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { revalidateTag } from 'next/cache'
 
 export async function POST(
   request: NextRequest,
@@ -44,6 +45,14 @@ export async function POST(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  // step 75 — status/revealed_at are part of the cached test-core data.
+  // { expire: 0 } forces immediate expiration regardless of the entry's
+  // own revalidate window — revalidateTag's second (profile) argument is
+  // required as of this Next.js version; a named string profile would
+  // need registering in next.config's cacheLife, which this codebase
+  // deliberately doesn't use (see build-history/75-*.md).
+  revalidateTag(`test-${id}`, { expire: 0 })
 
   return NextResponse.json({ ok: true })
 }

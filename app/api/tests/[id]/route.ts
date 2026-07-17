@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { isValidForumLink } from '@/lib/tests/validate-forum-link'
+import { revalidateTag } from 'next/cache'
 
 export async function GET(
   request: NextRequest,
@@ -114,6 +115,11 @@ export async function DELETE(
     return NextResponse.json({ error: 'Failed to delete test' }, { status: 500 })
   }
 
+  // step 75 — avoids a stale cached test-core entry lingering for a
+  // deleted test's id until its own revalidate window expires. See
+  // reveal/route.ts for why { expire: 0 } (not a named profile).
+  revalidateTag(`test-${id}`, { expire: 0 })
+
   return NextResponse.json({ ok: true })
 }
 
@@ -175,6 +181,10 @@ export async function PATCH(
   if (error || !updated) {
     return NextResponse.json({ error: 'Failed to update forum link' }, { status: 500 })
   }
+
+  // step 75 — forum_link is part of the cached test-core data. See
+  // reveal/route.ts for why { expire: 0 } (not a named profile).
+  revalidateTag(`test-${id}`, { expire: 0 })
 
   return NextResponse.json({ forum_link: updated.forum_link })
 }

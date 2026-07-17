@@ -732,3 +732,54 @@ const { count } = await supabase
 
 const hasVoted = (count ?? 0) > 0
 ```
+
+---
+
+## Server-side caching — test-core data (build step 75)
+
+`lib/tests/get-cached-test-core.ts` caches the "fetch a test with its
+clips" query above (plus snapshots) via `unstable_cache`, keyed and tagged
+`test-${testId}`, shared across every viewer's request — nothing in that
+query varies by who's asking, and per-viewer redaction
+(`canSeeSystemInfo`, forum-link visibility) still happens in JS after the
+fetch, exactly as before caching. `getCachedRevealedMapping` does the same
+for `clip_mapping`, safe unconditionally once a test is revealed (its own
+RLS — "revealed OR creator_id = auth.uid()" — means an anon-key read
+naturally returns nothing for a still-open test, so no extra `isRevealed`
+check is needed in the caching layer itself).
+
+**Both use `lib/supabase/client.ts`'s anon-key client, not
+`lib/supabase/server.ts`** — `unstable_cache` throws if a dynamic API
+(`cookies()`/`headers()`) is touched inside it, and the server client
+calls `cookies()` internally. Not a problem here: every table involved
+(`tests`, `clips`, `tracks`, and `clip_mapping` once revealed) is RLS
+public-read (or effectively so), so a session-less read returns exactly
+what a session-bound one would.
+
+**Invalidated via `revalidateTag(`test-${id}`, { expire: 0 })`** from
+every route that mutates a cached field — `{ expire: 0 }`, not a named
+string profile, since `revalidateTag`'s second argument (required as of
+this Next.js version) looks up named profiles from `next.config`'s
+`cacheLife`, which this codebase doesn't configure (deliberately avoiding
+`cacheComponents: true`'s app-wide blast radius — see
+`build-history/75-*.md`); `{ expire: 0 }` bypasses that lookup entirely
+and forces immediate expiration.
+
+| Route | Field(s) invalidated |
+|---|---|
+| `POST /api/tests/[id]/reveal` | `status`, `revealed_at` |
+| `PATCH /api/tests/[id]` | `forum_link` |
+| `DELETE /api/tests/[id]` | whole row (avoids a lingering stale entry) |
+| `PATCH /api/clips/[id]` | the replaced clip's row |
+| `PATCH /api/admin/clips/[id]/override` | `admin_override`/`_by`/`_at` |
+
+**Deliberately not invalidated: the URL-health-check cron**
+(`app/api/cron/check-urls/route.ts`, `clips.url_status`) — mapping every
+checked clip back to its test id for per-test invalidation would add
+real complexity to a route already documented as expensive and
+deliberately unscoped (`build-history/58-*.md`). Bounded staleness via
+the cache's own `revalidate: 3600` instead — a clip-health indicator
+lagging by up to an hour is accepted, low-stakes, same tradeoff class as
+the Google Photos fetch's own `revalidate: 3600`
+(`lib/clips/resolve-google-photos.ts`). An admin's own manual override
+still invalidates immediately (see table above).

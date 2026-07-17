@@ -89,3 +89,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 72 | Align Vercel Function region with Supabase (`lhr1`) | [72-vercel-region-alignment.md](72-vercel-region-alignment.md) |
 | 73 | Lighthouse throttling-method investigation; RPC consolidation deliberately not pursued | [73-lighthouse-methodology-and-rpc-consolidation-decision.md](73-lighthouse-methodology-and-rpc-consolidation-decision.md) |
 | 74 | Fix footer height changing across pagination; prioritize nav over Privacy/Terms on mobile (`SiteFooter`) | [74-footer-height-wrap-fix.md](74-footer-height-wrap-fix.md) |
+| 75 | Cache the non-personalized parts of a test-detail page (`unstable_cache`) | [75-cache-test-core-data.md](75-cache-test-core-data.md) |

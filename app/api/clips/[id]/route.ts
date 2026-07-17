@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { revalidateTag } from 'next/cache'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -92,6 +93,11 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   if (error || !updated) {
     return NextResponse.json({ error: 'Failed to update clip' }, { status: 500 })
   }
+
+  // step 75 — this clip's row is part of its parent test's cached core
+  // data. See app/api/tests/[id]/reveal/route.ts for why { expire: 0 }
+  // (not a named profile).
+  revalidateTag(`test-${clip.test_id}`, { expire: 0 })
 
   return NextResponse.json({ ok: true })
 }

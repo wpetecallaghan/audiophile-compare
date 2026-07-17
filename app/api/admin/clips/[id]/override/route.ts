@@ -4,6 +4,7 @@ import { isAdminEmail } from '@/lib/admin/is-admin-email'
 import { STATUS_OK, STATUS_DEAD } from '@/lib/clips/check-url'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { revalidateTag } from 'next/cache'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -76,7 +77,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
       admin_override_at: override ? new Date().toISOString() : null,
     })
     .eq('id', clipId)
-    .select('id')
+    .select('id, test_id')
     .single()
 
   if (error) {
@@ -90,6 +91,13 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   if (!updated) {
     return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
   }
+
+  // step 75 — this clip's row is part of its parent test's cached core
+  // data; an admin's own explicit override should be visible immediately,
+  // not wait out the cache's bounded staleness window like the health
+  // check cron's own writes do. See tests/[id]/reveal/route.ts for why
+  // { expire: 0 } (not a named profile).
+  revalidateTag(`test-${updated.test_id}`, { expire: 0 })
 
   return NextResponse.json({ ok: true })
 }

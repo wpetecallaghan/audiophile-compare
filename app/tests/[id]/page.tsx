@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getRequestUser } from '@/lib/auth/get-request-user'
+import { getCachedTestCore, getCachedRevealedMapping, type RawClip } from '@/lib/tests/get-cached-test-core'
 import { notFound } from 'next/navigation'
 import { Link } from '@/components/ui/Link'
 import { Callout } from '@/components/ui/Callout'
@@ -39,18 +40,6 @@ type Props = {
   searchParams: Promise<{ from?: string; fromId?: string; page?: string }>
 }
 
-// Raw clips row shape — shared between TestDetailPage's own cast and
-// ClipPlayerSection's props below, so the two can't silently drift apart.
-type RawClip = {
-  id: string
-  label: string
-  source_url: string
-  provider: string
-  media_type: string
-  url_status: string
-  admin_override: UrlStatus | null
-}
-
 export default async function TestDetailPage({ params, searchParams }: Props) {
   const { id } = await params
   const { from, fromId, page: pageParam } = await searchParams
@@ -66,21 +55,15 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
   // every single page load.
   const user = await getRequestUser()
 
-  const { data: test, error } = await supabase
-    .from('tests')
-    .select(`
-      id, title, status, revealed_at, created_at, source_url, source_ref, forum_link,
-      creator_id,
-      creator:users!creator_id(display_name, is_placeholder),
-      track:tracks(artist, title, album, passage_note),
-      clips(id, label, source_url, provider, media_type, url_status, admin_override),
-      snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
-      snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name))
-    `)
-    .eq('id', id)
-    .single()
+  // The test row + track + clips + snapshots is identical for every
+  // viewer (step 75) — cached and shared across requests. Per-viewer
+  // redaction (canSeeSystemInfo etc. below) still runs fresh on every
+  // request against the cached data, exactly as before; see
+  // lib/tests/get-cached-test-core.ts for the safety reasoning and
+  // audiophile-compare-schema.md for the invalidation list.
+  const test = await getCachedTestCore(id)
 
-  if (error || !test) notFound()
+  if (!test) notFound()
 
   // --- Security decisions, server-side ---
 
@@ -101,7 +84,7 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
 
   // --- Shape the clips for ABPlayer (pure derivation, no I/O) ---
 
-  const clips = test.clips as RawClip[]
+  const clips = test.clips
 
   const rawA = clips.find(c => c.label === 'A')
   const rawB = clips.find(c => c.label === 'B')
@@ -124,9 +107,18 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
     { data: allActiveTechniques },
     { data: revealedTallyRows },
   ] = await Promise.all([
-    isCreator || isRevealed
-      ? supabase.from('clip_mapping').select('before_clip_id, after_clip_id').eq('test_id', test.id).single()
-      : Promise.resolve({ data: null as { before_clip_id: string; after_clip_id: string } | null }),
+    // Once revealed, mapping is safe for everyone and served from the same
+    // cache as the core test data (step 75) — clip_mapping's own RLS
+    // ("revealed OR creator_id = auth.uid()") means the cached function's
+    // session-less anon client can only ever read it once revealed, so
+    // this doesn't need its own isRevealed re-check. The still-open,
+    // creator-only case stays on the dynamic, cookie-based path below —
+    // genuinely personalized, not cacheable.
+    isRevealed
+      ? getCachedRevealedMapping(test.id).then(data => ({ data }))
+      : isCreator
+        ? supabase.from('clip_mapping').select('before_clip_id, after_clip_id').eq('test_id', test.id).single()
+        : Promise.resolve({ data: null as { before_clip_id: string; after_clip_id: string } | null }),
     user
       ? supabase.from('votes').select('technique_id, chosen_clip_id, other_description, observation').eq('test_id', test.id).eq('user_id', user.id)
       : Promise.resolve({ data: null as ExistingVote[] | null }),

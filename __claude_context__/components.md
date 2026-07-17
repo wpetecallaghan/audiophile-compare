@@ -1128,8 +1128,15 @@ const [{ data: { user } }, { data: test, error }] = await Promise.all([
 ```
 
 Both `app/tests/[id]/page.tsx` and `app/page.tsx` (`FeedContent`) do this
-for `getUser()` + their main row query. `app/tests/[id]/page.tsx` goes
-further: `clip_mapping`, existing-votes, the vote-count RPC,
+for `getUser()` + their main row query — though `app/tests/[id]/page.tsx`'s
+own main query has since moved to `getCachedTestCore()`
+(`lib/tests/get-cached-test-core.ts`, build step 75,
+`audiophile-compare-schema.md`'s "Server-side caching" section) rather
+than a live `Promise.all` member, since it turned out to be identical for
+every viewer and worth caching outright, not just parallelizing. The
+pattern above is still the right one for `getUser()`/`getRequestUser()`
+paired with any query that *does* need to stay live. `app/tests/[id]/page.tsx`
+goes further: `clip_mapping`, existing-votes, the vote-count RPC,
 `listening_techniques`, and the tally query (only when the test is already
 revealed) all batch into one `Promise.all` together, since none of them
 reads another's result. **A query that genuinely depends on another
