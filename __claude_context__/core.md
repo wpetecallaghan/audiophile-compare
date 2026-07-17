@@ -49,6 +49,14 @@ GitHub staging  → Vercel Preview     → Supabase audiophile-staging
 - **Never edit a migration file once applied to any project** — `supabase db push` tracks applied files by filename, so an edit silently no-ops. Write a new migration instead. See `audiophile-compare-schema.md` for the full rule and precedent.
 - Each project requires its own Auth redirect URL in Supabase → Authentication → URL Configuration.
   Mismatched redirect URLs cause magic link logins to land on the wrong environment.
+- **Vercel Functions are pinned to `lhr1` (London)** (`vercel.json`'s
+  `regions`, step 72) — confirmed via `x-vercel-id` that they were
+  otherwise defaulting to `iad1` (US East), while both Supabase projects
+  are in Europe (staging `eu-west-1` Ireland, production `eu-west-2`
+  London). A single Vercel region can't perfectly co-locate with two
+  different Supabase regions at once; `lhr1` is exact for production and
+  a short intra-Europe hop from staging — a deliberate best fit, not
+  claimed to be optimal for both.
 
 ---
 
@@ -231,7 +239,7 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-Steps 1–63 and 65–71 complete: core app (1–29, 40–63, 65–71) plus the
+Steps 1–63 and 65–72 complete: core app (1–29, 40–63, 65–72) plus the
 forum-ingestion pipeline (30–39) through a real production import. Current
 unit suite: 56 files / 569 tests passing (`npm run test`); integration suite
 (`npm run test:integration`, testing.md §11): 17/17 passing against real

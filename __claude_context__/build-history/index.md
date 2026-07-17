@@ -86,3 +86,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 69 | Parallelize sequential Supabase queries + stream independent sections via Suspense (faster page loads) | [69-test-detail-query-parallelization-streaming.md](69-test-detail-query-parallelization-streaming.md) |
 | 70 | Fix track info missing for anonymous visitors (`tracks` RLS gap) | [70-tracks-public-read-rls-fix.md](70-tracks-public-read-rls-fix.md) |
 | 71 | Eliminate the page's redundant `getUser()` call (middleware header forwarding) | [71-getuser-header-dedup.md](71-getuser-header-dedup.md) |
+| 72 | Align Vercel Function region with Supabase (`lhr1`) | [72-vercel-region-alignment.md](72-vercel-region-alignment.md) |
