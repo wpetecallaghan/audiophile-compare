@@ -171,6 +171,24 @@ test.describe('Anonymous clip playback', () => {
     await expect(page.getByRole(ROLE.heading, { name: 'Clip B' })).toBeVisible()
   })
 
+  test('anonymous visitor can see the track artist/title on a test detail page (step 70)', async ({ page }) => {
+    // Regression coverage for the tracks RLS gap (step 70): the tracks
+    // table used to require auth.uid() is not null on select, so this line
+    // silently rendered as nothing (track was always null) for anyone not
+    // signed in, even though it's never gated on `user` in the page itself.
+    await page.goto(routes.test(fixture.test.id))
+    await expect(
+      page.getByText(`${fixture.track.artist} — ${fixture.track.title}`),
+    ).toBeVisible()
+  })
+
+  test('anonymous visitor can see the track artist/title on the feed (step 70)', async ({ page }) => {
+    await page.goto('/')
+    await expect(
+      page.getByText(`${fixture.track.artist} — ${fixture.track.title}`),
+    ).toBeVisible()
+  })
+
   test('anonymous visitor sees a "Sign in to vote" prompt instead of the vote form', async ({ page }) => {
     await page.goto(routes.test(fixture.test.id))
     const main = page.getByRole('main')

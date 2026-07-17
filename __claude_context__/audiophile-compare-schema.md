@@ -228,7 +228,7 @@ All tables have RLS enabled. Policy intent per table:
 | users | Public | Own row only |
 | systems | Public | Owner only (insert + update + delete) |
 | system_snapshots | Public | System owner only, checked via JOIN (insert + update + delete) |
-| tracks | Authenticated | Any authenticated user |
+| tracks | Public (step 70 — was Authenticated, a gap since the initial schema) | Any authenticated user |
 | tests | Public | Creator only (insert + update + delete) |
 | clips | Public | Test creator only, checked via JOIN (insert + update + delete) |
 | clip_mapping | Revealed tests OR creator | Test creator only, checked via JOIN (insert + delete) |
