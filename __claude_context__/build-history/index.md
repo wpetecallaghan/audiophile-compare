@@ -87,3 +87,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 70 | Fix track info missing for anonymous visitors (`tracks` RLS gap) | [70-tracks-public-read-rls-fix.md](70-tracks-public-read-rls-fix.md) |
 | 71 | Eliminate the page's redundant `getUser()` call (middleware header forwarding) | [71-getuser-header-dedup.md](71-getuser-header-dedup.md) |
 | 72 | Align Vercel Function region with Supabase (`lhr1`) | [72-vercel-region-alignment.md](72-vercel-region-alignment.md) |
+| 73 | Lighthouse throttling-method investigation; RPC consolidation deliberately not pursued | [73-lighthouse-methodology-and-rpc-consolidation-decision.md](73-lighthouse-methodology-and-rpc-consolidation-decision.md) |
