@@ -177,8 +177,40 @@ which is the same mechanism already unit-tested for all three providers.
   - **Google Drive** — clicked the facade; confirmed the real iframe's
     `src` ends in `?autoplay=1` as wired.
 
-**Repeat performance analysis:** pending deploy to staging — Lighthouse
-Total Blocking Time and `mainthread-work-breakdown` for the test-detail
-page, compared against the step-75 baseline (not LCP — that page's LCP is
-tied to the *video file* loading once played, per step 73's finding, a
-cost this step doesn't target).
+**Repeat performance analysis:** deployed to staging as commit `341f123`.
+Deployed staging only ever reflects the *latest* deploy, so there's no way
+to re-run Lighthouse against the pre-step-76 state once it's superseded —
+instead measured a same-machine, same-Supabase-project A/B: two local
+production builds (`next build && next start`), one checked out at
+`88c8858` (step 75, before this step) in a `git worktree`, one at `341f123`
+(this step), both pointed at the same real staging Supabase project via the
+same `.env.local`, both measured with `npx lighthouse --throttling-method=
+devtools` against the same revealed two-YouTube-clip test page
+(`46a8fb74-...`, chosen specifically because it has real YouTube embeds —
+a `direct`-provider test page wouldn't exercise this step's change at
+all):
+
+| Metric | Before (88c8858) | After (341f123) |
+|---|---|---|
+| `mainthread-work-breakdown` total | 490ms | 314ms (‑36%) |
+| — Script Evaluation | 288ms | 192ms |
+| Bootup time | 0.3s | 0.2s |
+| Network transfer (page load) | 1477 KB | 362 KB (‑75%) |
+| Total Blocking Time | ~0ms | ~0ms |
+| Performance score | 0.98 | 0.99 |
+
+Total Blocking Time itself stayed ~0ms in both runs — this particular page
+is light enough that neither version produces a >50ms long task, so TBT
+isn't a discriminating metric here despite being the plan's original
+target. `mainthread-work-breakdown` and network transfer tell the real
+story: with two clips on the page, the "before" build eagerly loaded a
+full YouTube IFrame API (SDK script, player CSS, embed JS, logging pings)
+for *both* clips regardless of whether the visitor ever pressed play;
+the "after" build's initial load fetches nothing from YouTube but a
+static thumbnail image per clip, deferring the entire SDK to the first
+real click — the 75% network-transfer reduction is the more visitor-
+relevant number, since it's the difference between "downloads ~1.4MB of
+YouTube's own JS on every page view" and "downloads two small JPEGs."
+Not LCP — that page's LCP is tied to the *video file* loading once
+played, per step 73's finding, a cost this step doesn't target (and LCP
+was, as expected, within noise between the two runs: 1.5s vs 1.8s).
