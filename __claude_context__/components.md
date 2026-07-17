@@ -931,21 +931,39 @@ placeholder (verified for both `tests/[id]/loading.tsx` and
 (`ChevronsLeftIcon`) / Previous (`ChevronLeftIcon`) / All (`ListIcon`,
 unconditional, links back to the originating list) / Next
 (`ChevronRightIcon`) / Last (`ChevronsRightIcon`) — each rendered as
-`<Link variant="nav" aria-label={t('nav.*')} />` (`components/ui/Link.tsx`),
-icons from `components/ui/icons.tsx`:
+`<FooterNavLink aria-label={t('nav.*')} />` (`components/ui/FooterNavLink.tsx`,
+step 68), icons from `components/ui/icons.tsx`:
 ```tsx
 <FooterPortal>
   <div className="flex items-center gap-3">
-    {firstId && <Link href={`/tracks/${firstId}`} variant="nav" aria-label={t('nav.first')}><ChevronsLeftIcon className="w-4 h-4" /></Link>}
-    {prevId && <Link href={`/tracks/${prevId}`} variant="nav" aria-label={t('nav.previous')}><ChevronLeftIcon className="w-4 h-4" /></Link>}
-    <Link href={navBackHref} variant="nav" aria-label={t('nav.all')}><ListIcon className="w-4 h-4" /></Link>
-    {nextId && <Link href={`/tracks/${nextId}`} variant="nav" aria-label={t('nav.next')}><ChevronRightIcon className="w-4 h-4" /></Link>}
-    {lastId && <Link href={`/tracks/${lastId}`} variant="nav" aria-label={t('nav.last')}><ChevronsRightIcon className="w-4 h-4" /></Link>}
+    {firstId && <FooterNavLink href={`/tracks/${firstId}`} aria-label={t('nav.first')}><ChevronsLeftIcon className="w-4 h-4" /></FooterNavLink>}
+    {prevId && <FooterNavLink href={`/tracks/${prevId}`} aria-label={t('nav.previous')}><ChevronLeftIcon className="w-4 h-4" /></FooterNavLink>}
+    <FooterNavLink href={navBackHref} aria-label={t('nav.all')}><ListIcon className="w-4 h-4" /></FooterNavLink>
+    {nextId && <FooterNavLink href={`/tracks/${nextId}`} aria-label={t('nav.next')}><ChevronRightIcon className="w-4 h-4" /></FooterNavLink>}
+    {lastId && <FooterNavLink href={`/tracks/${lastId}`} aria-label={t('nav.last')}><ChevronsRightIcon className="w-4 h-4" /></FooterNavLink>}
   </div>
 </FooterPortal>
 ```
 First/Previous/Next/Last are conditionally rendered — a `null` from the
 position helper hides that control entirely rather than disabling it.
+
+**`FooterNavLink` (step 68) grows each control's touch target to 44×44px.**
+Wraps `<Link variant="nav">` (never call `Link variant="nav"` directly for
+one of these five controls — always go through `FooterNavLink`, the same
+"componentize once duplicated 3+ times" precedent as `RowCard`/`PageHeader`)
+with `flex items-center justify-center w-11 h-11 rounded-full
+hover:bg-gray-100 dark:hover:bg-gray-800`. Before this, the clickable `<a>`
+was exactly the bare 16px icon with **no** padding — confirmed by reading
+every call site — well under the ~44×44px minimum recommended for a touch
+target (iOS HIG, WCAG 2.5.5) and hard to land with a fingertip on a real
+phone. The icon's own visual size (`w-4 h-4`) is unchanged; only the
+invisible padding around it grows, plus a rounded hover fill so the actual
+tappable region is visible rather than just bigger. Feed pagination
+(`app/page.tsx`, step 66/68) and both `[id]` detail pages all use it — this
+is the *only* place `variant="nav"` needs the larger target; `SiteHeader`'s
+and `SiteFooter`'s plain text nav links (`variant="nav"` too) are untouched,
+since a multi-character text link is already a reasonable tap width and
+wasn't part of what step 68 found.
 
 **The position math** — `getAdjacentIds(ids, currentId)`
 (`lib/nav/get-adjacent-ids.ts`, added step 61): a pure, unit-tested helper

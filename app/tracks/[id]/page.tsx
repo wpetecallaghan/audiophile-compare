@@ -7,13 +7,13 @@ import { Heading } from '@/components/ui/Heading'
 import { PageShell } from '@/components/ui/PageShell'
 import { RowCard } from '@/components/ui/RowCard'
 import { Text } from '@/components/ui/Text'
-import { Link } from '@/components/ui/Link'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 import { STATUS_DEAD, type UrlStatus } from '@/lib/clips/check-url'
 import { effectiveUrlStatus } from '@/lib/clips/effective-url-status'
 import { getAdjacentIds } from '@/lib/nav/get-adjacent-ids'
 import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon, ListIcon } from '@/components/ui/icons'
 import { FooterPortal } from '@/components/ui/FooterPortal'
+import { FooterNavLink } from '@/components/ui/FooterNavLink'
 
 const TRACKS_LIST_HREF = '/tracks'
 
@@ -163,27 +163,27 @@ export default async function TrackDetailPage({ params }: Props) {
       <FooterPortal>
         <div className="flex items-center gap-3">
           {firstId && (
-            <Link href={`/tracks/${firstId}`} variant="nav" aria-label={t('nav.first')}>
+            <FooterNavLink href={`/tracks/${firstId}`} aria-label={t('nav.first')}>
               <ChevronsLeftIcon className="w-4 h-4" />
-            </Link>
+            </FooterNavLink>
           )}
           {prevId && (
-            <Link href={`/tracks/${prevId}`} variant="nav" aria-label={t('nav.previous')}>
+            <FooterNavLink href={`/tracks/${prevId}`} aria-label={t('nav.previous')}>
               <ChevronLeftIcon className="w-4 h-4" />
-            </Link>
+            </FooterNavLink>
           )}
-          <Link href={navBackHref} variant="nav" aria-label={t('nav.all')}>
+          <FooterNavLink href={navBackHref} aria-label={t('nav.all')}>
             <ListIcon className="w-4 h-4" />
-          </Link>
+          </FooterNavLink>
           {nextId && (
-            <Link href={`/tracks/${nextId}`} variant="nav" aria-label={t('nav.next')}>
+            <FooterNavLink href={`/tracks/${nextId}`} aria-label={t('nav.next')}>
               <ChevronRightIcon className="w-4 h-4" />
-            </Link>
+            </FooterNavLink>
           )}
           {lastId && (
-            <Link href={`/tracks/${lastId}`} variant="nav" aria-label={t('nav.last')}>
+            <FooterNavLink href={`/tracks/${lastId}`} aria-label={t('nav.last')}>
               <ChevronsRightIcon className="w-4 h-4" />
-            </Link>
+            </FooterNavLink>
           )}
         </div>
       </FooterPortal>

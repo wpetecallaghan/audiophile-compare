@@ -14,6 +14,7 @@ import { effectiveUrlStatus } from '@/lib/clips/effective-url-status'
 import { FEED_PAGE_SIZE } from '@/lib/tests/feed-page-size'
 import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon } from '@/components/ui/icons'
 import { FooterPortal } from '@/components/ui/FooterPortal'
+import { FooterNavLink } from '@/components/ui/FooterNavLink'
 import { PageLoading } from '@/components/ui/PageLoading'
 
 const PAGE_SIZE = FEED_PAGE_SIZE
@@ -187,27 +188,27 @@ async function FeedContent({ page }: { page: number }) {
         <FooterPortal>
           <div className="flex items-center gap-2">
             {hasPrev && (
-              <Link href="/?page=1" variant="nav" aria-label={t('firstPage')}>
+              <FooterNavLink href="/?page=1" aria-label={t('firstPage')}>
                 <ChevronsLeftIcon className="w-4 h-4" />
-              </Link>
+              </FooterNavLink>
             )}
             {hasPrev && (
-              <Link href={`/?page=${page - 1}`} variant="nav" aria-label={t('previousPage')}>
+              <FooterNavLink href={`/?page=${page - 1}`} aria-label={t('previousPage')}>
                 <ChevronLeftIcon className="w-4 h-4" />
-              </Link>
+              </FooterNavLink>
             )}
             <Text as="span" size="xs">
               {t('pageOf', { page, total: totalPages })}
             </Text>
             {hasNext && (
-              <Link href={`/?page=${page + 1}`} variant="nav" aria-label={t('nextPage')}>
+              <FooterNavLink href={`/?page=${page + 1}`} aria-label={t('nextPage')}>
                 <ChevronRightIcon className="w-4 h-4" />
-              </Link>
+              </FooterNavLink>
             )}
             {hasNext && (
-              <Link href={`/?page=${totalPages}`} variant="nav" aria-label={t('lastPage')}>
+              <FooterNavLink href={`/?page=${totalPages}`} aria-label={t('lastPage')}>
                 <ChevronsRightIcon className="w-4 h-4" />
-              </Link>
+              </FooterNavLink>
             )}
           </div>
         </FooterPortal>

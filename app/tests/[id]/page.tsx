@@ -29,6 +29,7 @@ import { isAdminEmail } from '@/lib/admin/is-admin-email'
 import { FEED_PAGE_SIZE } from '@/lib/tests/feed-page-size'
 import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon, ListIcon } from '@/components/ui/icons'
 import { FooterPortal } from '@/components/ui/FooterPortal'
+import { FooterNavLink } from '@/components/ui/FooterNavLink'
 import { getAdjacentIds } from '@/lib/nav/get-adjacent-ids'
 
 type Props = {
@@ -452,27 +453,27 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
         <FooterPortal>
           <div className="flex items-center gap-3">
             {firstId && (
-              <Link href={`/tests/${firstId}${navCtxSuffix}`} variant="nav" aria-label={t('nav.first')}>
+              <FooterNavLink href={`/tests/${firstId}${navCtxSuffix}`} aria-label={t('nav.first')}>
                 <ChevronsLeftIcon className="w-4 h-4" />
-              </Link>
+              </FooterNavLink>
             )}
             {prevId && (
-              <Link href={`/tests/${prevId}${navCtxSuffix}`} variant="nav" aria-label={t('nav.previous')}>
+              <FooterNavLink href={`/tests/${prevId}${navCtxSuffix}`} aria-label={t('nav.previous')}>
                 <ChevronLeftIcon className="w-4 h-4" />
-              </Link>
+              </FooterNavLink>
             )}
-            <Link href={navBackHref} variant="nav" aria-label={t('nav.all')}>
+            <FooterNavLink href={navBackHref} aria-label={t('nav.all')}>
               <ListIcon className="w-4 h-4" />
-            </Link>
+            </FooterNavLink>
             {nextId && (
-              <Link href={`/tests/${nextId}${navCtxSuffix}`} variant="nav" aria-label={t('nav.next')}>
+              <FooterNavLink href={`/tests/${nextId}${navCtxSuffix}`} aria-label={t('nav.next')}>
                 <ChevronRightIcon className="w-4 h-4" />
-              </Link>
+              </FooterNavLink>
             )}
             {lastId && (
-              <Link href={`/tests/${lastId}${navCtxSuffix}`} variant="nav" aria-label={t('nav.last')}>
+              <FooterNavLink href={`/tests/${lastId}${navCtxSuffix}`} aria-label={t('nav.last')}>
                 <ChevronsRightIcon className="w-4 h-4" />
-              </Link>
+              </FooterNavLink>
             )}
           </div>
         </FooterPortal>

@@ -134,6 +134,28 @@ test.describe('Public feed (unauthenticated)', () => {
     await expect(page.getByRole('status')).not.toBeVisible({ timeout: 5_000 })
     await expect(page).toHaveURL(/\?page=2/)
   })
+
+  test('feed pagination controls have at least a 44x44 touch target (step 68)', async ({ page }) => {
+    await page.goto('/?page=1')
+
+    const nextPageLink = page.getByRole(ROLE.link, { name: m.feed.nextPage })
+    if ((await nextPageLink.count()) === 0) {
+      // Not enough tests on this environment for a second feed page — same
+      // early-return pattern as the empty-feed case above.
+      return
+    }
+
+    // A real geometric check, not just role/label presence — FooterNavLink
+    // (components/ui/FooterNavLink.tsx) grows the clickable box around each
+    // bare 16px icon to the ~44x44px minimum recommended for a touch target
+    // (iOS HIG / WCAG 2.5.5); nothing else in the suite verifies element
+    // size, so this is the only thing that would catch a regression back to
+    // the old bare-icon-with-no-padding markup.
+    const box = await nextPageLink.boundingBox()
+    expect(box).not.toBeNull()
+    expect(box!.width).toBeGreaterThanOrEqual(44)
+    expect(box!.height).toBeGreaterThanOrEqual(44)
+  })
 })
 
 test.describe('Anonymous clip playback', () => {
