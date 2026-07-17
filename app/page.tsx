@@ -40,7 +40,13 @@ export default async function HomePage({ searchParams }: Props) {
   // simplify this back into a plain top-level async function — that
   // silently regresses the skeleton on slow connections (build-history/66).
   return (
-    <Suspense key={page} fallback={<PageLoading maxWidth="4xl" />}>
+    // hasFooterNav: an approximation, not exact — pagination controls only
+    // render once there's more than one page, which isn't known until
+    // FeedContent's data resolves. The common case (real content, multiple
+    // pages) has it; accepting a mismatch in the rare single-page case is
+    // a better tradeoff than never hiding Privacy/Terms during loading at
+    // all. See components.md §14.
+    <Suspense key={page} fallback={<PageLoading maxWidth="4xl" hasFooterNav />}>
       <FeedContent page={page} />
     </Suspense>
   )

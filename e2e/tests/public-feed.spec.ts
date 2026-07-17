@@ -101,6 +101,7 @@ test.describe('Public feed (unauthenticated)', () => {
   })
 
   test('shows a loading skeleton when navigating between feed pages on a slow connection (step 66)', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/?page=1')
 
     const nextPageLink = page.getByRole(ROLE.link, { name: m.feed.nextPage })
@@ -131,6 +132,13 @@ test.describe('Public feed (unauthenticated)', () => {
 
     await nextPageLink.click()
     await expect(page.getByRole('status')).toBeVisible()
+    // While the skeleton itself is showing (step 74 follow-up) — not just
+    // once real content replaces it — Privacy/Terms must already be
+    // hidden on this narrow viewport. PageLoading's hasFooterNav prop
+    // portals an empty marker into the footer nav slot for exactly this:
+    // without it, Privacy/Terms would flash visible for the whole
+    // skeleton duration, then disappear the instant real content mounts.
+    await expect(page.getByRole(ROLE.link, { name: m.footer.privacyLink })).not.toBeVisible()
     await expect(page.getByRole('status')).not.toBeVisible({ timeout: 5_000 })
     await expect(page).toHaveURL(/\?page=2/)
   })
@@ -155,6 +163,65 @@ test.describe('Public feed (unauthenticated)', () => {
     expect(box).not.toBeNull()
     expect(box!.width).toBeGreaterThanOrEqual(44)
     expect(box!.height).toBeGreaterThanOrEqual(44)
+  })
+
+  test('footer height stays constant across feed pagination on a narrow viewport (SiteFooter fix)', async ({ page }) => {
+    // Regression test: page 1 only shows Next/Last (2 controls); page 2+
+    // also shows First/Previous (4 controls) — at a narrow width the extra
+    // controls used to push the nav row past what fit alongside the
+    // Privacy/Terms links, wrapping the whole footer onto a second line
+    // and visibly changing its height between pages. SiteFooter.tsx now
+    // always stacks Privacy/Terms and the nav slot on their own rows below
+    // the `sm:` breakpoint, so height no longer depends on how many
+    // controls happen to render.
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/?page=1')
+
+    const nextPageLink = page.getByRole(ROLE.link, { name: m.feed.nextPage })
+    if ((await nextPageLink.count()) === 0) {
+      // Same early-return pattern as the other pagination tests above.
+      return
+    }
+
+    const footer = page.locator('footer')
+    const page1Height = (await footer.boundingBox())!.height
+
+    await nextPageLink.click()
+    await expect(page).toHaveURL(/\?page=2/)
+    // FooterPortal mounts its content client-side after hydration — wait
+    // for page 2's own First/Previous controls to actually appear (they
+    // only exist once hasPrev is true) before measuring, otherwise this
+    // can race a brief moment where the nav slot is still empty from the
+    // navigation and reads as shorter, not taller.
+    await expect(page.getByRole(ROLE.link, { name: m.feed.previousPage })).toBeVisible()
+    const page2Height = (await footer.boundingBox())!.height
+
+    expect(page2Height).toBe(page1Height)
+  })
+
+  test('Privacy/Terms links are hidden on mobile only when the footer nav is present', async ({ page }) => {
+    // Mobile footer space is tight — step-through navigation takes
+    // priority over Privacy/Terms there (SiteFooter.tsx's
+    // group-has-[#page-nav-slot:not(:empty)] rule, max-sm: scoped only).
+    // A page with no nav content (e.g. /about) still shows both links on
+    // mobile; a page with nav content hides them there, but both still
+    // show together at sm: and up regardless.
+    await page.setViewportSize({ width: 390, height: 844 })
+
+    await page.goto('/about')
+    await expect(page.getByRole(ROLE.link, { name: m.footer.privacyLink })).toBeVisible()
+
+    await page.goto('/?page=1')
+    const nextPageLink = page.getByRole(ROLE.link, { name: m.feed.nextPage })
+    if ((await nextPageLink.count()) === 0) {
+      // Same early-return pattern as the other pagination tests above.
+      return
+    }
+    await expect(page.getByRole(ROLE.link, { name: m.footer.privacyLink })).not.toBeVisible()
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto('/?page=1')
+    await expect(page.getByRole(ROLE.link, { name: m.footer.privacyLink })).toBeVisible()
   })
 })
 

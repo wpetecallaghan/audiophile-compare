@@ -927,6 +927,64 @@ data has resolved, a route's `loading.tsx` skeleton correctly shows no nav
 placeholder (verified for both `tests/[id]/loading.tsx` and
 `tracks/[id]/loading.tsx`).
 
+**`SiteFooter`'s own layout always stacks Privacy/Terms and the nav slot
+onto separate rows below the `sm:` breakpoint (build step 74)** — not
+`flex-wrap` on a single row. The number of controls in the nav slot varies
+by page and state (feed page 1 shows only Next/Last; page 2+ also shows
+First/Previous; `tests/[id]` can show all five) — with `flex-wrap`, some
+of those combinations fit alongside Privacy/Terms on one line and some
+don't, so the footer's height visibly changed depending on which page or
+pagination state a viewer was on. Unconditionally giving the nav slot its
+own row on narrow viewports (`flex-col sm:flex-row` on the outer
+container) makes the footer's height depend only on "is there nav content
+at all," never on how many controls it happens to contain. The empty case
+(a route with nothing portaled in) still collapses to a single short row,
+since an empty flex child still takes zero height. See
+`e2e/tests/public-feed.spec.ts`'s "footer height stays constant across
+feed pagination" test for the regression coverage.
+
+**On mobile only, Privacy/Terms are hidden entirely whenever the nav slot
+has content** — step-through navigation matters more than those links in
+the very limited mobile footer space; both still show together at `sm:`
+and up regardless, and both still show on mobile when there's no nav to
+prioritize. Implemented with Tailwind's `group`/`group-has-*` variants,
+scoped with `max-sm:` so it never applies at `sm:` and up:
+```tsx
+<div className="... group">
+  <div className="... max-sm:group-has-[#page-nav-slot:not(:empty)]:hidden">
+    {/* Privacy/Terms links */}
+  </div>
+  <div id={FOOTER_NAV_SLOT_ID} className="..." />
+</div>
+```
+The literal `#page-nav-slot` in that arbitrary selector must match
+`FOOTER_NAV_SLOT_ID` (`components/ui/footer-nav-slot.ts`) — it can't
+reference the constant directly, since Tailwind's JIT scans this file's
+raw source text for class-name patterns rather than evaluating JS, so an
+interpolated value wouldn't be picked up. See
+`e2e/tests/public-feed.spec.ts`'s "Privacy/Terms links are hidden on
+mobile only when the footer nav is present" test for the regression
+coverage across all three states (no nav / nav on mobile / nav on
+desktop).
+
+**The `group-has-[...]` check only sees content that's actually in the
+DOM** — during a route's `loading.tsx` skeleton, the real page hasn't
+rendered yet, so nothing has been portaled into the nav slot regardless
+of whether the loaded page will show nav. Without addressing this,
+Privacy/Terms would visibly show for the entire loading/streaming window
+on routes that end up with nav, then disappear the instant real content
+replaces the skeleton — the same flash-then-hide jank the rest of this
+section fixes, just relocated to the loading phase. `PageLoading`
+(`components/ui/PageLoading.tsx`) takes a `hasFooterNav?: boolean` prop —
+when true, it portals an empty `<span>` into the nav slot itself (via the
+same `FooterPortal`), which is enough to satisfy `:not(:empty)` and hide
+Privacy/Terms immediately, before the real nav content ever exists. Only
+set on the three `loading.tsx`/`Suspense` fallbacks whose real page always
+(`tracks/[id]`, exact) or usually (`app/page.tsx`'s pagination, `tests/[id]`'s
+nav — both approximations, since whether nav actually renders depends on
+data not known until it resolves) shows footer nav — not a default, since
+most `loading.tsx` routes never show footer nav at all.
+
 **The five-control shape**, always in this order — First
 (`ChevronsLeftIcon`) / Previous (`ChevronLeftIcon`) / All (`ListIcon`,
 unconditional, links back to the originating list) / Next
