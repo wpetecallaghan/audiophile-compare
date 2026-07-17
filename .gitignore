@@ -48,3 +48,7 @@ test-results/
 
 # forum ingestion pipeline — scraped/candidate working data, not source
 scripts/output/
+
+# local Lighthouse before/after JSON captures — regenerable; findings get
+# written into build-history/*.md in prose instead
+perf-baselines/

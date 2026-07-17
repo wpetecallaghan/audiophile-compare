@@ -1128,3 +1128,47 @@ Reach for this only when a section's data truly doesn't gate anything else
 on the page — if in doubt, check every other consumer of that data (as
 above) before splitting it out, the same audit discipline §13's `RowCard`
 extraction and others already follow.
+
+---
+
+## 17. Reading the authenticated user in a page — `getRequestUser()`, not a second `getUser()` call (build step 71)
+
+`middleware.ts` already calls `supabase.auth.getUser()` once per request —
+a real network round trip to Supabase Auth, needed to refresh the session
+and gate protected routes (`core.md` §4 territory). Every server page that
+also called `supabase.auth.getUser()` itself was paying that same
+Auth-server round trip a **second** time before its own DB query could even
+start (`getUser()`, unlike `getSession()`, always revalidates over the
+network rather than decoding the session cookie locally).
+
+**Use `getRequestUser()` (`lib/auth/get-request-user.ts`) in a page instead:**
+```typescript
+import { getRequestUser } from '@/lib/auth/get-request-user'
+
+const user = await getRequestUser()   // { id: string; email: string | null } | null
+const isCreator = user?.id === test.creator_id
+const isAdmin = isAdminEmail(user?.email)
+```
+This reads `x-user-id`/`x-user-email` request headers via `next/headers` —
+`middleware.ts` sets them from the user it already validated, and
+**unconditionally strips any client-supplied copy of both headers first**,
+on every single request, before conditionally re-setting them from the real
+session. A forged header can never survive through to a page.
+
+**Why this is safe even though it's not re-validated in the page:** this
+value only ever feeds *UI-level* branching (which buttons render, which
+row a viewer is entitled to see). Actual data access still goes through the
+request's real Supabase client, attached to the genuine session cookie —
+RLS (`auth.uid()`-based) remains the actual authorization boundary
+regardless of what this header says. A forged `x-user-id` could make a page
+build a query filtered on the wrong `user_id`, but RLS still only returns
+rows *that id's real session* is entitled to, never leaking another user's
+data. See `e2e/tests/voting.spec.ts`'s "Header spoofing is rejected"
+test for the regression coverage proving the strip actually holds.
+
+**Not unit-tested** — same precedent as `lib/dates/get-request-locale.ts`
+(a thin `next/headers`-reading wrapper with no request context outside
+Next.js itself to construct in isolation); exercised via the E2E suite
+instead, which pervasively depends on `isCreator`/`isAdmin`/user-presence
+branching across `voting.spec.ts`, `public-feed.spec.ts`,
+`admin-clip-override.spec.ts`, and `import-provenance.spec.ts`.

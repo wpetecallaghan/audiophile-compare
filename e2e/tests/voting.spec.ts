@@ -7,7 +7,7 @@
  */
 import { test, expect } from '@playwright/test'
 import { routes } from '../helpers/routes'
-import { seedCompleteTest, type SeedTestFixture } from '../helpers/admin'
+import { seedCompleteTest, getTestUserId, type SeedTestFixture } from '../helpers/admin'
 import { ROLE } from '../helpers/constants'
 import { waitForServerState } from '../helpers/wait-for-server-state'
 import m from '../../messages/en.json'
@@ -292,5 +292,27 @@ test.describe('Footer step-through nav (First/Previous/Next/Last, step 69)', () 
     // "All" always renders regardless of position, and returns to the feed
     await page.getByRole(ROLE.link, { name: m.tests.nav.all }).click()
     await expect(page).toHaveURL(/\/(\?page=1)?$/)
+  })
+})
+
+test.describe('Header spoofing is rejected (step 71 security regression)', () => {
+  test('a forged x-user-id header does not grant creator-only controls to an anonymous viewer', async ({ browser }) => {
+    // step 71: middleware.ts forwards the validated user id via an
+    // x-user-id request header so pages can skip a second
+    // supabase.auth.getUser() call. It must unconditionally strip any
+    // client-supplied copy of that header before setting its own — this
+    // proves that holds: forge the header with the real creator's id, as
+    // an otherwise-anonymous (no session cookie) viewer, and confirm the
+    // creator-only Reveal control still doesn't render.
+    const realCreatorId = await getTestUserId()
+    const context = await browser.newContext({ storageState: undefined })
+    const page = await context.newPage()
+    await page.setExtraHTTPHeaders({ 'x-user-id': realCreatorId })
+
+    await page.goto(routes.test(fixture.test.id))
+
+    await expect(page.getByRole(ROLE.button, { name: m.tests.reveal.button })).not.toBeVisible()
+
+    await context.close()
   })
 })

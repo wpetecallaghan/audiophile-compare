@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { getRequestUser } from '@/lib/auth/get-request-user'
 import { Link } from '@/components/ui/Link'
 import FeedCard from '@/components/feed/FeedCard'
 import type { FeedTest } from '@/components/feed/FeedCard'
@@ -52,29 +53,28 @@ async function FeedContent({ page }: { page: number }) {
   const supabase = await createClient()
   const locale = await getRequestLocale()
 
-  // getUser() and the main paginated query are independent round trips — the
-  // query never references user.id, RLS is enforced via the request's auth
-  // cookie — so running them together removes one round trip off the
-  // critical path versus awaiting them sequentially.
-  const [{ data: { user } }, { data, count, error }] = await Promise.all([
-    supabase.auth.getUser(),
-    supabase
-      .from('tests')
-      .select(
-        `
-          id, title, status, created_at, source_url, source_ref,
-          creator_id,
-          creator:users!creator_id(display_name),
-          track:tracks(artist, title),
-          snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
-          snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name)),
-          clips(url_status, admin_override)
-        `,
-        { count: 'exact' },
-      )
-      .order('created_at', { ascending: false })
-      .range(from, to),
-  ])
+  // middleware.ts already validated the session and forwards the user id
+  // via a request header (step 71) — no need to call supabase.auth.getUser()
+  // again here, which would be a second Auth-server network round trip on
+  // every single page load.
+  const user = await getRequestUser()
+
+  const { data, count, error } = await supabase
+    .from('tests')
+    .select(
+      `
+        id, title, status, created_at, source_url, source_ref,
+        creator_id,
+        creator:users!creator_id(display_name),
+        track:tracks(artist, title),
+        snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
+        snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name)),
+        clips(url_status, admin_override)
+      `,
+      { count: 'exact' },
+    )
+    .order('created_at', { ascending: false })
+    .range(from, to)
 
   const tests = (data ?? []) as unknown as Array<{
     id: string

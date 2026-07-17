@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { getRequestUser } from '@/lib/auth/get-request-user'
 import { notFound } from 'next/navigation'
 import { Link } from '@/components/ui/Link'
 import { Callout } from '@/components/ui/Callout'
@@ -59,26 +60,25 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
   const tForumLink = await getTranslations('tests.forumLink')
   const locale = await getRequestLocale()
 
-  // getUser() and the main test query are independent round trips — RLS is
-  // enforced by the DB via the request's auth cookie, not by anything this
-  // JS passes in — so running them together removes one full round trip
-  // off the critical path versus awaiting them one after the other.
-  const [{ data: { user } }, { data: test, error }] = await Promise.all([
-    supabase.auth.getUser(),
-    supabase
-      .from('tests')
-      .select(`
-        id, title, status, revealed_at, created_at, source_url, source_ref, forum_link,
-        creator_id,
-        creator:users!creator_id(display_name, is_placeholder),
-        track:tracks(artist, title, album, passage_note),
-        clips(id, label, source_url, provider, media_type, url_status, admin_override),
-        snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
-        snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name))
-      `)
-      .eq('id', id)
-      .single(),
-  ])
+  // middleware.ts already validated the session and forwards the user id
+  // via a request header (step 71) — no need to call supabase.auth.getUser()
+  // again here, which would be a second Auth-server network round trip on
+  // every single page load.
+  const user = await getRequestUser()
+
+  const { data: test, error } = await supabase
+    .from('tests')
+    .select(`
+      id, title, status, revealed_at, created_at, source_url, source_ref, forum_link,
+      creator_id,
+      creator:users!creator_id(display_name, is_placeholder),
+      track:tracks(artist, title, album, passage_note),
+      clips(id, label, source_url, provider, media_type, url_status, admin_override),
+      snapshot_a:system_snapshots!snapshot_a_id(label, system:systems(name)),
+      snapshot_b:system_snapshots!snapshot_b_id(label, system:systems(name))
+    `)
+    .eq('id', id)
+    .single()
 
   if (error || !test) notFound()
 

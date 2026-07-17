@@ -85,3 +85,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 68 | Bigger touch targets for footer step-through nav | [68-footer-nav-touch-targets.md](68-footer-nav-touch-targets.md) |
 | 69 | Parallelize sequential Supabase queries + stream independent sections via Suspense (faster page loads) | [69-test-detail-query-parallelization-streaming.md](69-test-detail-query-parallelization-streaming.md) |
 | 70 | Fix track info missing for anonymous visitors (`tracks` RLS gap) | [70-tracks-public-read-rls-fix.md](70-tracks-public-read-rls-fix.md) |
+| 71 | Eliminate the page's redundant `getUser()` call (middleware header forwarding) | [71-getuser-header-dedup.md](71-getuser-header-dedup.md) |
