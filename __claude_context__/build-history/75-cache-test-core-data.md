@@ -121,6 +121,18 @@ dev server (see Verified below).
 - Full local e2e suite (`E2E_BASE_URL=http://localhost:3000`) — see
   command in the Rollout section below.
 
-**Repeat performance analysis:** pending deploy to staging — repeat
-`curl -w "%{time_total}"` timing for the same test id, compared against
-the pre-step-75 baseline.
+**Repeat performance analysis:** measured against deployed staging
+(`https://audiophile-compare-git-staging-pete-callaghan.vercel.app`,
+commit `88c8858`) with `curl -w "%{time_total}"` and the Vercel
+protection-bypass header, for two different revealed test ids:
+
+| Test id | Cold request | Repeat requests |
+|---|---|---|
+| `d5e2189c-...` (recently visited, already had warm traffic) | 348ms | 231ms / 201ms / 231ms / 194ms |
+| `08d0d4a8-...` (oldest revealed test, cleanest cold/warm contrast) | 346ms | 175ms / 203ms / 188ms / 176ms |
+
+A real, repeatable ~40-45% reduction on repeat visits, smaller than the
+local dev-server improvement (~507ms → ~100-130ms) because the deployed
+baseline already includes real client↔Vercel↔Supabase network overhead
+that the cache doesn't touch — it only removes the Postgres query itself,
+not the round trip.
