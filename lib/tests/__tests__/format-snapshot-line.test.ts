@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatSnapshotLine } from '../format-snapshot-line'
+import { formatSnapshotLine, formatOneSnapshot } from '../format-snapshot-line'
 
 describe('formatSnapshotLine', () => {
   it('joins both snapshots with their system name', () => {
@@ -27,5 +27,20 @@ describe('formatSnapshotLine', () => {
 
   it('returns an empty string when both snapshots are null', () => {
     expect(formatSnapshotLine(null, null)).toBe('')
+  })
+})
+
+describe('formatOneSnapshot', () => {
+  it('formats a single snapshot as "SystemName · label"', () => {
+    expect(formatOneSnapshot({ label: 'v2 new DAC', system: { name: 'Living room rig' } }))
+      .toBe('Living room rig · v2 new DAC')
+  })
+
+  it('falls back to "?" when the snapshot has no joined system', () => {
+    expect(formatOneSnapshot({ label: 'v2 new DAC', system: null })).toBe('? · v2 new DAC')
+  })
+
+  it('returns null when the snapshot itself is null', () => {
+    expect(formatOneSnapshot(null)).toBeNull()
   })
 })

@@ -134,6 +134,14 @@ test.describe('Voting flow', () => {
     // Runs after the previous test has revealed fixture.test — canSeeSystemInfo
     // = isRevealed || isCreator is now true for anyone, not just the creator.
     //
+    // Once revealed, the header's own generic snapshotLine is hidden (step
+    // 65 — app/tests/[id]/page.tsx gates it on !isRevealed) since
+    // MappingBadge becomes the single place this info renders, now correctly
+    // tied to each clip's Before/After label rather than an unordered "A vs
+    // B" pairing. So these assertions now find the text inside MappingBadge,
+    // not the header — same literal strings either way (both use
+    // formatOneSnapshot's "SystemName · label" format), just relocated.
+    //
     // waitForServerState, not a single goto + toBeVisible: the previous
     // test's write (via the creator's own session) is reliably NOT yet
     // visible to this brand-new, independent session for roughly a couple

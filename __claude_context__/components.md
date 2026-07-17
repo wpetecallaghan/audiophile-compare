@@ -393,6 +393,21 @@ Ingested test titles also used to bake the system name in (step 40 Part
 B); reverted by step 43 for the same reason — see
 `lib/ingestion/ingest-test-payload.ts`'s `resolveTestTitle`.
 
+**`MappingBadge.tsx` shows each clip's own snapshot next to its Before/After
+label (step 65).** Clip A always corresponds to `snapshot_a_id`, clip B to
+`snapshot_b_id` — a documented invariant across every test-creation path
+(the web wizard, cross-check, and ingestion) — so `MappingBadge` takes
+`snapshotA`/`snapshotB` props and renders `formatOneSnapshot(...)`
+(now exported from `format-snapshot-line.ts`) under each side. No new
+gating check needed: `MappingBadge` only renders once `isRevealed` is true,
+at which point `canSeeSystemInfo` is already true for every viewer.
+Because this duplicates what the page header's own `snapshotLine` used to
+show unconditionally, `app/tests/[id]/page.tsx` now gates that header line
+on `!isRevealed` — it remains the only source of this info for a creator
+viewing their own still-blind test (the one case `MappingBadge` doesn't
+render for), and disappears once revealed since `MappingBadge` takes over,
+now correctly tied to before/after rather than an unordered "A vs B" pairing.
+
 ---
 
 ## 9. Error boundaries

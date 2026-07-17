@@ -284,7 +284,12 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
         {track?.passage_note && (
           <Text className="italic">{track.passage_note}</Text>
         )}
-        {snapshotLine && (
+        {/* Hidden once revealed (step 65) — MappingBadge below then shows
+            the same "SystemName · label" info per clip, correctly tied to
+            Before/After, so this generic unordered line would just be a
+            duplicate. Stays visible for the creator's own still-blind test,
+            the one case where MappingBadge isn't rendered yet. */}
+        {snapshotLine && !isRevealed && (
           <Text size="xs">{snapshotLine}</Text>
         )}
         <Text size="xs">
@@ -349,6 +354,8 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
           afterClipId={mapping.after_clip_id}
           clipAUnsupportedUrl={hideClipA ? rawA.source_url : null}
           clipBUnsupportedUrl={hideClipB ? rawB.source_url : null}
+          snapshotA={snapshotA}
+          snapshotB={snapshotB}
         />
       )}
 
