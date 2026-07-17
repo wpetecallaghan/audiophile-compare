@@ -43,9 +43,27 @@ claim of optimality for both.
 repeat performance analysis below is the verification.
 
 **Verified / Repeat performance analysis:** deployed to staging
-(`Staging` branch), confirmed via a fresh `x-vercel-id` header that the
-function now executes in `lhr1`, then re-measured with the same Lighthouse
-command (mobile, simulated throttling) used for step 71, comparing against
-step 71's "after" numbers:
+(`Staging` branch). Confirmed via a fresh `x-vercel-id` response header
+that the function now executes in `lhr1` (was `lhr1::iad1::...`, now
+`lhr1::lhr1::...`). Re-measured with the same Lighthouse command (mobile,
+simulated throttling) used for step 71, comparing against step 71's
+"after" numbers:
 
-<!-- numbers filled in once measured against the deployed change -->
+| Metric | Feed step 71 → step 72 | Test detail step 71 → step 72 |
+|---|---|---|
+| Performance score | 0.88 → 0.89 | 0.85 → 0.78-0.83 (3 runs, noisy) |
+| LCP | 3.4s → 3.3s | 4.1s → 3.9-4.3s (noisy) |
+| LCP breakdown TTFB phase | 807ms → **687ms** (~120ms faster) | 666ms → 678ms (flat) |
+| Render Delay | 2634ms → 2584ms (flat) | 3409ms → 3188-3409ms (flat) |
+| Speed Index | 4.2s → 4.2s (flat) | 3.9s → 4.2-5.0s (noisy, 3 runs averaged) |
+
+The feed page shows a clean, consistent ~120ms TTFB improvement — matches
+removing the transatlantic hop for that page's single (post-step-71)
+database round trip. The test-detail page shows no clear signal either
+way; three repeated runs land in a similar spread to step 71's single
+measurement, consistent with its LCP being dominated by the *external*
+Dropbox-hosted video load (see step 69's finding — its LCP element is the
+`<video>` itself), not server round-trip time, so a region fix wasn't
+expected to move it much. Net: real, modest win on the feed; the
+test-detail page's remaining latency is elsewhere (its own media loading,
+not something either step 71 or 72 touches).
