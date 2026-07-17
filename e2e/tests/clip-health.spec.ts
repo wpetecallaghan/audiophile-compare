@@ -92,7 +92,7 @@ test.describe('Unsupported-playback clip handling', () => {
     await expect(page.getByRole(ROLE.heading, { name: 'Clip B' })).toBeVisible()
   })
 
-  test('revealed view: the mapping badge\'s Before/After label links directly to the clip, with no separate link below', async ({ page }) => {
+  test('revealed view: the mapping badge\'s clip slot links directly to an unsupported clip, with no separate link below', async ({ page }) => {
     const fixture = await seedCompleteTest(`unsupported-mapping-${Date.now()}`, {
       clipAProvider: 'unknown',
     })
@@ -103,15 +103,18 @@ test.describe('Unsupported-playback clip handling', () => {
     // exact: true — TallyDisplay's ownVoteOnlyNote copy contains the
     // lowercase substring "revealed" too ("...until this test is
     // revealed."); a non-exact match can hit that instead of the actual
-    // status eyebrow / MappingBadge label.
-    await expect(page.getByText(m.tests.revealedStatus, { exact: true }).first()).toBeVisible({ timeout: 5_000 })
+    // status eyebrow. MappingBadge no longer renders its own "Revealed"
+    // text (step 67), so this is the page's only exact match.
+    await expect(page.getByText(m.tests.revealedStatus, { exact: true })).toBeVisible({ timeout: 5_000 })
 
     // Clip A's slot in the player is gone — no heading, no player, no link
     await expect(page.getByRole(ROLE.heading, { name: 'Clip A' })).not.toBeVisible()
 
-    // Exactly one link to the clip's URL exists, and it's the Before/After label
+    // Exactly one link to the clip's URL exists, and it's MappingBadge's
+    // own clip-slot link (step 67 — reuses the same "Open link directly"
+    // copy MediaPlayer's own unsupported-clip fallback uses elsewhere)
     const links = page.locator(`a[href="${fixture.clipA.source_url}"]`)
     await expect(links).toHaveCount(1)
-    await expect(links.first()).toHaveText(/before|after/i)
+    await expect(links.first()).toHaveText(m.tests.openClipLink)
   })
 })

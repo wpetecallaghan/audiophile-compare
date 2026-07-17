@@ -158,9 +158,9 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
   const hasDeadClip = effA === STATUS_DEAD || effB === STATUS_DEAD
 
   // Once revealed, a clip that can't be embedded gets its link folded into
-  // MappingBadge's Before/After label instead of a separate box below —
-  // gated on `mapping` too (matching MappingBadge's own render condition
-  // below), so a hidden slot is never left with nothing to show
+  // MappingBadge's own clip slot instead of a separate box below — gated
+  // on `mapping` too (matching MappingBadge's own render condition below),
+  // so a hidden slot is never left with nothing to show
   const canShowMappingLinks = isRevealed && !!mapping
   const hideClipA = canShowMappingLinks && isUnsupportedClip(rawA)
   const hideClipB = canShowMappingLinks && isUnsupportedClip(rawB)
@@ -285,10 +285,10 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
           <Text className="italic">{track.passage_note}</Text>
         )}
         {/* Hidden once revealed (step 65) — MappingBadge below then shows
-            the same "SystemName · label" info per clip, correctly tied to
-            Before/After, so this generic unordered line would just be a
-            duplicate. Stays visible for the creator's own still-blind test,
-            the one case where MappingBadge isn't rendered yet. */}
+            the same "SystemName · label" info per clip, so this generic
+            unordered line would just be a duplicate. Stays visible for the
+            creator's own still-blind test, the one case where MappingBadge
+            isn't rendered yet. */}
         {snapshotLine && !isRevealed && (
           <Text size="xs">{snapshotLine}</Text>
         )}
@@ -349,9 +349,6 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
       {/* Reveal badge */}
       {isRevealed && mapping && (
         <MappingBadge
-          clipAId={clipA.id}
-          beforeClipId={mapping.before_clip_id}
-          afterClipId={mapping.after_clip_id}
           clipAUnsupportedUrl={hideClipA ? rawA.source_url : null}
           clipBUnsupportedUrl={hideClipB ? rawB.source_url : null}
           snapshotA={snapshotA}

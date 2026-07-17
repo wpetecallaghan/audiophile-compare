@@ -81,3 +81,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 64 | 🚧 Admin override for clip-health false positives/negatives (code-complete, pending staging verification) | [64-admin-clip-override.md](64-admin-clip-override.md) |
 | 65 | Show snapshot info next to Before/After clip labels in MappingBadge | [65-mapping-badge-snapshot-info.md](65-mapping-badge-snapshot-info.md) |
 | 66 | Loading skeleton for feed pagination | [66-feed-pagination-loading-skeleton.md](66-feed-pagination-loading-skeleton.md) |
+| 67 | Tidy revealed-test information architecture in MappingBadge | [67-mapping-badge-ia-tidy.md](67-mapping-badge-ia-tidy.md) |

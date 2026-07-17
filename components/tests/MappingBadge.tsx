@@ -3,12 +3,9 @@ import { Callout } from '@/components/ui/Callout'
 import { formatOneSnapshot, type SnapshotSummary } from '@/lib/tests/format-snapshot-line'
 
 type Props = {
-  clipAId: string
-  beforeClipId: string
-  afterClipId: string
   // Set to the clip's source_url when that clip can't be embedded
-  // (see lib/clips/is-unsupported.ts) — turns its Before/After label into
-  // a direct link instead of plain text. null for a clip with a working
+  // (see lib/clips/is-unsupported.ts) — turns this clip's slot into a
+  // direct link instead of plain text. null for a clip with a working
   // embedded player, which doesn't need a redundant link.
   clipAUnsupportedUrl?: string | null
   clipBUnsupportedUrl?: string | null
@@ -22,56 +19,56 @@ type Props = {
   snapshotB?: SnapshotSummary
 }
 
-// Shows which clip was before and which was after, once revealed.
-// This is a server component — no interactivity needed.
+// Shows which system/snapshot each blind clip label (A/B) really was, once
+// revealed. This is a server component — no interactivity needed.
+//
+// No "Revealed" heading and no explicit Before/After wording (step 67) —
+// the page's own status eyebrow already says "Revealed" once, and each
+// clip's own snapshot text (below) already identifies it, so both were
+// redundant. See build-history/67-mapping-badge-ia-tidy.md.
 export default function MappingBadge({
-  clipAId,
-  beforeClipId,
-  afterClipId,
   clipAUnsupportedUrl = null,
   clipBUnsupportedUrl = null,
   snapshotA = null,
   snapshotB = null,
 }: Props) {
   const t = useTranslations('tests.mapping')
-  const aIsBefore = clipAId === beforeClipId
-
-  const clipALabelText = aIsBefore ? t('before') : t('after')
-  const clipBLabelText = aIsBefore ? t('after') : t('before')
+  const tTests = useTranslations('tests')
 
   const snapshotAText = formatOneSnapshot(snapshotA)
   const snapshotBText = formatOneSnapshot(snapshotB)
 
   return (
     <Callout tone="info">
-      <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">{t('revealedBadge')}</p>
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
           <span className="font-medium">{t('clipALabel')}</span>
-          <span className="ml-2 text-blue-700 dark:text-blue-300">
-            {clipAUnsupportedUrl ? (
-              <a href={clipAUnsupportedUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                {clipALabelText}
-              </a>
-            ) : (
-              clipALabelText
-            )}
-          </span>
+          {clipAUnsupportedUrl && (
+            <a
+              href={clipAUnsupportedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 text-blue-700 dark:text-blue-300 underline"
+            >
+              {tTests('openClipLink')}
+            </a>
+          )}
           {snapshotAText && (
             <p className="text-xs text-blue-700/80 dark:text-blue-300/80 mt-0.5">{snapshotAText}</p>
           )}
         </div>
         <div>
           <span className="font-medium">{t('clipBLabel')}</span>
-          <span className="ml-2 text-blue-700 dark:text-blue-300">
-            {clipBUnsupportedUrl ? (
-              <a href={clipBUnsupportedUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                {clipBLabelText}
-              </a>
-            ) : (
-              clipBLabelText
-            )}
-          </span>
+          {clipBUnsupportedUrl && (
+            <a
+              href={clipBUnsupportedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 text-blue-700 dark:text-blue-300 underline"
+            >
+              {tTests('openClipLink')}
+            </a>
+          )}
           {snapshotBText && (
             <p className="text-xs text-blue-700/80 dark:text-blue-300/80 mt-0.5">{snapshotBText}</p>
           )}

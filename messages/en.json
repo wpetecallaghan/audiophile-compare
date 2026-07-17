@@ -232,11 +232,8 @@
       "ownVoteOnlyNote": "Showing only your own vote. Full results from every listener appear once this test is revealed."
     },
     "mapping": {
-      "revealedBadge": "Revealed",
       "clipALabel": "Clip A",
-      "clipBLabel": "Clip B",
-      "before": "Before",
-      "after": "After"
+      "clipBLabel": "Clip B"
     },
     "nav": {
       "first": "First test",

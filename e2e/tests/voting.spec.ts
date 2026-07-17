@@ -123,11 +123,11 @@ test.describe('Voting flow', () => {
     // ownVoteOnlyNote copy ("...until this test is revealed.") contains the
     // same word lowercase, which a non-exact getByText match can hit
     // instead of the real status eyebrow, silently defeating the hardening
-    // above. .first() still matters even with exact: true — once genuinely
-    // revealed, MappingBadge's own "Revealed" label is a second legitimate
-    // exact match alongside the status eyebrow.
+    // above. MappingBadge no longer renders its own "Revealed" text (step
+    // 67 — it was a redundant duplicate of this same eyebrow), so this is
+    // the page's only exact match; no `.first()` needed.
     await expect(revealButton).not.toBeVisible({ timeout: 5_000 })
-    await expect(page.getByText(m.tests.revealedStatus, { exact: true }).first()).toBeVisible()
+    await expect(page.getByText(m.tests.revealedStatus, { exact: true })).toBeVisible()
   })
 
   test('after reveal: system/snapshot info is visible to a non-creator too', async ({ browser }) => {
@@ -137,8 +137,8 @@ test.describe('Voting flow', () => {
     // Once revealed, the header's own generic snapshotLine is hidden (step
     // 65 — app/tests/[id]/page.tsx gates it on !isRevealed) since
     // MappingBadge becomes the single place this info renders, now correctly
-    // tied to each clip's Before/After label rather than an unordered "A vs
-    // B" pairing. So these assertions now find the text inside MappingBadge,
+    // tied to each clip's own label (A/B) rather than an unordered "A vs B"
+    // pairing. So these assertions now find the text inside MappingBadge,
     // not the header — same literal strings either way (both use
     // formatOneSnapshot's "SystemName · label" format), just relocated.
     //
@@ -210,7 +210,7 @@ test.describe('Forum discussion link (build step 46)', () => {
     await page.getByRole(ROLE.button, { name: m.tests.reveal.confirmButton }).click()
     await expect(revealButton).not.toBeVisible({ timeout: 5_000 })
     // exact: true — see 'creator can reveal the test' above.
-    await expect(page.getByText(m.tests.revealedStatus, { exact: true }).first()).toBeVisible()
+    await expect(page.getByText(m.tests.revealedStatus, { exact: true })).toBeVisible()
   })
 
   test('non-creator can see the forum link once revealed', async ({ browser }) => {

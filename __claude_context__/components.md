@@ -136,9 +136,10 @@ export type PlayerHandle = {
 - `ABPlayer` also takes optional `hideClipA`/`hideClipB` (step 28) — skips
   that slot (heading + player) entirely. Used by `app/tests/[id]/page.tsx`
   once revealed, for a clip whose player would be `UnknownPlayer` (see
-  `lib/clips/is-unsupported.ts`) — its link moves into `MappingBadge`'s
-  Before/After label instead, so the slot below would otherwise duplicate
-  it. `ABPlayer` itself stays unaware of *why* — it only receives a
+  `lib/clips/is-unsupported.ts`) — its link moves into `MappingBadge`'s own
+  clip slot instead (an "Open link directly" link, step 67), so the slot
+  below would otherwise duplicate it. `ABPlayer` itself stays unaware of
+  *why* — it only receives a
   boolean, the same "page.tsx decides, player components don't" boundary
   `isCreator`/`isRevealed` already follow everywhere else. As of step 54,
   `isUnsupportedClip` only returns true for `provider === 'unknown'` (a
@@ -393,20 +394,36 @@ Ingested test titles also used to bake the system name in (step 40 Part
 B); reverted by step 43 for the same reason — see
 `lib/ingestion/ingest-test-payload.ts`'s `resolveTestTitle`.
 
-**`MappingBadge.tsx` shows each clip's own snapshot next to its Before/After
-label (step 65).** Clip A always corresponds to `snapshot_a_id`, clip B to
-`snapshot_b_id` — a documented invariant across every test-creation path
-(the web wizard, cross-check, and ingestion) — so `MappingBadge` takes
-`snapshotA`/`snapshotB` props and renders `formatOneSnapshot(...)`
-(now exported from `format-snapshot-line.ts`) under each side. No new
-gating check needed: `MappingBadge` only renders once `isRevealed` is true,
-at which point `canSeeSystemInfo` is already true for every viewer.
-Because this duplicates what the page header's own `snapshotLine` used to
-show unconditionally, `app/tests/[id]/page.tsx` now gates that header line
-on `!isRevealed` — it remains the only source of this info for a creator
-viewing their own still-blind test (the one case `MappingBadge` doesn't
-render for), and disappears once revealed since `MappingBadge` takes over,
-now correctly tied to before/after rather than an unordered "A vs B" pairing.
+**`MappingBadge.tsx` shows each clip's own snapshot under its clip label
+(step 65, refined step 67).** Clip A always corresponds to `snapshot_a_id`,
+clip B to `snapshot_b_id` — a documented invariant across every
+test-creation path (the web wizard, cross-check, and ingestion) — so
+`MappingBadge` takes `snapshotA`/`snapshotB` props and renders
+`formatOneSnapshot(...)` (exported from `format-snapshot-line.ts`) under
+each side. No new gating check needed: `MappingBadge` only renders once
+`isRevealed` is true, at which point `canSeeSystemInfo` is already true for
+every viewer. Because this duplicates what the page header's own
+`snapshotLine` used to show unconditionally, `app/tests/[id]/page.tsx`
+gates that header line on `!isRevealed` — it remains the only source of
+this info for a creator viewing their own still-blind test (the one case
+`MappingBadge` doesn't render for), and disappears once revealed since
+`MappingBadge` takes over.
+
+**Step 67 removed two redundancies from `MappingBadge`**, once the snapshot
+text above made them extra ceremony rather than the only source of that
+information: the Callout's own "Revealed" heading (the page's status
+eyebrow, `t('revealedStatus')`, already says this once, directly above),
+and the explicit "Before"/"After" wording per clip (the clip's own snapshot
+text — e.g. "Living room rig · v2 new DAC" — already identifies it).
+`MappingBadge` now renders just `Clip A`/`Clip B` plus each side's snapshot
+text. Because the Before/After words are gone, the component no longer
+needs `clip_mapping`'s `before_clip_id`/`after_clip_id` values at all — its
+`clipAId`/`beforeClipId`/`afterClipId` props were deleted along with the
+`aIsBefore` logic that was their only reader. An unsupported clip's link
+(§5 above) now renders the same `tests.openClipLink` ("Open link directly")
+copy `MediaPlayer`'s own unsupported-clip fallback uses elsewhere, reused
+rather than duplicated — see
+`build-history/67-mapping-badge-ia-tidy.md`.
 
 ---
 
