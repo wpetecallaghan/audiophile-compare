@@ -177,4 +177,31 @@ test.describe('Anonymous clip playback', () => {
     await expect(main.getByText(m.tests.signInToVote)).toBeVisible()
     await expect(main.getByRole(ROLE.link, { name: m.tests.signIn })).toBeVisible()
   })
+
+  test('test detail page streams in the footer nav and player under a slow connection (step 69)', async ({ page }) => {
+    // Throttle every non-asset request — same pattern as the feed's step-66
+    // test. app/tests/[id]/page.tsx splits the footer nav (TestNavFooter)
+    // and the clip player (ClipPlayerSection) into their own Suspense
+    // boundaries so neither blocks the rest of the page; on a fast
+    // connection both resolve too quickly for this assertion to ever
+    // observe them settling independently.
+    await page.route('**/*', async route => {
+      const url = route.request().url()
+      if (!url.match(/\.(js|css|png|jpg|svg|ico|woff2?)(\?|$)/)) {
+        await new Promise(r => setTimeout(r, 1500))
+      }
+      await route.continue()
+    })
+
+    await page.goto(`${routes.test(fixture.test.id)}?from=feed&page=1`)
+
+    // The player (ClipPlayerSection) still resolves and renders...
+    await expect(page.getByRole(ROLE.heading, { name: 'Clip A' })).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByRole(ROLE.heading, { name: 'Clip B' })).toBeVisible({ timeout: 10_000 })
+
+    // ...and the footer nav (TestNavFooter, a separate Suspense boundary)
+    // streams in too — neither boundary hangs or errors under a slow
+    // connection.
+    await expect(page.getByRole(ROLE.link, { name: m.tests.nav.all })).toBeVisible({ timeout: 10_000 })
+  })
 })

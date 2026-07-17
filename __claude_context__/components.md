@@ -1056,3 +1056,75 @@ outside the root layout (unit tests, in particular).
 override live in `app/globals.css` as plain `::view-transition-*`
 selectors — global, not per-component, since the transition is between two
 whole pages, not a scoped element.
+
+---
+
+## 16. Faster server-rendered pages — parallel query batches + Suspense-split sections (build step 69)
+
+Two reusable patterns for a data-heavy server page, established when
+`app/tests/[id]/page.tsx` and `app/page.tsx` (the feed) were found awaiting
+several Supabase round trips sequentially before rendering anything. See
+`build-history/69-test-detail-query-parallelization-streaming.md` for the
+full investigation and measured before/after numbers.
+
+**1. Parallelize independent awaits with `Promise.all`.** If two Supabase
+calls don't read each other's result, awaiting them one after another pays
+a full round trip for each when they could run concurrently:
+
+```typescript
+// ✅ getUser() doesn't depend on the row query, and vice versa — RLS is
+// enforced via the request's auth cookie, not anything passed in JS
+const [{ data: { user } }, { data: test, error }] = await Promise.all([
+  supabase.auth.getUser(),
+  supabase.from('tests').select('...').eq('id', id).single(),
+])
+```
+
+Both `app/tests/[id]/page.tsx` and `app/page.tsx` (`FeedContent`) do this
+for `getUser()` + their main row query. `app/tests/[id]/page.tsx` goes
+further: `clip_mapping`, existing-votes, the vote-count RPC,
+`listening_techniques`, and the tally query (only when the test is already
+revealed) all batch into one `Promise.all` together, since none of them
+reads another's result. **A query that genuinely depends on another
+query's result cannot join the batch** — e.g. the feed's vote-count RPC
+needs the `testIds` from the main query's result first, and an
+open-test's tally query needs `hasVoted` computed from the existing-votes
+query first; both stay sequential, awaited after the batch resolves.
+
+**2. Split an independent, slower section into its own async component
+under its own `<Suspense>`**, rather than awaiting it inline and blocking
+the rest of the page on it. Two examples, both in
+`app/tests/[id]/page.tsx`:
+- `TestNavFooter` — the footer prev/next/first/last nav's id-list query
+  (§14's `FooterPortal` pattern) is independent of everything else on the
+  page, so it's a standalone async component rendered under
+  `<Suspense fallback={null}>` instead of computed inline before the
+  page's `return`.
+- `ClipPlayerSection` — resolves both clips (`toClipData`) and renders
+  `<ABPlayer>`. `toClipData` can make a real blocking external HTTP fetch
+  for a Google Photos clip (`lib/clips/resolve-google-photos.ts`), but
+  nothing else on the page needs the *resolved* clip data, only the raw
+  clip row (`effA`/`effB`, `hideClipA`/`hideClipB`, `VoteForm`,
+  `MappingBadge` all read off `rawA`/`rawB` directly) — so only the player
+  needs to wait. Rendered under `<Suspense fallback={<ClipPlayerFallback ... />}>`,
+  a same-shape fallback (matching heading + `aspect-video` box per slot)
+  using `PageLoading`'s established spinner/`role="status"` convention, so
+  nothing shifts once the real player mounts.
+
+```tsx
+// Page: don't await the slow, independent part inline
+<Suspense fallback={<ClipPlayerFallback hideClipA={hideClipA} hideClipB={hideClipB} loadingLabel={tCommon('loading')} />}>
+  <ClipPlayerSection rawA={rawA} rawB={rawB} hideClipA={hideClipA} hideClipB={hideClipB} />
+</Suspense>
+
+// Separate async component — same file, awaits its own data independently
+async function ClipPlayerSection({ rawA, rawB, hideClipA, hideClipB }: Props) {
+  const [clipA, clipB] = await Promise.all([toClipData(rawA), toClipData(rawB)])
+  return <ABPlayer clipA={clipA} clipB={clipB} hideClipA={hideClipA} hideClipB={hideClipB} />
+}
+```
+
+Reach for this only when a section's data truly doesn't gate anything else
+on the page — if in doubt, check every other consumer of that data (as
+above) before splitting it out, the same audit discipline §13's `RowCard`
+extraction and others already follow.

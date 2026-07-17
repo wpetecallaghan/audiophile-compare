@@ -83,3 +83,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 66 | Loading skeleton for feed pagination | [66-feed-pagination-loading-skeleton.md](66-feed-pagination-loading-skeleton.md) |
 | 67 | Tidy revealed-test information architecture in MappingBadge | [67-mapping-badge-ia-tidy.md](67-mapping-badge-ia-tidy.md) |
 | 68 | Bigger touch targets for footer step-through nav | [68-footer-nav-touch-targets.md](68-footer-nav-touch-targets.md) |
+| 69 | Parallelize sequential Supabase queries + stream independent sections via Suspense (faster page loads) | [69-test-detail-query-parallelization-streaming.md](69-test-detail-query-parallelization-streaming.md) |

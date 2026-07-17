@@ -248,3 +248,49 @@ test.describe('Forum discussion link (build step 46)', () => {
     await expect(link).toHaveAttribute('href', updatedUrl)
   })
 })
+
+test.describe('Footer step-through nav (First/Previous/Next/Last, step 69)', () => {
+  test('Next/Previous are exact inverses, and First/Last land at the true ends of the feed', async ({ page }) => {
+    const fixtureUrl = `${routes.test(fixture.test.id)}?from=feed&page=1`
+    await page.goto(fixtureUrl)
+
+    const nextLink = page.getByRole(ROLE.link, { name: m.tests.nav.next })
+    if ((await nextLink.count()) === 0) {
+      // Only one test on this feed page in this environment — nothing to
+      // step through, same early-return convention as public-feed.spec.ts.
+      return
+    }
+
+    // Next then Previous should be exact inverses regardless of where the
+    // fixture test happens to sit in the feed's ordering — this doesn't
+    // assert on absolute position (testing.md: don't assert exact record
+    // counts/positions against real staging data), just that TestNavFooter's
+    // extraction didn't change the position math (lib/nav/get-adjacent-ids.ts).
+    await nextLink.click()
+    await expect(page).not.toHaveURL(new RegExp(`/tests/${fixture.test.id}(\\?|$)`))
+    await page.getByRole(ROLE.link, { name: m.tests.nav.previous }).click()
+    await expect(page).toHaveURL(new RegExp(`/tests/${fixture.test.id}(\\?|$)`))
+
+    // First always lands at the true first position — First/Previous both
+    // disappear there (getAdjacentIds: idx === 0 -> firstId/prevId null).
+    const firstLink = page.getByRole(ROLE.link, { name: m.tests.nav.first })
+    if ((await firstLink.count()) > 0) {
+      await firstLink.click()
+      await expect(page.getByRole(ROLE.link, { name: m.tests.nav.first })).not.toBeVisible()
+      await expect(page.getByRole(ROLE.link, { name: m.tests.nav.previous })).not.toBeVisible()
+    }
+
+    // Last always lands at the true last position — Next/Last both
+    // disappear there (idx === length - 1 -> nextId/lastId null).
+    const lastLink = page.getByRole(ROLE.link, { name: m.tests.nav.last })
+    if ((await lastLink.count()) > 0) {
+      await lastLink.click()
+      await expect(page.getByRole(ROLE.link, { name: m.tests.nav.next })).not.toBeVisible()
+      await expect(page.getByRole(ROLE.link, { name: m.tests.nav.last })).not.toBeVisible()
+    }
+
+    // "All" always renders regardless of position, and returns to the feed
+    await page.getByRole(ROLE.link, { name: m.tests.nav.all }).click()
+    await expect(page).toHaveURL(/\/(\?page=1)?$/)
+  })
+})
