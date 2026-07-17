@@ -939,6 +939,25 @@ taking a same-order id list and the current id and returning
 the identical formula, same "found duplicated, so componentize/extract"
 precedent as §13's `RowCard`.
 
+**A same-route searchParam-only pagination needs its own `<Suspense key>` —
+`app/loading.tsx` alone doesn't cover it (build step 66).** `tests/[id]` and
+`tracks/[id]`'s First/Previous/Next/Last change the dynamic route segment
+(`/tests/[id1]` → `/tests/[id2]`), which Next.js suspends behind that
+route's `loading.tsx` automatically. The feed's own pagination
+(`app/page.tsx`, `/?page=1` → `/?page=2`) only changes a searchParam on the
+*same* route — Next.js treats that as a lighter-weight update and never
+reaches `app/loading.tsx`'s Suspense boundary, confirmed directly (an
+artificial network delay showed the `[id]` case's skeleton reliably and the
+feed's not at all, however long the delay). Fix: `app/page.tsx` wraps its
+data-dependent content in an explicit `<Suspense key={page} fallback={
+<PageLoading maxWidth="4xl" />}>`, keyed on the page number, inside the page
+component itself — the changing `key` forces React to treat every page
+navigation as a fresh subtree regardless of how Next.js classifies it. Don't
+flatten `app/page.tsx` back into one plain async function — that silently
+regresses this skeleton on a slow connection without failing anything on a
+fast one. See `build-history/66-feed-pagination-loading-skeleton.md` for the
+full investigation.
+
 **Where the two call sites differ** — only in how `ids` is built, never in
 the position math or the JSX above:
 - `tests/[id]/page.tsx`: a test can be reached from three different origin

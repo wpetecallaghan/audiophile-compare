@@ -193,7 +193,7 @@ test'` test for the canonical two-line pattern.
 
 | Spec | Scenarios |
 |---|---|
-| `public-feed.spec.ts` | Feed loads; unauthenticated header; test card structure; `/systems` → login redirect with redirectTo; `/about` loads without a redirect; `/profile` → login redirect; `/tracks` → login redirect; anonymous visitor can play clips on a test detail page and sees a "Sign in to vote" prompt instead of the vote form; `/register` shows the Google sign-up option alongside the email form |
+| `public-feed.spec.ts` | Feed loads; unauthenticated header; test card structure; `/systems` → login redirect with redirectTo; `/about` loads without a redirect; `/profile` → login redirect; `/tracks` → login redirect; anonymous visitor can play clips on a test detail page and sees a "Sign in to vote" prompt instead of the vote form; `/register` shows the Google sign-up option alongside the email form; on a throttled connection, navigating between feed pages shows the `<PageLoading>` skeleton and lands on the right page (step 66) |
 | `auth.spec.ts` | Authenticated nav links (Tests / Systems / Tracks / Profile); redirectTo preserved through login flow |
 | `systems.spec.ts` | Create system; edit name and description; add snapshot; edit snapshot label; systems list shows test user's systems |
 | `test-creation.spec.ts` | Track search; full wizard (select track → snapshots → verify clips → publish), including an optional forum discussion link visible to the creator immediately on the fresh, unrevealed, un-voted test (step 46) |

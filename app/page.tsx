@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { Link } from '@/components/ui/Link'
 import FeedCard from '@/components/feed/FeedCard'
@@ -13,6 +14,7 @@ import { effectiveUrlStatus } from '@/lib/clips/effective-url-status'
 import { FEED_PAGE_SIZE } from '@/lib/tests/feed-page-size'
 import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon } from '@/components/ui/icons'
 import { FooterPortal } from '@/components/ui/FooterPortal'
+import { PageLoading } from '@/components/ui/PageLoading'
 
 const PAGE_SIZE = FEED_PAGE_SIZE
 
@@ -23,6 +25,26 @@ type Props = {
 export default async function HomePage({ searchParams }: Props) {
   const { page: pageParam } = await searchParams
   const page = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
+
+  // Page-to-page pagination only changes a searchParam on this same route
+  // (/?page=1 -> /?page=2), which Next.js treats as a lighter-weight update
+  // than a dynamic-segment change — it never suspends behind app/loading.tsx
+  // the way /tests/[id]'s First/Previous/Next/Last does (confirmed directly:
+  // throttling the network shows no skeleton at all on feed pagination
+  // without this). Keying this Suspense boundary on `page` forces React to
+  // treat every page change as a fresh subtree regardless of how Next.js
+  // classifies the navigation, so the same PageLoading fallback
+  // app/loading.tsx uses now also covers page-to-page pagination. Don't
+  // simplify this back into a plain top-level async function — that
+  // silently regresses the skeleton on slow connections (build-history/66).
+  return (
+    <Suspense key={page} fallback={<PageLoading maxWidth="4xl" />}>
+      <FeedContent page={page} />
+    </Suspense>
+  )
+}
+
+async function FeedContent({ page }: { page: number }) {
   const from = (page - 1) * PAGE_SIZE
   const to   = from + PAGE_SIZE - 1
 

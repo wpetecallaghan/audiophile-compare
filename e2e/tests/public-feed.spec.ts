@@ -99,6 +99,41 @@ test.describe('Public feed (unauthenticated)', () => {
     await page.goto('/tracks')
     await expect(page).toHaveURL(/\/login/)
   })
+
+  test('shows a loading skeleton when navigating between feed pages on a slow connection (step 66)', async ({ page }) => {
+    await page.goto('/?page=1')
+
+    const nextPageLink = page.getByRole(ROLE.link, { name: m.feed.nextPage })
+    if ((await nextPageLink.count()) === 0) {
+      // Not enough tests on this environment for a second feed page — nothing
+      // to paginate between, so nothing to verify here (same early-return
+      // pattern as the empty-feed case above).
+      return
+    }
+
+    // Throttle every non-asset request so the loading fallback has time to
+    // appear — on a fast connection the Suspense boundary resolves before a
+    // human (or this assertion) could ever observe it. Feed pagination only
+    // changes a searchParam on this same route (/?page=1 -> /?page=2), which
+    // Next.js does NOT suspend behind app/loading.tsx the way a dynamic-
+    // segment change (e.g. /tests/[id]'s First/Previous/Next/Last) does —
+    // confirmed directly against a real dev server before this step shipped.
+    // app/page.tsx's explicit `<Suspense key={page}>` (step 66) is what makes
+    // this test pass; removing it regresses this silently on a real slow
+    // connection, since a fast local/CI run wouldn't otherwise catch it.
+    await page.route('**/*', async route => {
+      const url = route.request().url()
+      if (!url.match(/\.(js|css|png|jpg|svg|ico|woff2?)(\?|$)/)) {
+        await new Promise(r => setTimeout(r, 1500))
+      }
+      await route.continue()
+    })
+
+    await nextPageLink.click()
+    await expect(page.getByRole('status')).toBeVisible()
+    await expect(page.getByRole('status')).not.toBeVisible({ timeout: 5_000 })
+    await expect(page).toHaveURL(/\?page=2/)
+  })
 })
 
 test.describe('Anonymous clip playback', () => {
