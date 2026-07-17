@@ -235,6 +235,9 @@
       "clipALabel": "Clip A",
       "clipBLabel": "Clip B"
     },
+    "clipFacade": {
+      "playAriaLabel": "Play clip {label}"
+    },
     "nav": {
       "first": "First test",
       "previous": "Previous test",

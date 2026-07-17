@@ -8,10 +8,14 @@ import { EMBED_WRAPPER_CLASSES } from './embedLayout'
 type Props = {
   videoId: string
   onPlay: () => void
+  // See YouTubePlayer.tsx's comment — only ever true after a real user
+  // click on ClipFacade's play button, which satisfies the browser's
+  // autoplay-requires-a-gesture requirement.
+  autoplay?: boolean
 }
 
 const VimeoPlayer = forwardRef<PlayerHandle, Props>(function VimeoPlayer(
-  { videoId, onPlay },
+  { videoId, onPlay, autoplay = false },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -32,6 +36,7 @@ const VimeoPlayer = forwardRef<PlayerHandle, Props>(function VimeoPlayer(
     const player = new VimeoSDK(containerRef.current, {
       id: Number(videoId),
       responsive: true,
+      autoplay,
     })
 
     player.on('play', onPlay)
@@ -42,7 +47,7 @@ const VimeoPlayer = forwardRef<PlayerHandle, Props>(function VimeoPlayer(
       player.destroy()
       playerRef.current = null
     }
-  }, [videoId])
+  }, [videoId, autoplay])
 
   return (
     <div className={EMBED_WRAPPER_CLASSES}>

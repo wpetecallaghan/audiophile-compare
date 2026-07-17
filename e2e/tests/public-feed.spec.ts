@@ -278,6 +278,22 @@ test.describe('Anonymous clip playback', () => {
     await expect(page.getByRole(ROLE.heading, { name: 'Clip B' })).toBeVisible()
   })
 
+  // Build step 76: the real YouTube iframe is deferred behind a ClipFacade
+  // (thumbnail + play button) until clicked — SDK init is real,
+  // uncacheable work paid only when a visitor actually presses play.
+  test('clip facade renders instead of an iframe until clicked, then the real player mounts', async ({ page }) => {
+    await page.goto(routes.test(fixture.test.id))
+
+    const clipASection = page.getByRole(ROLE.heading, { name: 'Clip A', level: 2 }).locator('..')
+    await expect(clipASection.locator('iframe')).toHaveCount(0)
+
+    await clipASection
+      .getByRole(ROLE.button, { name: m.tests.clipFacade.playAriaLabel.replace('{label}', 'A') })
+      .click()
+
+    await expect(clipASection.locator('iframe')).toBeVisible()
+  })
+
   test('anonymous visitor can see the track artist/title on a test detail page (step 70)', async ({ page }) => {
     // Regression coverage for the tracks RLS gap (step 70): the tracks
     // table used to require auth.uid() is not null on select, so this line

@@ -1,5 +1,6 @@
 import { detectProvider } from './detect-provider'
 import { isGooglePhotosUrl, resolveGooglePhotosVideoUrl } from './resolve-google-photos'
+import { fetchVimeoThumbnail } from './fetch-vimeo-thumbnail'
 import type { ClipData } from '@/components/media/MediaPlayer'
 
 type RawClip = {
@@ -35,6 +36,17 @@ export async function toClipData(clip: RawClip): Promise<ClipData> {
     ? `/api/clips/google-photos-proxy?url=${encodeURIComponent(resolvedVideoUrl)}`
     : detected.canonical_url
 
+  // ClipFacade's background thumbnail (build step 76), resolved per
+  // provider — see fetch-vimeo-thumbnail.ts for why Vimeo needs a real
+  // network call and GoogleDrivePlayer.tsx's comments for why Drive has no
+  // available thumbnail at all.
+  const thumbnailUrl =
+    detected.provider === 'youtube' && detected.embed_id
+      ? `https://img.youtube.com/vi/${detected.embed_id}/hqdefault.jpg`
+      : detected.provider === 'vimeo' && detected.embed_id
+        ? await fetchVimeoThumbnail(detected.embed_id)
+        : null
+
   return {
     id:            clip.id,
     label:         clip.label as 'A' | 'B',
@@ -43,5 +55,6 @@ export async function toClipData(clip: RawClip): Promise<ClipData> {
     media_type:    resolvedVideoUrl ? 'video' : (clip.media_type as ClipData['media_type']),
     canonical_url: canonicalUrl,
     embed_id:      detected.embed_id,
+    thumbnail_url: thumbnailUrl,
   }
 }

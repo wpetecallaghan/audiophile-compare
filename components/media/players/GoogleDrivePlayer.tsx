@@ -7,6 +7,12 @@ import { EMBED_WRAPPER_CLASSES, EMBED_FILL_CLASSES } from './embedLayout'
 type Props = {
   videoId: string
   onPlay: () => void
+  // See YouTubePlayer.tsx's comment — only ever true after a real user
+  // click on ClipFacade's play button. Appended to the /preview iframe src
+  // below; undocumented but observed to work for this endpoint, consistent
+  // with this file's existing best-effort/reverse-engineered treatment of
+  // Drive's embed.
+  autoplay?: boolean
 }
 
 // Google Drive's /preview embed has no public JS SDK — unlike YouTube's
@@ -41,6 +47,19 @@ type Props = {
 //   other provider's clean pause/resume, accepted given the platform
 //   constraint (see build-history/53-google-drive-pause-fix.md).
 //
+//   Real bug found in build step 76: once ClipFacade's autoplay wiring
+//   landed, a forced remount alone stopped being enough — the reloaded
+//   iframe's src is still computed from the same `autoplay` prop, which
+//   stays true for the rest of this component's life once the visitor has
+//   clicked play once, so the "paused" reload just autoplayed straight
+//   back into playing (both clips audible at once, tapping B never
+//   actually silenced A). `pausedByRemount` tracks that pause() has fired
+//   at least once and suppresses `?autoplay=1` on every reload from then
+//   on, restoring the original "reload lands on a paused frame, the
+//   visitor clicks inside the iframe again to resume" behavior — same
+//   accepted playback-position trade-off as before, just no longer
+//   fighting its own autoplay flag.
+//
 // A third, unfixable-from-here platform gap (build step 55, found via a
 // real mobile report): Drive's /preview widget crops the video to fill
 // whatever box its iframe is given, rather than letterboxing a
@@ -54,14 +73,16 @@ type Props = {
 // other player (components.md §5). See build-history.md step 34,
 // decision 3 for the original no-op rationale this step revises.
 const GoogleDrivePlayer = forwardRef<PlayerHandle, Props>(function GoogleDrivePlayer(
-  { videoId, onPlay },
+  { videoId, onPlay, autoplay = false },
   ref
 ) {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [reloadKey, setReloadKey] = useState(0)
+  const [pausedByRemount, setPausedByRemount] = useState(false)
 
   useImperativeHandle(ref, () => ({
     pause() {
+      setPausedByRemount(true)
       setReloadKey(k => k + 1)
     },
   }))
@@ -83,7 +104,7 @@ const GoogleDrivePlayer = forwardRef<PlayerHandle, Props>(function GoogleDrivePl
       <iframe
         key={reloadKey}
         ref={iframeRef}
-        src={`https://drive.google.com/file/d/${videoId}/preview`}
+        src={`https://drive.google.com/file/d/${videoId}/preview${autoplay && !pausedByRemount ? '?autoplay=1' : ''}`}
         className={EMBED_FILL_CLASSES}
         allow="autoplay"
         title="Google Drive video player"

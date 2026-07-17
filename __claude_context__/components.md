@@ -116,6 +116,7 @@ export type ClipData = {
   media_type: MediaType
   canonical_url?: string
   embed_id?: string | null
+  thumbnail_url?: string | null
 }
 ```
 `ClipProvider` (`'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'`) and
@@ -212,6 +213,54 @@ const MyPlayer = forwardRef<PlayerHandle, Props>(function MyPlayer(props, ref) {
     is Drive's own cross-origin rendering, not something our CSS
     controls. Accepted as a real, unfixable-from-our-side limitation, not
     a bug to chase.
+- **`ClipFacade` (step 76)** — `components/media/players/ClipFacade.tsx`,
+  a plain presentational component (no `forwardRef`, no SDK to control
+  yet). `MediaPlayer.tsx` renders it instead of the real YouTube/Vimeo/
+  Google-Drive player until the visitor clicks its play button, deferring
+  SDK/iframe mounting (real, uncacheable work) until it's actually needed.
+  Scoped to those three providers only — `NativePlayer` (`direct` clips)
+  has no SDK to defer and keeps its own existing background-load/reveal-
+  on-metadata behavior (documented above) untouched.
+  - `MediaPlayer` owns an `activated` boolean (`useState`, default
+    `false`), one per clip instance. `ClipFacade`'s `onActivate` calls the
+    existing `onPlay` prop **immediately** — optimistic pause-coordination
+    for the sibling clip, since the real player hasn't mounted yet to fire
+    its own play event — then sets `activated`. No ref-forwarding changes
+    were needed: `innerRef.current` stays `null` until the real player
+    mounts and attaches its own ref, so `pause()` on an unactivated clip
+    was already a safe no-op.
+  - Each real player takes a new `autoplay?: boolean` prop (default
+    `false`), passed `true` only once `activated`. The facade's click is
+    itself the user gesture that makes `autoplay` safe — YouTube via
+    `playerVars.autoplay`, Vimeo via the SDK constructor's own `autoplay`
+    option, Google Drive via an appended `?autoplay=1` on the `/preview`
+    iframe `src` (undocumented but observed to work, consistent with this
+    provider's existing best-effort treatment above). Empirically
+    confirmed live for YouTube (real `<video>` `currentTime` advancing
+    after a scripted click) and for the URL/param wiring reaching the real
+    Vimeo (`player.vimeo.com/video/{id}?autoplay=1`) and Google Drive
+    (`/preview?autoplay=1`) embeds; see `build-history/76-*.md` for the
+    full verification notes, including a red herring (Vimeo's own oEmbed
+    call getting blocked by this project's Playwright
+    `x-vercel-protection-bypass` header when checked through
+    `@playwright/test`'s configured context — not a product issue, a
+    testing-harness artifact worth remembering if it recurs) and a
+    Cloudflare bot-challenge that blocked headless-Playwright verification
+    of Vimeo's actual play-through (real users won't hit this).
+  - **Thumbnails** (`ClipData.thumbnail_url`, resolved in
+    `lib/clips/to-clip-data.ts`): YouTube's is derived synchronously from
+    `embed_id` alone (`https://img.youtube.com/vi/{embed_id}/hqdefault.jpg`,
+    no network call). Vimeo has no predictable path, so
+    `lib/clips/fetch-vimeo-thumbnail.ts` calls Vimeo's public oEmbed
+    endpoint (same timeout/try-catch-swallow/`revalidate: 86400` shape as
+    `resolve-google-photos.ts`) — deliberately **not**
+    `lib/ingestion/scrape/fetch-oembed.ts`, which is scoped to the forum-
+    ingestion pipeline and doesn't extract `thumbnail_url`; reusing it here
+    would mean the live page-render path importing from a batch-ingestion
+    module, the wrong dependency direction. Google Drive has no public
+    thumbnail without Drive API auth — `thumbnail_url` is `null` and
+    `ClipFacade` falls back to a plain play button with no background
+    image, an explicit scope reduction rather than an oversight.
 
 ---
 

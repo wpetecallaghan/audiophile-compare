@@ -35,6 +35,21 @@ describe('YouTubePlayer', () => {
     expect(capturedOptions.playerVars?.playsinline).toBe(1)
   })
 
+  // build step 76 — YouTubePlayer is only mounted after a real user click
+  // on ClipFacade, which satisfies the browser's autoplay-requires-a-gesture
+  // rule.
+  it('defaults autoplay to 0 in playerVars when the prop is omitted', () => {
+    render(<YouTubePlayer videoId="abc123" onPlay={vi.fn()} />)
+
+    expect(capturedOptions.playerVars?.autoplay).toBe(0)
+  })
+
+  it('passes autoplay: 1 in playerVars when the autoplay prop is set', () => {
+    render(<YouTubePlayer videoId="abc123" onPlay={vi.fn()} autoplay />)
+
+    expect(capturedOptions.playerVars?.autoplay).toBe(1)
+  })
+
   it('calls onPlay when the player state changes to PLAYING', () => {
     const onPlay = vi.fn()
     render(<YouTubePlayer videoId="abc123" onPlay={onPlay} />)

@@ -8,10 +8,15 @@ import { EMBED_WRAPPER_CLASSES, EMBED_FILL_CLASSES } from './embedLayout'
 type Props = {
   videoId: string
   onPlay: () => void
+  // Mounted only after the visitor clicks ClipFacade's play button (build
+  // step 76) — that click is itself the user gesture browsers require to
+  // allow autoplay, so this is safe even though autoplaying media is
+  // normally blocked.
+  autoplay?: boolean
 }
 
 const YouTubePlayer = forwardRef<PlayerHandle, Props>(function YouTubePlayer(
-  { videoId, onPlay },
+  { videoId, onPlay, autoplay = false },
   ref
 ) {
   // containerRef points to the <div> that YouTube replaces with its iframe
@@ -46,6 +51,7 @@ const YouTubePlayer = forwardRef<PlayerHandle, Props>(function YouTubePlayer(
           // the confirmed cause of a mobile UX report that the embed
           // frame made play/pause hard to reach (build step 55).
           playsinline: 1,
+          autoplay: autoplay ? 1 : 0,
         },
         events: {
           onStateChange(event) {
@@ -67,7 +73,7 @@ const YouTubePlayer = forwardRef<PlayerHandle, Props>(function YouTubePlayer(
       player?.destroy()
       playerRef.current = null
     }
-  }, [videoId])   // re-run this effect if videoId changes
+  }, [videoId, autoplay])   // re-run this effect if videoId (or autoplay) changes
 
   return (
     <div className={EMBED_WRAPPER_CLASSES}>

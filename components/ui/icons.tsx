@@ -57,3 +57,11 @@ export function SpinnerIcon({ className }: IconProps) {
     </svg>
   )
 }
+
+export function PlayIcon({ className }: IconProps) {
+  return (
+    <svg {...base} fill="currentColor" stroke="none" className={className}>
+      <path d="M8 5v14l11-7z" />
+    </svg>
+  )
+}

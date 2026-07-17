@@ -1,11 +1,13 @@
 'use client'
 
-import { forwardRef, useImperativeHandle, useRef } from 'react'
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import NativePlayer, { type PlayerHandle } from './players/NativePlayer'
 import YouTubePlayer from './players/YouTubePlayer'
 import VimeoPlayer from './players/VimeoPlayer'
 import GoogleDrivePlayer from './players/GoogleDrivePlayer'
 import UnknownPlayer from './players/UnknownPlayer'
+import { ClipFacade } from './players/ClipFacade'
 import type { ClipProvider, MediaType } from '@/lib/clips/detect-provider'
 
 // This is the shape of the clip data your API returns.
@@ -18,6 +20,10 @@ export type ClipData = {
   media_type: MediaType
   canonical_url?: string
   embed_id?: string | null
+  // Background image for ClipFacade, shown before the visitor presses play
+  // (build step 76) — null for a provider with no available thumbnail
+  // (Google Drive has no public one; see to-clip-data.ts).
+  thumbnail_url?: string | null
 }
 
 type Props = {
@@ -32,13 +38,34 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
   ref
 ) {
   const innerRef = useRef<PlayerHandle>(null)
+  // Defers mounting the YouTube/Vimeo/Google-Drive SDK until the visitor
+  // presses play (build step 76) — SDK init is real, uncacheable work, so
+  // it's paid only when actually needed. Direct/unknown clips are
+  // unaffected: NativePlayer has no SDK to defer, and its own
+  // background-load/reveal-on-metadata behavior already handles that case
+  // (see components.md §5).
+  const [activated, setActivated] = useState(false)
+  const t = useTranslations('tests.clipFacade')
 
-  // Forward the pause() call down to whichever inner player is rendered
+  // Forward the pause() call down to whichever inner player is rendered.
+  // Before activation, innerRef.current is still null (nothing but the
+  // facade has mounted a ref yet) — pausing an unactivated clip is
+  // therefore already a safe no-op, with no special-casing needed here.
   useImperativeHandle(ref, () => ({
     pause() {
       innerRef.current?.pause()
     },
   }))
+
+  // The facade's own click is the user gesture that makes autoplay=true
+  // safe on the real player. onPlay fires immediately (optimistic
+  // pause-coordination for the sibling clip) rather than waiting for the
+  // SDK's own async play event, since the real player hasn't even mounted
+  // yet at the moment of the click.
+  function handleActivate() {
+    onPlay()
+    setActivated(true)
+  }
 
   // A plain link to the clip's original source is always shown alongside
   // the embed below — not a failure-only fallback, a permanent companion —
@@ -48,11 +75,20 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
   if (clip.provider === 'youtube' && clip.embed_id) {
     return (
       <div className="space-y-2">
-        <YouTubePlayer
-          ref={innerRef}
-          videoId={clip.embed_id}
-          onPlay={onPlay}
-        />
+        {activated ? (
+          <YouTubePlayer
+            ref={innerRef}
+            videoId={clip.embed_id}
+            onPlay={onPlay}
+            autoplay
+          />
+        ) : (
+          <ClipFacade
+            thumbnailUrl={clip.thumbnail_url ?? null}
+            playLabel={t('playAriaLabel', { label: clip.label })}
+            onActivate={handleActivate}
+          />
+        )}
         <UnknownPlayer url={clip.source_url} />
       </div>
     )
@@ -61,11 +97,20 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
   if (clip.provider === 'vimeo' && clip.embed_id) {
     return (
       <div className="space-y-2">
-        <VimeoPlayer
-          ref={innerRef}
-          videoId={clip.embed_id}
-          onPlay={onPlay}
-        />
+        {activated ? (
+          <VimeoPlayer
+            ref={innerRef}
+            videoId={clip.embed_id}
+            onPlay={onPlay}
+            autoplay
+          />
+        ) : (
+          <ClipFacade
+            thumbnailUrl={clip.thumbnail_url ?? null}
+            playLabel={t('playAriaLabel', { label: clip.label })}
+            onActivate={handleActivate}
+          />
+        )}
         <UnknownPlayer url={clip.source_url} />
       </div>
     )
@@ -74,11 +119,20 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
   if (clip.provider === 'google-drive' && clip.embed_id) {
     return (
       <div className="space-y-2">
-        <GoogleDrivePlayer
-          ref={innerRef}
-          videoId={clip.embed_id}
-          onPlay={onPlay}
-        />
+        {activated ? (
+          <GoogleDrivePlayer
+            ref={innerRef}
+            videoId={clip.embed_id}
+            onPlay={onPlay}
+            autoplay
+          />
+        ) : (
+          <ClipFacade
+            thumbnailUrl={clip.thumbnail_url ?? null}
+            playLabel={t('playAriaLabel', { label: clip.label })}
+            onActivate={handleActivate}
+          />
+        )}
         <UnknownPlayer url={clip.source_url} />
       </div>
     )
