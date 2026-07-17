@@ -943,47 +943,36 @@ since an empty flex child still takes zero height. See
 `e2e/tests/public-feed.spec.ts`'s "footer height stays constant across
 feed pagination" test for the regression coverage.
 
-**On mobile only, Privacy/Terms are hidden entirely whenever the nav slot
-has content** — step-through navigation matters more than those links in
-the very limited mobile footer space; both still show together at `sm:`
-and up regardless, and both still show on mobile when there's no nav to
-prioritize. Implemented with Tailwind's `group`/`group-has-*` variants,
-scoped with `max-sm:` so it never applies at `sm:` and up:
-```tsx
-<div className="... group">
-  <div className="... max-sm:group-has-[#page-nav-slot:not(:empty)]:hidden">
-    {/* Privacy/Terms links */}
-  </div>
-  <div id={FOOTER_NAV_SLOT_ID} className="..." />
-</div>
-```
-The literal `#page-nav-slot` in that arbitrary selector must match
-`FOOTER_NAV_SLOT_ID` (`components/ui/footer-nav-slot.ts`) — it can't
-reference the constant directly, since Tailwind's JIT scans this file's
-raw source text for class-name patterns rather than evaluating JS, so an
-interpolated value wouldn't be picked up. See
-`e2e/tests/public-feed.spec.ts`'s "Privacy/Terms links are hidden on
-mobile only when the footer nav is present" test for the regression
-coverage across all three states (no nav / nav on mobile / nav on
-desktop).
-
-**The `group-has-[...]` check only sees content that's actually in the
-DOM** — during a route's `loading.tsx` skeleton, the real page hasn't
-rendered yet, so nothing has been portaled into the nav slot regardless
-of whether the loaded page will show nav. Without addressing this,
-Privacy/Terms would visibly show for the entire loading/streaming window
-on routes that end up with nav, then disappear the instant real content
-replaces the skeleton — the same flash-then-hide jank the rest of this
-section fixes, just relocated to the loading phase. `PageLoading`
-(`components/ui/PageLoading.tsx`) takes a `hasFooterNav?: boolean` prop —
-when true, it portals an empty `<span>` into the nav slot itself (via the
-same `FooterPortal`), which is enough to satisfy `:not(:empty)` and hide
-Privacy/Terms immediately, before the real nav content ever exists. Only
-set on the three `loading.tsx`/`Suspense` fallbacks whose real page always
-(`tracks/[id]`, exact) or usually (`app/page.tsx`'s pagination, `tests/[id]`'s
-nav — both approximations, since whether nav actually renders depends on
-data not known until it resolves) shows footer nav — not a default, since
-most `loading.tsx` routes never show footer nav at all.
+**On mobile only, Privacy/Terms are hidden entirely on routes that show
+footer nav** (`components/ui/FooterPrivacyLinks.tsx`, client) — step-through
+navigation matters more than those links in the very limited mobile
+footer space; both still show together at `sm:` and up regardless, and
+both still show on mobile on routes with no nav to prioritize (e.g.
+`/about`). The decision is keyed off **the current pathname**
+(`usePathname()`), matched against a small list of route patterns for
+`/`, `/tests/[id]`, `/tracks/[id]` — not off whether `FooterPortal` has
+actually mounted content into the nav slot. That distinction is
+load-bearing, not a style choice: an earlier version checked the
+portaled DOM content directly (a CSS `group-has-[#page-nav-slot:not(:empty)]`
+rule), which depends on `FooterPortal`'s client-side `useEffect` mount —
+there's an unavoidable brief window, both on first hydration and (more
+visibly) between the old page's portal unmounting and the new page's
+mounting on every subsequent navigation, where the slot reads as empty
+and Privacy/Terms flash back into view. That gap never showed up in fast
+local testing but was a real, visible flicker on actual mobile devices.
+`usePathname()` has no such gap — it's resolved synchronously, including
+in the server-rendered HTML itself, so the correct `hidden` class is
+already present before any client JS runs at all (verified directly: a
+plain `fetch()` of the raw SSR HTML for `/` already contains the
+`max-sm:hidden` class; `/about`'s doesn't; and the hidden state is
+correct even with `javaScriptEnabled: false`). Two of the three matched
+routes are approximations, same reasoning as always — `/` and
+`/tests/[id]`'s nav depend on data not known until it resolves (more
+than one feed page; a valid `from` context) — only `/tracks/[id]`'s match
+is exact (`navBackHref` there is unconditionally `/tracks`). See
+`e2e/tests/public-feed.spec.ts`'s three tests — visibility across all
+three states, the JS-disabled SSR check, and repeated polling through an
+actual throttled page-to-page transition — for the regression coverage.
 
 **The five-control shape**, always in this order — First
 (`ChevronsLeftIcon`) / Previous (`ChevronLeftIcon`) / All (`ListIcon`,

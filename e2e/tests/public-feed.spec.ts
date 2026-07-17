@@ -130,16 +130,30 @@ test.describe('Public feed (unauthenticated)', () => {
       await route.continue()
     })
 
+    // Poll frequently through the whole transition rather than checking
+    // once — a single check right after the spinner appears missed a real
+    // regression here (step 74 follow-up): an earlier version hid
+    // Privacy/Terms via a class on the portaled nav content itself
+    // (FooterPortal, mounted by a client-side useEffect), which has an
+    // unavoidable brief gap — both on first hydration and, more visibly,
+    // between the old page's portal unmounting and the new page's
+    // mounting — during which the nav slot reads as empty and
+    // Privacy/Terms flash back into view. That gap never showed up in a
+    // single fast localhost check but was visible as a real flicker on
+    // real mobile devices. The fix (components/ui/FooterPrivacyLinks.tsx)
+    // bases the hidden state on the current pathname via `usePathname()`
+    // instead, which is available synchronously — including in the
+    // server-rendered HTML itself, before any client JS runs at all — so
+    // there's no window where it can be wrong.
     await nextPageLink.click()
     await expect(page.getByRole('status')).toBeVisible()
-    // While the skeleton itself is showing (step 74 follow-up) — not just
-    // once real content replaces it — Privacy/Terms must already be
-    // hidden on this narrow viewport. PageLoading's hasFooterNav prop
-    // portals an empty marker into the footer nav slot for exactly this:
-    // without it, Privacy/Terms would flash visible for the whole
-    // skeleton duration, then disappear the instant real content mounts.
-    await expect(page.getByRole(ROLE.link, { name: m.footer.privacyLink })).not.toBeVisible()
+    const privacyLink = page.getByRole(ROLE.link, { name: m.footer.privacyLink })
+    for (let i = 0; i < 10; i++) {
+      await expect(privacyLink).not.toBeVisible()
+      await page.waitForTimeout(100)
+    }
     await expect(page.getByRole('status')).not.toBeVisible({ timeout: 5_000 })
+    await expect(privacyLink).not.toBeVisible()
     await expect(page).toHaveURL(/\?page=2/)
   })
 
@@ -201,11 +215,11 @@ test.describe('Public feed (unauthenticated)', () => {
 
   test('Privacy/Terms links are hidden on mobile only when the footer nav is present', async ({ page }) => {
     // Mobile footer space is tight — step-through navigation takes
-    // priority over Privacy/Terms there (SiteFooter.tsx's
-    // group-has-[#page-nav-slot:not(:empty)] rule, max-sm: scoped only).
-    // A page with no nav content (e.g. /about) still shows both links on
-    // mobile; a page with nav content hides them there, but both still
-    // show together at sm: and up regardless.
+    // priority over Privacy/Terms there (FooterPrivacyLinks.tsx's
+    // pathname-based max-sm:hidden). A page with no nav content (e.g.
+    // /about) still shows both links on mobile; a page with nav content
+    // hides them there, but both still show together at sm: and up
+    // regardless.
     await page.setViewportSize({ width: 390, height: 844 })
 
     await page.goto('/about')
@@ -222,6 +236,32 @@ test.describe('Public feed (unauthenticated)', () => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto('/?page=1')
     await expect(page.getByRole(ROLE.link, { name: m.footer.privacyLink })).toBeVisible()
+  })
+
+  test('Privacy/Terms mobile-hide is decided server-side, not dependent on client JS', async ({ browser }) => {
+    // Strongest possible guarantee against the flicker regression above:
+    // with JavaScript disabled entirely, the hidden state must already be
+    // correct in the raw server-rendered HTML. If a future change moves
+    // this decision back to something that needs client JS to resolve
+    // (e.g. reading portaled DOM content, as an earlier version of this
+    // fix did), this fails immediately and directly, rather than relying
+    // on timing/polling luck to catch it.
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      javaScriptEnabled: false,
+    })
+    const page = await context.newPage()
+
+    await page.goto('/about')
+    await expect(page.getByRole(ROLE.link, { name: m.footer.privacyLink })).toBeVisible()
+
+    await page.goto('/?page=1')
+    const nextPageLinkNoJs = page.getByRole(ROLE.link, { name: m.feed.nextPage })
+    if ((await nextPageLinkNoJs.count()) > 0) {
+      await expect(page.getByRole(ROLE.link, { name: m.footer.privacyLink })).not.toBeVisible()
+    }
+
+    await context.close()
   })
 })
 
