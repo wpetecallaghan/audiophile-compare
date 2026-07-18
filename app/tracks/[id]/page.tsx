@@ -162,29 +162,33 @@ export default async function TrackDetailPage({ params }: Props) {
           slot so it's always visible without scrolling (see FooterPortal). */}
       <FooterPortal>
         <div className="flex items-center gap-3">
-          {firstId && (
-            <FooterNavLink href={`/tracks/${firstId}`} aria-label={t('nav.first')}>
-              <ChevronsLeftIcon className="w-4 h-4" />
-            </FooterNavLink>
-          )}
-          {prevId && (
-            <FooterNavLink href={`/tracks/${prevId}`} aria-label={t('nav.previous')}>
-              <ChevronLeftIcon className="w-4 h-4" />
-            </FooterNavLink>
-          )}
+          <FooterNavLink
+            href={firstId ? `/tracks/${firstId}` : null}
+            aria-label={t('nav.first')}
+          >
+            <ChevronsLeftIcon className="w-4 h-4" />
+          </FooterNavLink>
+          <FooterNavLink
+            href={prevId ? `/tracks/${prevId}` : null}
+            aria-label={t('nav.previous')}
+          >
+            <ChevronLeftIcon className="w-4 h-4" />
+          </FooterNavLink>
           <FooterNavLink href={navBackHref} aria-label={t('nav.all')}>
             <ListIcon className="w-4 h-4" />
           </FooterNavLink>
-          {nextId && (
-            <FooterNavLink href={`/tracks/${nextId}`} aria-label={t('nav.next')}>
-              <ChevronRightIcon className="w-4 h-4" />
-            </FooterNavLink>
-          )}
-          {lastId && (
-            <FooterNavLink href={`/tracks/${lastId}`} aria-label={t('nav.last')}>
-              <ChevronsRightIcon className="w-4 h-4" />
-            </FooterNavLink>
-          )}
+          <FooterNavLink
+            href={nextId ? `/tracks/${nextId}` : null}
+            aria-label={t('nav.next')}
+          >
+            <ChevronRightIcon className="w-4 h-4" />
+          </FooterNavLink>
+          <FooterNavLink
+            href={lastId ? `/tracks/${lastId}` : null}
+            aria-label={t('nav.last')}
+          >
+            <ChevronsRightIcon className="w-4 h-4" />
+          </FooterNavLink>
         </div>
       </FooterPortal>
     </PageShell>

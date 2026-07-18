@@ -272,26 +272,63 @@ test.describe('Footer step-through nav (First/Previous/Next/Last, step 69)', () 
     await expect(page).toHaveURL(new RegExp(`/tests/${fixture.test.id}(\\?|$)`))
 
     // First always lands at the true first position — First/Previous both
-    // disappear there (getAdjacentIds: idx === 0 -> firstId/prevId null).
+    // become disabled there (build step 77: getAdjacentIds: idx === 0 ->
+    // firstId/prevId null -> FooterNavLink renders a disabled button in
+    // the same slot, rather than omitting the control from the DOM).
     const firstLink = page.getByRole(ROLE.link, { name: m.tests.nav.first })
     if ((await firstLink.count()) > 0) {
       await firstLink.click()
-      await expect(page.getByRole(ROLE.link, { name: m.tests.nav.first })).not.toBeVisible()
-      await expect(page.getByRole(ROLE.link, { name: m.tests.nav.previous })).not.toBeVisible()
+      await expect(page.getByRole(ROLE.button, { name: m.tests.nav.first })).toBeDisabled()
+      await expect(page.getByRole(ROLE.button, { name: m.tests.nav.previous })).toBeDisabled()
     }
 
     // Last always lands at the true last position — Next/Last both
-    // disappear there (idx === length - 1 -> nextId/lastId null).
+    // become disabled there (idx === length - 1 -> nextId/lastId null).
     const lastLink = page.getByRole(ROLE.link, { name: m.tests.nav.last })
     if ((await lastLink.count()) > 0) {
       await lastLink.click()
-      await expect(page.getByRole(ROLE.link, { name: m.tests.nav.next })).not.toBeVisible()
-      await expect(page.getByRole(ROLE.link, { name: m.tests.nav.last })).not.toBeVisible()
+      await expect(page.getByRole(ROLE.button, { name: m.tests.nav.next })).toBeDisabled()
+      await expect(page.getByRole(ROLE.button, { name: m.tests.nav.last })).toBeDisabled()
     }
 
     // "All" always renders regardless of position, and returns to the feed
     await page.getByRole(ROLE.link, { name: m.tests.nav.all }).click()
     await expect(page).toHaveURL(/\/(\?page=1)?$/)
+  })
+
+  // Real reported bug, build step 77: First/Previous/Next/Last used to be
+  // removed from the DOM entirely at a boundary, so the whole row reflowed
+  // and the control the visitor just clicked landed somewhere else on the
+  // next screen — cumbersome for rapid step-through clicking. Fixed by
+  // always rendering every control in the same flex slot, disabled rather
+  // than absent at a boundary (FooterNavLink.tsx). This is the direct
+  // position-stability regression guard, not just a presence/visibility
+  // check like the test above.
+  test('Previous does not shift position when stepping onto the true first item', async ({ page }) => {
+    const fixtureUrl = `${routes.test(fixture.test.id)}?from=feed&page=1`
+    await page.goto(fixtureUrl)
+
+    const firstLink = page.getByRole(ROLE.link, { name: m.tests.nav.first })
+    if ((await firstLink.count()) === 0) {
+      // Fixture test is already the first item (or there's nothing to
+      // step through) — same early-return convention as the test above.
+      return
+    }
+
+    // Previous is enabled here — record its position before crossing onto
+    // the true first item, where it becomes disabled.
+    const previousEnabled = page.getByRole(ROLE.link, { name: m.tests.nav.previous })
+    const beforeBox = await previousEnabled.boundingBox()
+    expect(beforeBox).not.toBeNull()
+
+    await firstLink.click()
+
+    const previousDisabled = page.getByRole(ROLE.button, { name: m.tests.nav.previous })
+    await expect(previousDisabled).toBeDisabled()
+    const afterBox = await previousDisabled.boundingBox()
+    expect(afterBox).not.toBeNull()
+    expect(afterBox!.x).toBe(beforeBox!.x)
+    expect(afterBox!.y).toBe(beforeBox!.y)
   })
 })
 

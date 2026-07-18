@@ -193,29 +193,33 @@ async function FeedContent({ page }: { page: number }) {
       {(hasPrev || hasNext) && (
         <FooterPortal>
           <div className="flex items-center gap-2">
-            {hasPrev && (
-              <FooterNavLink href="/?page=1" aria-label={t('firstPage')}>
-                <ChevronsLeftIcon className="w-4 h-4" />
-              </FooterNavLink>
-            )}
-            {hasPrev && (
-              <FooterNavLink href={`/?page=${page - 1}`} aria-label={t('previousPage')}>
-                <ChevronLeftIcon className="w-4 h-4" />
-              </FooterNavLink>
-            )}
+            <FooterNavLink
+              href={hasPrev ? '/?page=1' : null}
+              aria-label={t('firstPage')}
+            >
+              <ChevronsLeftIcon className="w-4 h-4" />
+            </FooterNavLink>
+            <FooterNavLink
+              href={hasPrev ? `/?page=${page - 1}` : null}
+              aria-label={t('previousPage')}
+            >
+              <ChevronLeftIcon className="w-4 h-4" />
+            </FooterNavLink>
             <Text as="span" size="xs">
               {t('pageOf', { page, total: totalPages })}
             </Text>
-            {hasNext && (
-              <FooterNavLink href={`/?page=${page + 1}`} aria-label={t('nextPage')}>
-                <ChevronRightIcon className="w-4 h-4" />
-              </FooterNavLink>
-            )}
-            {hasNext && (
-              <FooterNavLink href={`/?page=${totalPages}`} aria-label={t('lastPage')}>
-                <ChevronsRightIcon className="w-4 h-4" />
-              </FooterNavLink>
-            )}
+            <FooterNavLink
+              href={hasNext ? `/?page=${page + 1}` : null}
+              aria-label={t('nextPage')}
+            >
+              <ChevronRightIcon className="w-4 h-4" />
+            </FooterNavLink>
+            <FooterNavLink
+              href={hasNext ? `/?page=${totalPages}` : null}
+              aria-label={t('lastPage')}
+            >
+              <ChevronsRightIcon className="w-4 h-4" />
+            </FooterNavLink>
           </div>
         </FooterPortal>
       )}

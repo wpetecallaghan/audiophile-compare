@@ -501,29 +501,33 @@ async function TestNavFooter({
   return (
     <FooterPortal>
       <div className="flex items-center gap-3">
-        {firstId && (
-          <FooterNavLink href={`/tests/${firstId}${navCtxSuffix}`} aria-label={t('nav.first')}>
-            <ChevronsLeftIcon className="w-4 h-4" />
-          </FooterNavLink>
-        )}
-        {prevId && (
-          <FooterNavLink href={`/tests/${prevId}${navCtxSuffix}`} aria-label={t('nav.previous')}>
-            <ChevronLeftIcon className="w-4 h-4" />
-          </FooterNavLink>
-        )}
+        <FooterNavLink
+          href={firstId ? `/tests/${firstId}${navCtxSuffix}` : null}
+          aria-label={t('nav.first')}
+        >
+          <ChevronsLeftIcon className="w-4 h-4" />
+        </FooterNavLink>
+        <FooterNavLink
+          href={prevId ? `/tests/${prevId}${navCtxSuffix}` : null}
+          aria-label={t('nav.previous')}
+        >
+          <ChevronLeftIcon className="w-4 h-4" />
+        </FooterNavLink>
         <FooterNavLink href={navBackHref} aria-label={t('nav.all')}>
           <ListIcon className="w-4 h-4" />
         </FooterNavLink>
-        {nextId && (
-          <FooterNavLink href={`/tests/${nextId}${navCtxSuffix}`} aria-label={t('nav.next')}>
-            <ChevronRightIcon className="w-4 h-4" />
-          </FooterNavLink>
-        )}
-        {lastId && (
-          <FooterNavLink href={`/tests/${lastId}${navCtxSuffix}`} aria-label={t('nav.last')}>
-            <ChevronsRightIcon className="w-4 h-4" />
-          </FooterNavLink>
-        )}
+        <FooterNavLink
+          href={nextId ? `/tests/${nextId}${navCtxSuffix}` : null}
+          aria-label={t('nav.next')}
+        >
+          <ChevronRightIcon className="w-4 h-4" />
+        </FooterNavLink>
+        <FooterNavLink
+          href={lastId ? `/tests/${lastId}${navCtxSuffix}` : null}
+          aria-label={t('nav.last')}
+        >
+          <ChevronsRightIcon className="w-4 h-4" />
+        </FooterNavLink>
       </div>
     </FooterPortal>
   )

@@ -180,14 +180,15 @@ test.describe('Public feed (unauthenticated)', () => {
   })
 
   test('footer height stays constant across feed pagination on a narrow viewport (SiteFooter fix)', async ({ page }) => {
-    // Regression test: page 1 only shows Next/Last (2 controls); page 2+
-    // also shows First/Previous (4 controls) — at a narrow width the extra
-    // controls used to push the nav row past what fit alongside the
+    // Regression test: page 1's First/Previous render as disabled buttons,
+    // page 2+'s render as enabled links (build step 77) — at a narrow
+    // width, before SiteFooter.tsx's fix, having only some controls
+    // present at all used to push the nav row past what fit alongside the
     // Privacy/Terms links, wrapping the whole footer onto a second line
     // and visibly changing its height between pages. SiteFooter.tsx now
     // always stacks Privacy/Terms and the nav slot on their own rows below
     // the `sm:` breakpoint, so height no longer depends on how many
-    // controls happen to render.
+    // controls happen to be enabled.
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/?page=1')
 
@@ -203,14 +204,47 @@ test.describe('Public feed (unauthenticated)', () => {
     await nextPageLink.click()
     await expect(page).toHaveURL(/\?page=2/)
     // FooterPortal mounts its content client-side after hydration — wait
-    // for page 2's own First/Previous controls to actually appear (they
-    // only exist once hasPrev is true) before measuring, otherwise this
-    // can race a brief moment where the nav slot is still empty from the
+    // for page 2's own Previous control to become an enabled link (it's
+    // a disabled button on page 1) before measuring, otherwise this can
+    // race a brief moment where the nav slot is still empty from the
     // navigation and reads as shorter, not taller.
     await expect(page.getByRole(ROLE.link, { name: m.feed.previousPage })).toBeVisible()
     const page2Height = (await footer.boundingBox())!.height
 
     expect(page2Height).toBe(page1Height)
+  })
+
+  // Real reported bug, build step 77: First/Previous/Next/Last used to be
+  // removed from the DOM entirely on page 1 (nothing to page back to), so
+  // the whole row reflowed once Next was clicked and First/Previous popped
+  // in on page 2 — the control the visitor just clicked landed somewhere
+  // else, cumbersome for rapid step-through paging. Fixed by always
+  // rendering every control in the same flex slot, disabled rather than
+  // absent at a boundary (FooterNavLink.tsx). This is the direct
+  // position-stability regression guard.
+  test('Previous does not shift position when paging from page 1 to page 2', async ({ page }) => {
+    await page.goto('/?page=1')
+
+    const nextPageLink = page.getByRole(ROLE.link, { name: m.feed.nextPage })
+    if ((await nextPageLink.count()) === 0) {
+      return
+    }
+
+    // Previous is disabled on page 1 — record its position before paging.
+    const previousDisabled = page.getByRole(ROLE.button, { name: m.feed.previousPage })
+    await expect(previousDisabled).toBeDisabled()
+    const beforeBox = await previousDisabled.boundingBox()
+    expect(beforeBox).not.toBeNull()
+
+    await nextPageLink.click()
+    await expect(page).toHaveURL(/\?page=2/)
+
+    const previousEnabled = page.getByRole(ROLE.link, { name: m.feed.previousPage })
+    await expect(previousEnabled).toBeVisible()
+    const afterBox = await previousEnabled.boundingBox()
+    expect(afterBox).not.toBeNull()
+    expect(afterBox!.x).toBe(beforeBox!.x)
+    expect(afterBox!.y).toBe(beforeBox!.y)
   })
 
   test('Privacy/Terms links are hidden on mobile only when the footer nav is present', async ({ page }) => {

@@ -91,3 +91,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 74 | Fix footer height changing across pagination; prioritize nav over Privacy/Terms on mobile (`SiteFooter`) | [74-footer-height-wrap-fix.md](74-footer-height-wrap-fix.md) |
 | 75 | Cache the non-personalized parts of a test-detail page (`unstable_cache`) | [75-cache-test-core-data.md](75-cache-test-core-data.md) |
 | 76 | Defer YouTube/Vimeo/Google Drive SDK mounting until the visitor presses play (`ClipFacade`) | [76-lazy-embed-facade.md](76-lazy-embed-facade.md) |
+| 77 | Fix First/Previous/Next/Last footer nav shifting position at list boundaries (`FooterNavLink` disabled state) | [77-footer-nav-position-stability.md](77-footer-nav-position-stability.md) |
