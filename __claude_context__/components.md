@@ -530,6 +530,27 @@ return <button>{t('addSnapshot')}</button>
 
 **Type safety:** `types/next-intl.d.ts` extends `IntlMessages` from `messages/en.json`. Using an unknown key is a TypeScript error.
 
+**Apostrophes near a `{placeholder}` need doubling (ICU escaping) — a real
+bug, not a hypothetical.** next-intl parses `en.json` values as real ICU
+MessageFormat. A single `'` opens a "quoted literal" span that runs to the
+next `'`: everything inside — including a `{placeholder}` — is rendered as
+literal text, unsubstituted, and the quote marks themselves are stripped
+from the output. `"Which clip is '{snapshot}'?"` silently rendered as
+**"Which clip is {snapshot}?"** in the real app (step 79) — the
+placeholder never interpolated — while its unit test still passed,
+because `vitest.setup.ts`'s next-intl mock (§2 of `testing.md`) does plain
+`{variable}` regex substitution with no ICU quote semantics, so it can't
+catch this class of bug. To get a literal apostrophe next to (or
+anywhere near) a placeholder, double it: `"Which clip is ''{snapshot}''?"`
+— this is also what the mock will render verbatim (doubled quotes,
+unescaped), so a test asserting against this string needs to expect the
+doubled form, not the single-quoted form a human would write by hand. Only
+matters when a literal `'` sits close enough to `{`/`}` (or other ICU
+syntax) to be parsed as an escape — plain prose apostrophes elsewhere in a
+string are unaffected. This is exactly why UI copy changes with
+interpolation should be checked against the real rendered page (not just
+the unit-test mock) before considering them done.
+
 **Layout setup** (already done — do not duplicate):
 - `app/layout.tsx` wraps the tree with `<NextIntlClientProvider messages={messages}>`
 - `next.config.mjs` wraps the config with `createNextIntlPlugin()`

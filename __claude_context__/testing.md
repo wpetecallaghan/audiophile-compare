@@ -88,6 +88,7 @@ indirectly through the step tests.
 | `components/tests/__tests__/VoteForm.test.tsx` | 22 | Rendering, Other field visibility, validation, submission, pre-population, hasDeadClip |
 | `components/tests/__tests__/MappingBadge.test.tsx` | 5 | Both clip labels render with no "Revealed" heading and no Before/After wording anywhere (step 67 — both removed as redundant with the page's own status eyebrow and each clip's own snapshot text); each side's snapshot summary (`snapshotA`/`snapshotB`) renders under its label; summary omitted when a snapshot is `null`; an unsupported clip renders an "Open link directly" link (`tests.openClipLink`, reused from `MediaPlayer`'s own fallback) with the correct `href`; a supported clip renders no link at all |
 | `components/tests/__tests__/StepSnapshots.test.tsx` | 28 | Open/close, validation, POST, onSnapshotCreated, inline system creation |
+| `components/tests/__tests__/StepClips.test.tsx` | 5 | (step 79) "before" question and radio labels render with Clip A's real snapshot name interpolated; completing with the default selection reports `beforeIsA: true`, selecting Clip B reports `false`; renders without crashing when `snapshotA` is null |
 | `components/systems/__tests__/AddSnapshotForm.test.tsx` | 14 | Open/close, POST, router.refresh on success, validation |
 | `components/systems/__tests__/CreateSystemForm.test.tsx` | 11 | POST /api/systems, validation, redirect, cancel |
 | `components/systems/__tests__/EditSystemForm.test.tsx` | 12 | PATCH /api/systems/[id], validation, redirect, cancel |

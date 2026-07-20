@@ -21,7 +21,6 @@ type Props = {
 // step 27.
 export default function ReplaceClipUrlButton({ clipId, label }: Props) {
   const t = useTranslations('tests.replaceClip')
-  const tClips = useTranslations('tests.clipsStep')
   const tCommon = useTranslations('common')
   const router = useRouter()
 
@@ -80,9 +79,6 @@ export default function ReplaceClipUrlButton({ clipId, label }: Props) {
           onUrlChange={v => { setUrl(v); setVerified(null) }}
           onVerify={verify}
           verifying={verifying}
-          urlPlaceholder={tClips('urlPlaceholder')}
-          verifyLabel={tClips('verifyButton')}
-          verifyingLabel={tClips('verifying')}
         />
         {error && <FormMessage tone="error">{error}</FormMessage>}
         <div className="flex gap-3">

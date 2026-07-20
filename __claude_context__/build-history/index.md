@@ -93,3 +93,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 76 | Defer YouTube/Vimeo/Google Drive SDK mounting until the visitor presses play (`ClipFacade`) | [76-lazy-embed-facade.md](76-lazy-embed-facade.md) |
 | 77 | Fix First/Previous/Next/Last footer nav shifting position at list boundaries (`FooterNavLink` disabled state) | [77-footer-nav-position-stability.md](77-footer-nav-position-stability.md) |
 | 78 | Fix revealed-test observations missing for curated (non-Other) techniques | [78-curated-technique-observations.md](78-curated-technique-observations.md) |
+| 79 | Show the real snapshot name in the Clips step's "before" question; finish translating `ClipInput.tsx` | [79-clips-step-snapshot-name.md](79-clips-step-snapshot-name.md) |

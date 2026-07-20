@@ -24,6 +24,15 @@ export default function StepClips({ draft, onComplete }: Props) {
   const [verifyingB, setVerifyingB] = useState(false)
   const [beforeIsA, setBeforeIsA] = useState(draft.beforeIsA)
 
+  // The snapshot tied to Clip A (draft.snapshotA, chosen in the Systems
+  // step) — StepSnapshots already gates its own Continue button on both
+  // snapshots being non-null before advancing, so this is always
+  // populated by the time this step renders; the fallback only satisfies
+  // the `Snapshot | null` type.
+  const firstSnapshotName = draft.snapshotA
+    ? `v${draft.snapshotA.version} — ${draft.snapshotA.label}`
+    : ''
+
   async function verify(url: string, setVerifying: (v: boolean) => void, setResult: (r: VerifiedClip) => void) {
     setVerifying(true)
     const res = await fetch('/api/clips/verify', {
@@ -46,8 +55,7 @@ export default function StepClips({ draft, onComplete }: Props) {
       <div>
         <Heading level={2}>{t('heading')}</Heading>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Enter the URL for each recording. Listeners will see these as Clip A
-          and Clip B — the before/after identity stays hidden until you reveal.
+          {t('description')}
         </p>
       </div>
 
@@ -58,9 +66,6 @@ export default function StepClips({ draft, onComplete }: Props) {
         onUrlChange={v => { setUrlA(v); setVerifiedA(null) }}
         onVerify={() => verify(urlA, setVerifyingA, setVerifiedA)}
         verifying={verifyingA}
-        urlPlaceholder={t('urlPlaceholder')}
-        verifyLabel={t('verifyButton')}
-        verifyingLabel={t('verifying')}
       />
 
       <ClipInput
@@ -70,13 +75,10 @@ export default function StepClips({ draft, onComplete }: Props) {
         onUrlChange={v => { setUrlB(v); setVerifiedB(null) }}
         onVerify={() => verify(urlB, setVerifyingB, setVerifiedB)}
         verifying={verifyingB}
-        urlPlaceholder={t('urlPlaceholder')}
-        verifyLabel={t('verifyButton')}
-        verifyingLabel={t('verifying')}
       />
 
       <div className="rounded border p-4 space-y-2">
-        <p className="text-sm font-medium">{t('beforeQuestion')}</p>
+        <p className="text-sm font-medium">{t('beforeQuestion', { snapshot: firstSnapshotName })}</p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {t('beforeDescription')}
         </p>
@@ -89,7 +91,7 @@ export default function StepClips({ draft, onComplete }: Props) {
                 checked={side === 'A' ? beforeIsA : !beforeIsA}
                 onChange={() => setBeforeIsA(side === 'A')}
               />
-              Clip {side} is before
+              {t('beforeLabel', { side, snapshot: firstSnapshotName })}
             </label>
           ))}
         </div>

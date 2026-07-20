@@ -154,10 +154,17 @@
     },
     "clipsStep": {
       "heading": "Clips",
+      "description": "Enter the URL for each recording. Listeners will see these as Clip A and Clip B — the before/after identity stays hidden until you reveal.",
       "urlPlaceholder": "YouTube, Vimeo, or direct audio/video URL",
       "verifyButton": "Verify",
       "verifying": "Checking…",
-      "beforeQuestion": "Which clip is the 'before' system?",
+      "clipLabel": "Clip {label}",
+      "deadUrlError": "This URL could not be reached. Check the link and try again.",
+      "verified": "Verified — {provider}",
+      "verifiedMediaType": ", {mediaType}",
+      "verifiedDegraded": " (server responded slowly — may be intermittent)",
+      "beforeQuestion": "Which clip is ''{snapshot}''?",
+      "beforeLabel": "Clip {side} is {snapshot}",
       "beforeDescription": "This is recorded now and revealed to listeners only when you choose to reveal the test.",
       "continueButton": "Continue"
     },
