@@ -32,7 +32,7 @@ service" decision) — see `build-history-ingestion/index.md` for what's current
 
 An AI process reads Lejonklou forum threads, extracts recordings and listening comparisons, and writes them into the database as tests, tracks, clips, and votes. Periodic scheduled refreshes catch new posts.
 
-**Authentication:** A single dedicated `ingestion_bot` user in `auth.users`, created manually. The ingestion service authenticates as this user via Supabase Auth (magic link issued once; token stored in the service's environment). No API key table needed. Subject to standard RLS — no policy exceptions required.
+**Authentication:** A single dedicated `ingestion_bot` user in `auth.users`, created manually. The ingestion service authenticates as this user via Supabase Auth (magic link issued once; token stored in the service's environment — the Supabase Auth API itself, still available even after the app's own interactive magic-link login UI was removed, build step 81). No API key table needed. Subject to standard RLS — no policy exceptions required.
 
 *(Superseded by `build-history-ingestion/31-internal-ingest-api-route.md`: per-author placeholder identities via the admin/service-role client, not a single session-based bot user — see that file for why.)*
 
@@ -90,7 +90,7 @@ The ingest route resolves or creates tracks, systems, and snapshots by name befo
 
 ### Use case 2 — Mobile app
 
-The mobile app is a first-party client. It authenticates users via Supabase Auth directly (magic link or OAuth), storing tokens in `expo-secure-store` rather than cookies. It then calls the same `/api/` routes as the browser. **No separate auth mechanism needed** — existing RLS policies and route auth checks apply unchanged.
+The mobile app is a first-party client. It authenticates users via Supabase Auth directly (password or OAuth — magic link was removed as a web login option in build step 81, though the underlying Supabase Auth API still supports it if a mobile-only magic-link flow were ever wanted), storing tokens in `expo-secure-store` rather than cookies. It then calls the same `/api/` routes as the browser. **No separate auth mechanism needed** — existing RLS policies and route auth checks apply unchanged.
 
 **Upload flow** (when owned storage is implemented):
 ```

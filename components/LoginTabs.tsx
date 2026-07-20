@@ -3,12 +3,11 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import LoginWithPasswordForm from '@/components/LoginWithPasswordForm'
-import LoginForm from '@/components/LoginForm'
 import OAuthButtons from '@/components/OAuthButtons'
 import ForgotPasswordForm from '@/components/ForgotPasswordForm'
 import { useTranslations } from 'next-intl'
 
-type Tab = 'password' | 'magic' | 'google'
+type Tab = 'password' | 'google'
 
 export default function LoginTabs({ redirectTo }: { redirectTo?: string }) {
   const t = useTranslations('auth')
@@ -17,7 +16,6 @@ export default function LoginTabs({ redirectTo }: { redirectTo?: string }) {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'password', label: t('tabs.password') },
-    { id: 'magic',    label: t('tabs.magicLink') },
     { id: 'google',   label: t('tabs.google') },
   ]
 
@@ -59,10 +57,6 @@ export default function LoginTabs({ redirectTo }: { redirectTo?: string }) {
             </>
           )}
         </div>
-      )}
-
-      {tab === 'magic' && (
-        <LoginForm redirectTo={redirectTo} />
       )}
 
       {tab === 'google' && (

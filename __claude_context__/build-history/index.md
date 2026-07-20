@@ -95,3 +95,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 78 | Fix revealed-test observations missing for curated (non-Other) techniques | [78-curated-technique-observations.md](78-curated-technique-observations.md) |
 | 79 | Show the real snapshot name in the Clips step's "before" question; finish translating `ClipInput.tsx` | [79-clips-step-snapshot-name.md](79-clips-step-snapshot-name.md) |
 | 80 | Export a named constant for every `ClipProvider`/`MediaType` union member (matches `STATUS_*`'s existing `UrlStatus` precedent) | [80-clip-provider-media-type-constants.md](80-clip-provider-media-type-constants.md) |
+| 81 | Remove magic-link login (password + Google OAuth unaffected) | [81-remove-magic-link-login.md](81-remove-magic-link-login.md) |

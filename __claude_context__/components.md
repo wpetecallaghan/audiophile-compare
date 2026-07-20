@@ -98,7 +98,7 @@ router.refresh()
 router.push(redirectTo ?? '/')
 ```
 
-Magic link and OAuth callbacks perform a server-side redirect — not affected by this rule.
+OAuth, registration, and password-reset email-link callbacks perform a server-side redirect — not affected by this rule.
 
 ---
 

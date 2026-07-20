@@ -44,15 +44,11 @@ test.describe('Public feed (unauthenticated)', () => {
     await expect(page).toHaveURL(/redirectTo=%2Fsystems/)
   })
 
-  test('login page shows magic link form and Google sign-in button', async ({ page }) => {
+  test('login page shows a Google sign-in option', async ({ page }) => {
     await page.goto('/login')
     await expect(page.getByRole(ROLE.heading, { name: m.auth.heading })).toBeVisible()
 
-    // Magic link and Google sign-in each live behind their own tab
-    await page.getByRole(ROLE.button, { name: m.auth.tabs.magicLink }).click()
-    await expect(page.getByLabel(m.auth.emailLabel)).toBeVisible()
-    await expect(page.getByRole(ROLE.button, { name: m.auth.magicLinkButton })).toBeVisible()
-
+    // Google sign-in lives behind its own tab
     await page.getByRole(ROLE.button, { name: m.auth.tabs.google }).click()
     await expect(page.getByRole(ROLE.button, { name: m.auth.googleButton })).toBeVisible()
   })

@@ -48,7 +48,7 @@ GitHub staging  → Vercel Preview     → Supabase audiophile-staging
 - **Migrations apply independently** to each project — apply to staging first, verify, then production.
 - **Never edit a migration file once applied to any project** — `supabase db push` tracks applied files by filename, so an edit silently no-ops. Write a new migration instead. See `audiophile-compare-schema.md` for the full rule and precedent.
 - Each project requires its own Auth redirect URL in Supabase → Authentication → URL Configuration.
-  Mismatched redirect URLs cause magic link logins to land on the wrong environment.
+  Mismatched redirect URLs cause OAuth/registration/password-reset email links to land on the wrong environment.
 - **Vercel Functions are pinned to `lhr1` (London)** (`vercel.json`'s
   `regions`, step 72) — confirmed via `x-vercel-id` that they were
   otherwise defaulting to `iad1` (US East), while both Supabase projects
@@ -82,7 +82,7 @@ app/
     tracks/route.ts
     votes/route.ts
     votes/[id]/route.ts
-  auth/callback/route.ts                    ← Magic link + OAuth code exchange
+  auth/callback/route.ts                    ← OAuth + registration + password-reset code exchange
   auth/confirm/route.ts                     ← token_hash verification (admin/service-issued links)
   auth/signout/route.ts                     ← Step 62; server-side signOut(), fetch()-invoked from SignOutButton
   global-error.tsx                          ← Required for Next.js 16 + Turbopack
@@ -141,9 +141,8 @@ components/
   SiteHeader.tsx                            ← Server: global header; reads auth
   SignOutButton.tsx                         ← Client
   OAuthButtons.tsx                          ← Client; accepts redirectTo prop
-  LoginForm.tsx                             ← Client: magic link form
   LoginWithPasswordForm.tsx                 ← Client
-  LoginTabs.tsx                             ← Client: tab shell on /login
+  LoginTabs.tsx                             ← Client: tab shell on /login (Password, Google)
   RegisterForm.tsx                          ← Client
   ForgotPasswordForm.tsx                    ← Client
   ProfileForm.tsx                           ← Client
@@ -239,9 +238,9 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-Steps 1–63 and 65–80 complete: core app (1–29, 40–63, 65–80) plus the
+Steps 1–63 and 65–81 complete: core app (1–29, 40–63, 65–81) plus the
 forum-ingestion pipeline (30–39) through a real production import. Current
-unit suite: 62 files / 623 tests passing (`npm run test`); integration suite
+unit suite: 61 files / 611 tests passing (`npm run test`); integration suite
 (`npm run test:integration`, testing.md §11): 17/17 passing against real
 staging.
 

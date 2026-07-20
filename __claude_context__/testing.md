@@ -69,7 +69,6 @@ indirectly through the step tests.
 | File | Tests | What it covers |
 |---|---|---|
 | `__tests__/setup.test.ts` | 3 | Test infrastructure verification |
-| `__tests__/LoginForm.test.tsx` | 12 | Email input, success/error states, Supabase OTP call, redirectTo |
 | `__tests__/OAuthButtons.test.tsx` | 5 | Google button, signInWithOAuth call, redirectTo prop |
 | `__tests__/supabase-client.test.ts` | 7 | Browser client creation, env vars |
 | `__tests__/supabase-server.test.ts` | 10 | Async client, cookie handling, env vars |
@@ -134,7 +133,9 @@ indirectly through the step tests.
   admin-issued links can't carry a PKCE `code_verifier`), saving session cookies to
   `playwright/.auth/user.json`. This shared session is reused by every authenticated
   spec **except** `zz-sign-out.spec.ts`, which needs its own disposable session — see
-  that file for why.
+  that file for why. This is an admin-only Supabase API call, independent of the
+  interactive magic-link login UI removed in step 81 — it needs no replacement and
+  isn't affected by that removal.
 - Google OAuth is not E2E-tested — `OAuthButtons` unit tests cover the API call.
 - Staging/preview deployments sit behind Vercel SSO Deployment Protection —
   `VERCEL_AUTOMATION_BYPASS_SECRET` (§9) lets the automated browser through.

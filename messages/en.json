@@ -23,11 +23,8 @@
     "heading": "Sign in",
     "googleButton": "Continue with Google",
     "emailLabel": "Email address",
-    "magicLinkButton": "Send magic link",
-    "magicLinkSent": "Check your email — a magic link is on its way.",
     "tabs": {
       "password": "Password",
-      "magicLink": "Magic link",
       "google": "Google"
     },
     "registerLink": "Don't have an account? Register",

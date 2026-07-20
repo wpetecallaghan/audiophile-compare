@@ -540,7 +540,7 @@ Inserts a row into `public.users`, deriving `display_name` from user metadata:
 coalesce(
   raw_user_meta_data->>'full_name',  -- set by signUp({ options: { data: { full_name } } })
   raw_user_meta_data->>'name',       -- some OAuth providers
-  split_part(email, '@', 1)          -- magic link / password fallback
+  split_part(email, '@', 1)          -- generic fallback when no full_name is available
 )
 ```
 Uses `ON CONFLICT (id) DO NOTHING` so re-triggering is safe.
