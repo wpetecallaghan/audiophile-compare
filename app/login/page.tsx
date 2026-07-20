@@ -1,4 +1,8 @@
-import LoginTabs from '@/components/LoginTabs'
+import Link from 'next/link'
+import LoginWithPasswordForm from '@/components/LoginWithPasswordForm'
+import OAuthButtons from '@/components/OAuthButtons'
+import { AuthShell } from '@/components/ui/AuthShell'
+import { Divider } from '@/components/ui/Divider'
 import { getTranslations } from 'next-intl/server'
 
 export default async function LoginPage({
@@ -10,11 +14,23 @@ export default async function LoginPage({
   const t = await getTranslations('auth')
 
   return (
-    <main className="h-full flex items-center justify-center">
-      <div className="w-full max-w-sm space-y-6 p-8">
-        <h1 className="text-2xl font-semibold">{t('heading')}</h1>
-        <LoginTabs redirectTo={params.redirectTo} />
+    <AuthShell heading={t('heading')}>
+      <OAuthButtons redirectTo={params.redirectTo} />
+      <Divider label={t('orSignInWithEmail')} />
+      <div className="space-y-4">
+        <LoginWithPasswordForm redirectTo={params.redirectTo} />
+        <Link
+          href="/forgot-password"
+          className="block text-xs text-gray-500 dark:text-gray-400 hover:underline"
+        >
+          {t('forgotPasswordLink')}
+        </Link>
       </div>
-    </main>
+      <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+        <Link href="/register" className="hover:underline">
+          {t('registerLink')}
+        </Link>
+      </p>
+    </AuthShell>
   )
 }

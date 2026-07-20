@@ -29,21 +29,14 @@ describe('ForgotPasswordForm', () => {
   // ---------------------------------------------------------------------------
 
   describe('Rendering', () => {
-    it('renders the heading and email input', () => {
+    it('renders the email input', () => {
       render(<ForgotPasswordForm />)
-      expect(screen.getByText(/reset your password/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/email address/i)).toBeInTheDocument()
     })
 
     it('renders the Send reset link button', () => {
       render(<ForgotPasswordForm />)
       expect(screen.getByRole('button', { name: /send reset link/i })).toBeInTheDocument()
-    })
-
-    it('renders the Back to sign in button when onBack is provided', () => {
-      const onBack = vi.fn()
-      render(<ForgotPasswordForm onBack={onBack} />)
-      expect(screen.getByRole('button', { name: /back to sign in/i })).toBeInTheDocument()
     })
   })
 
@@ -103,16 +96,6 @@ describe('ForgotPasswordForm', () => {
       await user.click(screen.getByRole('button', { name: /send reset link/i }))
 
       expect(await screen.findByText(/60 seconds/i)).toBeInTheDocument()
-    })
-
-    it('calls onBack when Back to sign in is clicked', async () => {
-      const user = userEvent.setup()
-      const onBack = vi.fn()
-
-      render(<ForgotPasswordForm onBack={onBack} />)
-      await user.click(screen.getByRole('button', { name: /back to sign in/i }))
-
-      expect(onBack).toHaveBeenCalled()
     })
   })
 })

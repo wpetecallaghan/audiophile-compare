@@ -96,3 +96,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 79 | Show the real snapshot name in the Clips step's "before" question; finish translating `ClipInput.tsx` | [79-clips-step-snapshot-name.md](79-clips-step-snapshot-name.md) |
 | 80 | Export a named constant for every `ClipProvider`/`MediaType` union member (matches `STATUS_*`'s existing `UrlStatus` precedent) | [80-clip-provider-media-type-constants.md](80-clip-provider-media-type-constants.md) |
 | 81 | Remove magic-link login (password + Google OAuth unaffected) | [81-remove-magic-link-login.md](81-remove-magic-link-login.md) |
+| 82 | Login: Google + password on one view (no tabs), forgot-password split to its own page, `AuthShell`/`Divider` built | [82-login-single-view-authshell-divider.md](82-login-single-view-authshell-divider.md) |

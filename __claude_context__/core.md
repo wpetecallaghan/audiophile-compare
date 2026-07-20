@@ -89,8 +89,9 @@ app/
   layout.tsx
   page.tsx                                  ← Public feed (server, paginated)
   about/page.tsx                            ← Public: why/how explainer, no auth
-  login/page.tsx
-  register/page.tsx
+  login/page.tsx                            ← Public: AuthShell + OAuthButtons + Divider + LoginWithPasswordForm
+  register/page.tsx                         ← Public: AuthShell + OAuthButtons + Divider + RegisterForm
+  forgot-password/page.tsx                  ← Public: AuthShell + ForgotPasswordForm
   profile/page.tsx
   systems/page.tsx
   systems/new/page.tsx
@@ -142,9 +143,10 @@ components/
   SignOutButton.tsx                         ← Client
   OAuthButtons.tsx                          ← Client; accepts redirectTo prop
   LoginWithPasswordForm.tsx                 ← Client
-  LoginTabs.tsx                             ← Client: tab shell on /login (Password, Google)
   RegisterForm.tsx                          ← Client
-  ForgotPasswordForm.tsx                    ← Client
+  ForgotPasswordForm.tsx                    ← Client; no onBack prop (step 82) — "back to sign in" is now
+                                                a persistent page-level link (app/forgot-password/page.tsx),
+                                                not an in-place swap
   ProfileForm.tsx                           ← Client
   ChangeEmailForm.tsx                       ← Client
   ChangePasswordForm.tsx                    ← Client
@@ -238,9 +240,9 @@ See `components.md §1` for the full rule and code patterns. Summary: default is
 
 ## 6. Build status
 
-Steps 1–63 and 65–81 complete: core app (1–29, 40–63, 65–81) plus the
+Steps 1–63 and 65–82 complete: core app (1–29, 40–63, 65–82) plus the
 forum-ingestion pipeline (30–39) through a real production import. Current
-unit suite: 61 files / 611 tests passing (`npm run test`); integration suite
+unit suite: 61 files / 609 tests passing (`npm run test`); integration suite
 (`npm run test:integration`, testing.md §11): 17/17 passing against real
 staging.
 

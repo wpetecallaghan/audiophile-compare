@@ -23,10 +23,7 @@
     "heading": "Sign in",
     "googleButton": "Continue with Google",
     "emailLabel": "Email address",
-    "tabs": {
-      "password": "Password",
-      "google": "Google"
-    },
+    "orSignInWithEmail": "or sign in with email",
     "registerLink": "Don't have an account? Register",
     "forgotPasswordLink": "Forgot password?",
     "loginButton": "Sign in",

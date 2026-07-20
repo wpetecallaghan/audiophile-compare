@@ -873,16 +873,18 @@ in this codebase.
 
 ---
 
-## 13. Page-level layout — `PageShell`/`Text`/`Section`/`RowCard`/`PageHeader` (build step 52)
+## 13. Page-level layout — `PageShell`/`Text`/`Section`/`RowCard`/`PageHeader`/`AuthShell`/`Divider` (build steps 52, 82)
 
 Same motivation as step 22, one layer up — page-level structure (the
 `<main>` wrapper, `<section>` groupings, muted/body text, list-item cards,
 title+subtitle headers) was still hand-copied across all 17 `app/**/page.tsx`
 files. Found via a full audit (three parallel reviews, cross-referenced);
-see `build-history/52-componentize-page-layout.md` for the full catalog,
-including patterns identified but deliberately **not** componentized yet
-(`Breadcrumbs`, `AuthShell`, `ClipHealthWarning`, `Divider`, `Byline`,
-`SectionHeading`, `ButtonRow`).
+see `build-history/52-componentize-page-layout.md` for the full catalog.
+Two of the patterns identified there but deliberately left unbuilt at the
+time (`AuthShell`, `Divider` — only 2 occurrences each then) were built in
+step 82 once a third caller (`/forgot-password`) made the duplication
+worth closing; `Breadcrumbs`, `ClipHealthWarning`, `Byline`,
+`SectionHeading`, `ButtonRow` remain catalogued but not yet built.
 
 **The page wrapper — use `<PageShell maxWidth />` (`components/ui/PageShell.tsx`),
 never a raw `<main className="container mx-auto max-w-...">`:**
@@ -892,8 +894,33 @@ import { PageShell } from '@/components/ui/PageShell'
 <PageShell maxWidth="4xl">...</PageShell>   {/* feed, profile, systems, tracks, tests */}
 <PageShell maxWidth="4xl" spacing="responsive">...</PageShell>  {/* tests/[id] only — space-y-4 sm:space-y-6 */}
 ```
-`login`/`register` deliberately don't use `PageShell` — they're a
-different, centered-card shell (`AuthShell` in the catalog, not built yet).
+`login`/`register`/`forgot-password` deliberately don't use `PageShell` —
+they use the centered-card `AuthShell` instead (below).
+
+**The centered-card auth-page wrapper — use `<AuthShell heading />`
+(`components/ui/AuthShell.tsx`), never a raw `<main className="h-full
+flex items-center justify-center">` + hand-rolled `<h1>`:**
+```tsx
+import { AuthShell } from '@/components/ui/AuthShell'
+<AuthShell heading={t('heading')}>
+  {/* page content — OAuthButtons, a Divider, a form, footer links */}
+</AuthShell>
+```
+Used by `app/login/page.tsx`, `app/register/page.tsx`,
+`app/forgot-password/page.tsx` — the only three pages in the app with this
+shell. Renders the heading via the existing `Heading level={1}` (not a raw
+`<h1>`), fixing a non-responsive text-size defect the three pages had
+independently carried before this existed.
+
+**A labeled horizontal divider (e.g. "or register with email") — use
+`<Divider label />` (`components/ui/Divider.tsx`), never a hand-rolled
+flex + two `border-t` divs:**
+```tsx
+import { Divider } from '@/components/ui/Divider'
+<Divider label={t('orRegisterWithEmail')} />
+```
+Used between `OAuthButtons` and the password/email form on `/login` and
+`/register`. `/forgot-password` has no OAuth option, so no divider there.
 
 **Muted/body text — use `<Text size tone as />` (`components/ui/Text.tsx`),
 never a raw `<p>`/`<span>` with a hand-copied color class:**

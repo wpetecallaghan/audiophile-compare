@@ -44,13 +44,20 @@ test.describe('Public feed (unauthenticated)', () => {
     await expect(page).toHaveURL(/redirectTo=%2Fsystems/)
   })
 
-  test('login page shows a Google sign-in option', async ({ page }) => {
+  test('login page shows Google sign-in and password sign-in on one view', async ({ page }) => {
     await page.goto('/login')
     await expect(page.getByRole(ROLE.heading, { name: m.auth.heading })).toBeVisible()
 
-    // Google sign-in lives behind its own tab
-    await page.getByRole(ROLE.button, { name: m.auth.tabs.google }).click()
+    // No tabs on login — Google and the password form are both visible at once
     await expect(page.getByRole(ROLE.button, { name: m.auth.googleButton })).toBeVisible()
+    await expect(page.getByRole(ROLE.button, { name: m.auth.loginButton })).toBeVisible()
+  })
+
+  test('forgot-password link navigates to its own page', async ({ page }) => {
+    await page.goto('/login')
+    await page.getByRole(ROLE.link, { name: m.auth.forgotPasswordLink }).click()
+    await expect(page).toHaveURL(/\/forgot-password/)
+    await expect(page.getByRole(ROLE.heading, { name: m.auth.forgotPasswordHeading })).toBeVisible()
   })
 
   test('register page shows the Google sign-up option alongside the form', async ({ page }) => {
