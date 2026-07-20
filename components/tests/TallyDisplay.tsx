@@ -16,6 +16,8 @@ type Props = {
 
 export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnly }: Props) {
   const t = await getTranslations('tests.results')
+  const tMapping = await getTranslations('tests.mapping')
+  const tTests = await getTranslations('tests')
   const { curated, others, divergent } = tally
   const votedTechniques = curated.filter(r => r.total > 0)
   const hasAnyVotes = votedTechniques.length > 0 || others.length > 0
@@ -34,8 +36,7 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
 
       {divergent && (
         <Callout tone="warning" className="px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">
-          Techniques disagree on the winner — this change may involve a
-          tradeoff.
+          {t('divergentWarning')}
         </Callout>
       )}
 
@@ -55,13 +56,13 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
                 [
                   {
                     clipId: clipAId,
-                    label: 'Clip A',
+                    label: tMapping('clipALabel'),
                     votes: r.clipAVotes,
                     percent: r.clipAPercent,
                   },
                   {
                     clipId: clipBId,
-                    label: 'Clip B',
+                    label: tMapping('clipBLabel'),
                     votes: r.clipBVotes,
                     percent: r.clipBPercent,
                   },
@@ -86,6 +87,22 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
                   </span>
                 </div>
               ))}
+
+              {r.observations.length > 0 && (
+                <ul className="space-y-1 pt-1">
+                  {r.observations.map((obs, i) => (
+                    <li key={i} className="text-sm text-gray-600 dark:text-gray-300">
+                      <span className="font-medium">
+                        {obs.chosenClipId === clipAId ? tMapping('clipALabel') : tMapping('clipBLabel')}
+                      </span>
+                      {' — '}
+                      {obs.observation}
+                      {' '}
+                      {t('observationAuthor', { name: obs.voterName ?? tTests('anonymous') })}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </div>
@@ -101,13 +118,15 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
             {others.map((vote, i) => (
               <li key={i} className="text-sm text-gray-600 dark:text-gray-300">
                 <span className="font-medium">
-                  {vote.chosenClipId === clipAId ? 'Clip A' : 'Clip B'}
+                  {vote.chosenClipId === clipAId ? tMapping('clipALabel') : tMapping('clipBLabel')}
                 </span>
                 {' — '}
                 {vote.description}
                 {vote.observation && (
                   <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5 ml-2">
                     {vote.observation}
+                    {' '}
+                    {t('observationAuthor', { name: vote.voterName ?? tTests('anonymous') })}
                   </span>
                 )}
               </li>

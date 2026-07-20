@@ -99,7 +99,7 @@ indirectly through the step tests.
 | `lib/clips/__tests__/is-unsupported.test.ts` | 3 | `isUnsupportedClip` (step 54 simplification): true only for provider unknown; false for direct regardless of media_type; false for every embeddable provider |
 | `lib/clips/__tests__/to-clip-data.test.ts` | 6 | embed_id and canonical_url derivation for each provider, including Google Drive |
 | `lib/clips/__tests__/find-shared-clips.test.ts` | 9 | Shared track finder; side A/B selection; no shared tracks |
-| `lib/votes/__tests__/compute-tally.test.ts` | 16 | Grouping, percentages, divergence detection, Other routing |
+| `lib/votes/__tests__/compute-tally.test.ts` | 26 | Grouping, percentages, divergence detection, Other routing; curated (non-Other) technique observations (step 78) — collected per vote, scoped to their own technique, empty when not provided, order-preserving across multiple voters; voter display-name attribution on both curated and Other observations, including the Supabase single-element-array join form and a null/no-display-name fallback |
 | `lib/votes/__tests__/compute-outcome.test.ts` | 8 | Win/loss/draw/no-votes/open per snapshot |
 | `lib/admin/__tests__/is-admin-email.test.ts` | 7 | ADMIN_EMAILS allowlist: unset, null/undefined email, match, no match, case-insensitivity, whitespace, empty entries |
 | `lib/ingestion/__tests__/create-placeholder-author.test.ts` | 8 | Slugification (lowercase/strip/collapse/trim/truncate); resolves an existing (source, external_username) mapping without recreating; creates a new placeholder author; two usernames that slugify identically still get distinct placeholders; throws on auth user creation failure |

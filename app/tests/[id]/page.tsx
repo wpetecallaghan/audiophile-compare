@@ -139,7 +139,8 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
             chosen_clip_id,
             other_description,
             observation,
-            technique:listening_techniques(id, name, is_other, sort_order)
+            technique:listening_techniques(id, name, is_other, sort_order),
+            voter:users!user_id(display_name)
           `)
           .eq('test_id', test.id)
       : Promise.resolve({ data: null as RawVoteRow[] | null }),
@@ -189,7 +190,8 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
         chosen_clip_id,
         other_description,
         observation,
-        technique:listening_techniques(id, name, is_other, sort_order)
+        technique:listening_techniques(id, name, is_other, sort_order),
+        voter:users!user_id(display_name)
       `)
       .eq('test_id', test.id)
     tally = computeTally((data ?? []) as RawVoteRow[], rawA.id, rawB.id)

@@ -229,7 +229,9 @@
     "results": {
       "heading": "Results",
       "noVotes": "No votes recorded yet.",
-      "ownVoteOnlyNote": "Showing only your own vote. Full results from every listener appear once this test is revealed."
+      "ownVoteOnlyNote": "Showing only your own vote. Full results from every listener appear once this test is revealed.",
+      "divergentWarning": "Techniques disagree on the winner — this change may involve a tradeoff.",
+      "observationAuthor": "— {name}"
     },
     "mapping": {
       "clipALabel": "Clip A",

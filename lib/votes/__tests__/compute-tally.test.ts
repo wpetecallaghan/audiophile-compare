@@ -14,13 +14,14 @@ const other = { id: 'tech-other', name: 'Other',     is_other: true,  sort_order
 function vote(
   technique: typeof tune,
   clipId: string,
-  opts: { other_description?: string; observation?: string } = {},
+  opts: { other_description?: string; observation?: string; voterName?: string | null } = {},
 ): RawVoteRow {
   return {
     chosen_clip_id: clipId,
     other_description: opts.other_description ?? null,
     observation: opts.observation ?? null,
     technique,
+    voter: { display_name: opts.voterName ?? null },
   }
 }
 
@@ -136,6 +137,99 @@ describe('computeTally', () => {
     })
   })
 
+  describe('Curated technique observations', () => {
+    it('collects an observation left on a curated-technique vote', () => {
+      const votes = [
+        vote(tune, CLIP_A, { observation: 'Clip A had tighter bass' }),
+      ]
+      const { curated } = computeTally(votes, CLIP_A, CLIP_B)
+
+      expect(curated[0].observations).toHaveLength(1)
+      expect(curated[0].observations[0]).toEqual({
+        chosenClipId: CLIP_A,
+        observation: 'Clip A had tighter bass',
+        voterName: null,
+      })
+    })
+
+    it('leaves observations empty when no vote provided one', () => {
+      const votes = [vote(tune, CLIP_A), vote(tune, CLIP_B)]
+      const { curated } = computeTally(votes, CLIP_A, CLIP_B)
+
+      expect(curated[0].observations).toHaveLength(0)
+    })
+
+    it('collects observations from multiple voters on the same technique, in order', () => {
+      const votes = [
+        vote(tune, CLIP_A, { observation: 'First voter note' }),
+        vote(tune, CLIP_B, { observation: 'Second voter note' }),
+      ]
+      const { curated } = computeTally(votes, CLIP_A, CLIP_B)
+
+      expect(curated[0].observations.map(o => o.observation)).toEqual([
+        'First voter note',
+        'Second voter note',
+      ])
+    })
+
+    it('keeps observations scoped to their own technique', () => {
+      const votes = [
+        vote(tune, CLIP_A, { observation: 'Tune Method note' }),
+        vote(prat, CLIP_B, { observation: 'PRaT note' }),
+      ]
+      const { curated } = computeTally(votes, CLIP_A, CLIP_B)
+
+      const tuneResult = curated.find(r => r.techniqueName === 'Tune Method')
+      const pratResult = curated.find(r => r.techniqueName === 'PRaT')
+
+      expect(tuneResult?.observations).toEqual([
+        { chosenClipId: CLIP_A, observation: 'Tune Method note', voterName: null },
+      ])
+      expect(pratResult?.observations).toEqual([
+        { chosenClipId: CLIP_B, observation: 'PRaT note', voterName: null },
+      ])
+    })
+
+    it('attaches the voter display name to a curated observation', () => {
+      const votes = [
+        vote(tune, CLIP_A, { observation: 'Tighter bass', voterName: 'Jane Doe' }),
+      ]
+      const { curated } = computeTally(votes, CLIP_A, CLIP_B)
+
+      expect(curated[0].observations[0].voterName).toBe('Jane Doe')
+    })
+
+    it('handles the voter join returned as a single-element array', () => {
+      const votes: RawVoteRow[] = [
+        {
+          chosen_clip_id: CLIP_A,
+          other_description: null,
+          observation: 'Tighter bass',
+          technique: tune,
+          voter: [{ display_name: 'Jane Doe' }], // array form
+        },
+      ]
+      const { curated } = computeTally(votes, CLIP_A, CLIP_B)
+
+      expect(curated[0].observations[0].voterName).toBe('Jane Doe')
+    })
+
+    it('sets voterName to null when the voter has no display name', () => {
+      const votes: RawVoteRow[] = [
+        {
+          chosen_clip_id: CLIP_A,
+          other_description: null,
+          observation: 'Tighter bass',
+          technique: tune,
+          voter: { display_name: null },
+        },
+      ]
+      const { curated } = computeTally(votes, CLIP_A, CLIP_B)
+
+      expect(curated[0].observations[0].voterName).toBeNull()
+    })
+  })
+
   describe('Other technique', () => {
     it('puts Other votes into the others array, not curated', () => {
       const votes = [vote(other, CLIP_A, { other_description: 'Detail retrieval' })]
@@ -165,6 +259,24 @@ describe('computeTally', () => {
       expect(others[0].observation).toBeNull()
     })
 
+    it('attaches the voter display name to an Other vote', () => {
+      const votes = [
+        vote(other, CLIP_B, {
+          other_description: 'Low-level detail',
+          observation: 'Clip B resolved more micro-detail',
+          voterName: 'Jane Doe',
+        }),
+      ]
+      const { others } = computeTally(votes, CLIP_A, CLIP_B)
+      expect(others[0].voterName).toBe('Jane Doe')
+    })
+
+    it('sets voterName to null when the voter has no display name', () => {
+      const votes = [vote(other, CLIP_A, { other_description: 'Speed' })]
+      const { others } = computeTally(votes, CLIP_A, CLIP_B)
+      expect(others[0].voterName).toBeNull()
+    })
+
     it('does not affect divergence calculation', () => {
       const votes = [
         vote(tune,  CLIP_A),
@@ -184,11 +296,26 @@ describe('computeTally', () => {
           other_description: null,
           observation: null,
           technique: [tune], // array form
+          voter: null,
         },
       ]
       const { curated } = computeTally(votes, CLIP_A, CLIP_B)
       expect(curated).toHaveLength(1)
       expect(curated[0].techniqueName).toBe('Tune Method')
+    })
+
+    it('sets voterName to null when the voter join itself is null', () => {
+      const votes: RawVoteRow[] = [
+        {
+          chosen_clip_id: CLIP_A,
+          other_description: null,
+          observation: 'Tighter bass',
+          technique: tune,
+          voter: null,
+        },
+      ]
+      const { curated } = computeTally(votes, CLIP_A, CLIP_B)
+      expect(curated[0].observations[0].voterName).toBeNull()
     })
   })
 })
