@@ -11,6 +11,7 @@ import { routes } from '../helpers/routes'
 import { seedCompleteTest } from '../helpers/admin'
 import { ROLE } from '../helpers/constants'
 import m from '../../messages/en.json'
+import { PROVIDER_UNKNOWN } from '@/lib/clips/detect-provider'
 
 // A syntactically-valid YouTube URL — POST /api/clips/verify trusts the URL
 // pattern for youtube/vimeo (no HEAD request), so this always verifies 'ok'
@@ -72,7 +73,7 @@ test.describe('Dead clip handling', () => {
 test.describe('Unsupported-playback clip handling', () => {
   test('blind view: shows a bare link with no "could not be identified" message', async ({ page }) => {
     const fixture = await seedCompleteTest(`unsupported-${Date.now()}`, {
-      clipAProvider: 'unknown',
+      clipAProvider: PROVIDER_UNKNOWN,
     })
     await page.goto(routes.test(fixture.test.id))
 
@@ -94,7 +95,7 @@ test.describe('Unsupported-playback clip handling', () => {
 
   test('revealed view: the mapping badge\'s clip slot links directly to an unsupported clip, with no separate link below', async ({ page }) => {
     const fixture = await seedCompleteTest(`unsupported-mapping-${Date.now()}`, {
-      clipAProvider: 'unknown',
+      clipAProvider: PROVIDER_UNKNOWN,
     })
     await page.goto(routes.test(fixture.test.id))
 

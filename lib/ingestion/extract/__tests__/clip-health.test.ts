@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { checkDirectUrl } from '@/lib/clips/check-url'
 import { isRealPostLink, checkClipHealth, checkClipStatus } from '../clip-health'
+import { MEDIA_TYPE_AUDIO, MEDIA_TYPE_VIDEO, MEDIA_TYPE_UNKNOWN } from '@/lib/clips/detect-provider'
 
 vi.mock('@/lib/clips/check-url', () => ({
   checkDirectUrl: vi.fn(),
@@ -46,22 +47,22 @@ describe('checkClipHealth', () => {
   })
 
   it('returns dead when checkDirectUrl reports the URL is dead', async () => {
-    vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'dead', media_type: 'unknown', duration_ms: null })
+    vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'dead', media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     await expect(checkClipHealth(DIRECT_URL)).resolves.toBe('dead')
   })
 
   it('leaves a degraded (timeout/5xx) URL as passable, matching decision 12\'s original leniency', async () => {
-    vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'degraded', media_type: 'unknown', duration_ms: null })
+    vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'degraded', media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     await expect(checkClipHealth(DIRECT_URL)).resolves.toBe('ok')
   })
 
   it('returns ok when the URL is reachable and genuinely resolves to media', async () => {
-    vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'ok', media_type: 'audio', duration_ms: null })
+    vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'ok', media_type: MEDIA_TYPE_AUDIO, duration_ms: null })
     await expect(checkClipHealth(DIRECT_URL)).resolves.toBe('ok')
   })
 
   it('returns unplayable when the URL is reachable but resolves to a non-media page (the real Dropbox/Photos/iCloud case)', async () => {
-    vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'ok', media_type: 'unknown', duration_ms: null })
+    vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'ok', media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     await expect(checkClipHealth(DROPBOX_PREVIEW_URL)).resolves.toBe('unplayable')
   })
 })
@@ -82,7 +83,7 @@ describe('checkClipStatus', () => {
   })
 
   it('runs the real health check once the URL is confirmed to be a real post link', async () => {
-    vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'ok', media_type: 'video', duration_ms: null })
+    vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'ok', media_type: MEDIA_TYPE_VIDEO, duration_ms: null })
     await expect(checkClipStatus(DIRECT_URL, [DIRECT_URL])).resolves.toBe('ok')
     expect(checkDirectUrl).toHaveBeenCalledTimes(1)
   })

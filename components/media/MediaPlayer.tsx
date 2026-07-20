@@ -9,6 +9,7 @@ import GoogleDrivePlayer from './players/GoogleDrivePlayer'
 import UnknownPlayer from './players/UnknownPlayer'
 import { ClipFacade } from './players/ClipFacade'
 import type { ClipProvider, MediaType } from '@/lib/clips/detect-provider'
+import { PROVIDER_YOUTUBE, PROVIDER_VIMEO, PROVIDER_GOOGLE_DRIVE, PROVIDER_DIRECT, MEDIA_TYPE_AUDIO, MEDIA_TYPE_VIDEO } from '@/lib/clips/detect-provider'
 
 // This is the shape of the clip data your API returns.
 // It matches the columns in your clips table.
@@ -72,7 +73,7 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
   // since an embed can fail for reasons specific to its provider (iframe
   // blocked, video removed/region-locked, host-side hotlink protection)
   // that the listener has no other way to route around from this page.
-  if (clip.provider === 'youtube' && clip.embed_id) {
+  if (clip.provider === PROVIDER_YOUTUBE && clip.embed_id) {
     return (
       <div className="space-y-2">
         {activated ? (
@@ -94,7 +95,7 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
     )
   }
 
-  if (clip.provider === 'vimeo' && clip.embed_id) {
+  if (clip.provider === PROVIDER_VIMEO && clip.embed_id) {
     return (
       <div className="space-y-2">
         {activated ? (
@@ -116,7 +117,7 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
     )
   }
 
-  if (clip.provider === 'google-drive' && clip.embed_id) {
+  if (clip.provider === PROVIDER_GOOGLE_DRIVE && clip.embed_id) {
     return (
       <div className="space-y-2">
         {activated ? (
@@ -138,13 +139,13 @@ const MediaPlayer = forwardRef<PlayerHandle, Props>(function MediaPlayer(
     )
   }
 
-  if (clip.provider === 'direct') {
+  if (clip.provider === PROVIDER_DIRECT) {
     return (
       <div className="space-y-2">
         <NativePlayer
           ref={innerRef}
           url={clip.canonical_url ?? clip.source_url}
-          mediaType={clip.media_type === 'audio' ? 'audio' : 'video'}
+          mediaType={clip.media_type === MEDIA_TYPE_AUDIO ? MEDIA_TYPE_AUDIO : MEDIA_TYPE_VIDEO}
           onPlay={onPlay}
         />
         <UnknownPlayer url={clip.source_url} />

@@ -3,6 +3,7 @@ import { E2E_PREFIX } from './constants'
 import { createPlaceholderAuthor } from '@/lib/ingestion/create-placeholder-author'
 import { STATUS_OK, type UrlStatus } from '@/lib/clips/check-url'
 import type { ClipProvider, MediaType } from '@/lib/clips/detect-provider'
+import { PROVIDER_YOUTUBE, MEDIA_TYPE_VIDEO } from '@/lib/clips/detect-provider'
 
 // ---------------------------------------------------------------------------
 // Admin client — bypasses RLS; use only in test setup/teardown
@@ -145,8 +146,8 @@ export async function seedClip(
   label: 'A' | 'B',
   sourceUrl: string,
   urlStatus: UrlStatus = STATUS_OK,
-  provider: ClipProvider = 'youtube',
-  mediaType: MediaType = 'video',
+  provider: ClipProvider = PROVIDER_YOUTUBE,
+  mediaType: MediaType = MEDIA_TYPE_VIDEO,
 ): Promise<SeededClip> {
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -207,14 +208,14 @@ export async function seedCompleteTest(
   const clipA = await seedClip(
     test.id, 'A', YOUTUBE_A,
     opts.clipAStatus ?? STATUS_OK,
-    opts.clipAProvider ?? 'youtube',
-    opts.clipAMediaType ?? 'video',
+    opts.clipAProvider ?? PROVIDER_YOUTUBE,
+    opts.clipAMediaType ?? MEDIA_TYPE_VIDEO,
   )
   const clipB = await seedClip(
     test.id, 'B', YOUTUBE_B,
     opts.clipBStatus ?? STATUS_OK,
-    opts.clipBProvider ?? 'youtube',
-    opts.clipBMediaType ?? 'video',
+    opts.clipBProvider ?? PROVIDER_YOUTUBE,
+    opts.clipBMediaType ?? MEDIA_TYPE_VIDEO,
   )
   // Clip A is "before", Clip B is "after" — a real test always has this
   // row (created by POST /api/tests); without it MappingBadge never

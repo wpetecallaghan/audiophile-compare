@@ -1,4 +1,4 @@
-import { detectProvider } from './detect-provider'
+import { detectProvider, PROVIDER_DIRECT, PROVIDER_YOUTUBE, PROVIDER_VIMEO, MEDIA_TYPE_VIDEO } from './detect-provider'
 import { isGooglePhotosUrl, resolveGooglePhotosVideoUrl } from './resolve-google-photos'
 import { fetchVimeoThumbnail } from './fetch-vimeo-thumbnail'
 import type { ClipData } from '@/components/media/MediaPlayer'
@@ -23,7 +23,7 @@ export async function toClipData(clip: RawClip): Promise<ClipData> {
   // provider where canonical_url/media_type below can diverge from the
   // stored DB values on success.
   const resolvedVideoUrl =
-    detected.provider === 'direct' && isGooglePhotosUrl(clip.source_url)
+    detected.provider === PROVIDER_DIRECT && isGooglePhotosUrl(clip.source_url)
       ? await resolveGooglePhotosVideoUrl(clip.source_url)
       : null
 
@@ -41,9 +41,9 @@ export async function toClipData(clip: RawClip): Promise<ClipData> {
   // network call and GoogleDrivePlayer.tsx's comments for why Drive has no
   // available thumbnail at all.
   const thumbnailUrl =
-    detected.provider === 'youtube' && detected.embed_id
+    detected.provider === PROVIDER_YOUTUBE && detected.embed_id
       ? `https://img.youtube.com/vi/${detected.embed_id}/hqdefault.jpg`
-      : detected.provider === 'vimeo' && detected.embed_id
+      : detected.provider === PROVIDER_VIMEO && detected.embed_id
         ? await fetchVimeoThumbnail(detected.embed_id)
         : null
 
@@ -52,7 +52,7 @@ export async function toClipData(clip: RawClip): Promise<ClipData> {
     label:         clip.label as 'A' | 'B',
     source_url:    clip.source_url,
     provider:      clip.provider as ClipData['provider'],
-    media_type:    resolvedVideoUrl ? 'video' : (clip.media_type as ClipData['media_type']),
+    media_type:    resolvedVideoUrl ? MEDIA_TYPE_VIDEO : (clip.media_type as ClipData['media_type']),
     canonical_url: canonicalUrl,
     embed_id:      detected.embed_id,
     thumbnail_url: thumbnailUrl,

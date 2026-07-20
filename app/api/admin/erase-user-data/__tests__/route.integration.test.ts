@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createPlaceholderAuthor } from '@/lib/ingestion/create-placeholder-author'
+import { PROVIDER_DIRECT, MEDIA_TYPE_AUDIO } from '@/lib/clips/detect-provider'
 
 // Hits real staging Supabase — see vitest.integration.config.ts and
 // testing.md §7/§11. Exercises the three erase_user_* Postgres functions
@@ -83,8 +84,8 @@ async function seedTestFixture(
       test_id: test!.id,
       label: 'A',
       source_url: 'https://example.com/e2e-erasure-a.mp3',
-      provider: 'direct',
-      media_type: 'audio',
+      provider: PROVIDER_DIRECT,
+      media_type: MEDIA_TYPE_AUDIO,
       url_status: 'ok',
     })
     .select('id')
@@ -95,8 +96,8 @@ async function seedTestFixture(
       test_id: test!.id,
       label: 'B',
       source_url: 'https://example.com/e2e-erasure-b.mp3',
-      provider: 'direct',
-      media_type: 'audio',
+      provider: PROVIDER_DIRECT,
+      media_type: MEDIA_TYPE_AUDIO,
       url_status: 'ok',
     })
     .select('id')

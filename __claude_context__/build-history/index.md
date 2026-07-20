@@ -94,3 +94,4 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 77 | Fix First/Previous/Next/Last footer nav shifting position at list boundaries (`FooterNavLink` disabled state) | [77-footer-nav-position-stability.md](77-footer-nav-position-stability.md) |
 | 78 | Fix revealed-test observations missing for curated (non-Other) techniques | [78-curated-technique-observations.md](78-curated-technique-observations.md) |
 | 79 | Show the real snapshot name in the Clips step's "before" question; finish translating `ClipInput.tsx` | [79-clips-step-snapshot-name.md](79-clips-step-snapshot-name.md) |
+| 80 | Export a named constant for every `ClipProvider`/`MediaType` union member (matches `STATUS_*`'s existing `UrlStatus` precedent) | [80-clip-provider-media-type-constants.md](80-clip-provider-media-type-constants.md) |

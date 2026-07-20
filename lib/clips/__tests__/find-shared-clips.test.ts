@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import { findSharedClips } from '../find-shared-clips'
 import type { TestWithClips } from '../find-shared-clips'
+import { PROVIDER_DIRECT, MEDIA_TYPE_AUDIO } from '../detect-provider'
 
 // --- Fixtures ---
 
@@ -13,8 +14,8 @@ const TRACK_2 = 'track-2'
 
 function makeClips(aUrl: string, bUrl: string): TestWithClips['clips'] {
   return [
-    { id: 'clip-a', label: 'A', source_url: aUrl, provider: 'direct', media_type: 'audio' },
-    { id: 'clip-b', label: 'B', source_url: bUrl, provider: 'direct', media_type: 'audio' },
+    { id: 'clip-a', label: 'A', source_url: aUrl, provider: PROVIDER_DIRECT, media_type: MEDIA_TYPE_AUDIO },
+    { id: 'clip-b', label: 'B', source_url: bUrl, provider: PROVIDER_DIRECT, media_type: MEDIA_TYPE_AUDIO },
   ]
 }
 

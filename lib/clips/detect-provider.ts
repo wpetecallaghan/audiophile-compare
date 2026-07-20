@@ -4,6 +4,24 @@
 export type ClipProvider = 'youtube' | 'vimeo' | 'google-drive' | 'direct' | 'unknown'
 export type MediaType = 'audio' | 'video' | 'unknown'
 
+// One named constant per member, imported everywhere instead of repeating
+// the raw string (mirrors check-url.ts's STATUS_OK/STATUS_DEGRADED/
+// STATUS_DEAD for UrlStatus). `as const` rather than an explicit
+// `: ClipProvider =` / `: MediaType =` annotation deliberately keeps each
+// constant's own type as its narrow literal, not the wider union — some
+// consumers (e.g. NativePlayer.tsx's own `'audio' | 'video'` prop type,
+// narrower than the full MediaType) need the literal type to still be
+// assignable there; a `MediaType`-typed constant would not be.
+export const PROVIDER_YOUTUBE = 'youtube' as const
+export const PROVIDER_VIMEO = 'vimeo' as const
+export const PROVIDER_GOOGLE_DRIVE = 'google-drive' as const
+export const PROVIDER_DIRECT = 'direct' as const
+export const PROVIDER_UNKNOWN = 'unknown' as const
+
+export const MEDIA_TYPE_AUDIO = 'audio' as const
+export const MEDIA_TYPE_VIDEO = 'video' as const
+export const MEDIA_TYPE_UNKNOWN = 'unknown' as const
+
 // Describes everything we can know about a clip URL before any network request
 export type DetectedClip = {
   provider: ClipProvider
@@ -80,8 +98,8 @@ export function detectProvider(rawUrl: string): DetectedClip {
   } catch {
     // URL constructor throws if the string isn't a valid URL
     return {
-      provider: 'unknown',
-      media_type: 'unknown',
+      provider: PROVIDER_UNKNOWN,
+      media_type: MEDIA_TYPE_UNKNOWN,
       embed_id: null,
       canonical_url: rawUrl,
     }
@@ -90,8 +108,8 @@ export function detectProvider(rawUrl: string): DetectedClip {
   const youtubeId = extractYouTubeId(url)
   if (youtubeId) {
     return {
-      provider: 'youtube',
-      media_type: 'video',
+      provider: PROVIDER_YOUTUBE,
+      media_type: MEDIA_TYPE_VIDEO,
       embed_id: youtubeId,
       canonical_url: `https://www.youtube.com/embed/${youtubeId}`,
     }
@@ -100,8 +118,8 @@ export function detectProvider(rawUrl: string): DetectedClip {
   const vimeoId = extractVimeoId(url)
   if (vimeoId) {
     return {
-      provider: 'vimeo',
-      media_type: 'video',
+      provider: PROVIDER_VIMEO,
+      media_type: MEDIA_TYPE_VIDEO,
       embed_id: vimeoId,
       canonical_url: `https://player.vimeo.com/video/${vimeoId}`,
     }
@@ -110,12 +128,12 @@ export function detectProvider(rawUrl: string): DetectedClip {
   const googleDriveId = extractGoogleDriveId(url)
   if (googleDriveId) {
     return {
-      provider: 'google-drive',
+      provider: PROVIDER_GOOGLE_DRIVE,
       // No reliable way to know audio vs video from the URL alone, but
       // real clips shared this way are virtually always video recordings
       // (e.g. filming a system playing back) — same 'video' default
       // already used for youtube/vimeo rather than 'unknown'.
-      media_type: 'video',
+      media_type: MEDIA_TYPE_VIDEO,
       embed_id: googleDriveId,
       canonical_url: `https://drive.google.com/file/d/${googleDriveId}/preview`,
     }
@@ -123,8 +141,8 @@ export function detectProvider(rawUrl: string): DetectedClip {
 
   if (isDropboxUrl(url)) {
     return {
-      provider: 'direct',
-      media_type: 'unknown',   // HEAD misreports Content-Type even for raw=1 — resolved client-side (step 54)
+      provider: PROVIDER_DIRECT,
+      media_type: MEDIA_TYPE_UNKNOWN,   // HEAD misreports Content-Type even for raw=1 — resolved client-side (step 54)
       embed_id: null,
       canonical_url: toDropboxRawUrl(url),
     }
@@ -132,8 +150,8 @@ export function detectProvider(rawUrl: string): DetectedClip {
 
   // Anything else is treated as a direct URL — we'll HEAD it to learn more
   return {
-    provider: 'direct',
-    media_type: 'unknown',   // resolved by HEAD request below
+    provider: PROVIDER_DIRECT,
+    media_type: MEDIA_TYPE_UNKNOWN,   // resolved by HEAD request below
     embed_id: null,
     canonical_url: rawUrl,
   }

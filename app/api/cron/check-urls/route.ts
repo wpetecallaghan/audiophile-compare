@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { detectProvider } from '@/lib/clips/detect-provider'
+import { detectProvider, PROVIDER_DIRECT, PROVIDER_GOOGLE_DRIVE, MEDIA_TYPE_UNKNOWN } from '@/lib/clips/detect-provider'
 import type { ClipProvider } from '@/lib/clips/detect-provider'
 import { checkDirectUrl } from '@/lib/clips/check-url'
 import type { UrlStatus } from '@/lib/clips/check-url'
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   // endpoint's HTTP status actually distinguishes reachable from gone
   // (step 58) — YouTube and Vimeo stay excluded because their embed pages
   // return 200 regardless of whether the specific video exists.
-  const CHECKED_PROVIDERS: ClipProvider[] = ['direct', 'google-drive']
+  const CHECKED_PROVIDERS: ClipProvider[] = [PROVIDER_DIRECT, PROVIDER_GOOGLE_DRIVE]
   const { data: clips, error } = await supabase
     .from('clips')
     .select('id, source_url, url_status, media_type')
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     // Upgrade media_type from 'unknown' when the HEAD response tells us more.
     // Never downgrade a known type back to 'unknown' (HEAD responses can omit Content-Type).
-    if (result.media_type !== 'unknown' && result.media_type !== clip.media_type) {
+    if (result.media_type !== MEDIA_TYPE_UNKNOWN && result.media_type !== clip.media_type) {
       updates.media_type = result.media_type
     }
 

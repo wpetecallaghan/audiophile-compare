@@ -1,3 +1,5 @@
+import { PROVIDER_UNKNOWN } from './detect-provider'
+
 // A clip with no player to even attempt — the URL never parsed at all
 // (lib/clips/detect-provider.ts only returns provider 'unknown' when `new
 // URL(rawUrl)` itself throws). 'direct' clips are NOT included here even
@@ -7,5 +9,5 @@
 // drift from MediaPlayer's own fallback condition — see build-history.md
 // step 28.
 export function isUnsupportedClip(clip: { provider: string }): boolean {
-  return clip.provider === 'unknown'
+  return clip.provider === PROVIDER_UNKNOWN
 }

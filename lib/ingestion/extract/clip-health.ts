@@ -1,4 +1,4 @@
-import { detectProvider } from '@/lib/clips/detect-provider'
+import { detectProvider, PROVIDER_GOOGLE_DRIVE, PROVIDER_DIRECT, MEDIA_TYPE_UNKNOWN } from '@/lib/clips/detect-provider'
 import { checkDirectUrl, STATUS_DEAD, STATUS_OK } from '@/lib/clips/check-url'
 
 export type ClipHealthStatus = 'ok' | 'missing' | 'dead' | 'unplayable' | 'unverifiable'
@@ -54,11 +54,11 @@ export function isRealPostLink(url: string, postLinks: string[]): boolean {
 export async function checkClipHealth(url: string): Promise<ClipHealthStatus> {
   const detected = detectProvider(url)
 
-  if (detected.provider === 'google-drive') return 'unverifiable'
+  if (detected.provider === PROVIDER_GOOGLE_DRIVE) return 'unverifiable'
 
   // youtube/vimeo: trusted by URL shape, decision 12, unchanged — their
   // embed endpoints are genuinely public and don't require a session.
-  if (detected.provider !== 'direct') return 'ok'
+  if (detected.provider !== PROVIDER_DIRECT) return 'ok'
 
   const checked = await checkDirectUrl(detected)
   if (checked.url_status === STATUS_DEAD) return 'dead'
@@ -66,7 +66,7 @@ export async function checkClipHealth(url: string): Promise<ClipHealthStatus> {
   // decision 12's original leniency for a possibly-transient condition —
   // this tightening only refines what counts as a genuine 'ok', not what
   // counts as 'dead'.
-  if (checked.url_status === STATUS_OK && checked.media_type === 'unknown') return 'unplayable'
+  if (checked.url_status === STATUS_OK && checked.media_type === MEDIA_TYPE_UNKNOWN) return 'unplayable'
   return 'ok'
 }
 

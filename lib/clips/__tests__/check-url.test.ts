@@ -2,17 +2,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { checkDirectUrl, STATUS_OK, STATUS_DEGRADED, STATUS_DEAD } from '../check-url'
 import type { DetectedClip } from '../detect-provider'
+import { PROVIDER_DIRECT, MEDIA_TYPE_AUDIO, MEDIA_TYPE_VIDEO, MEDIA_TYPE_UNKNOWN } from '../detect-provider'
 
 const DIRECT_CLIP: DetectedClip = {
-  provider: 'direct',
-  media_type: 'unknown',
+  provider: PROVIDER_DIRECT,
+  media_type: MEDIA_TYPE_UNKNOWN,
   embed_id: null,
   canonical_url: 'https://example.com/clip.mp3',
 }
 
 const DROPBOX_CLIP: DetectedClip = {
-  provider: 'direct',
-  media_type: 'unknown',
+  provider: PROVIDER_DIRECT,
+  media_type: MEDIA_TYPE_UNKNOWN,
   embed_id: null,
   canonical_url: 'https://www.dropbox.com/scl/fi/abc123/clip.mov?rlkey=xyz&raw=1',
 }
@@ -48,7 +49,7 @@ describe('checkDirectUrl', () => {
         mockResponse({ ok: true, url: DIRECT_CLIP.canonical_url, contentType: 'audio/mpeg' }),
       )
       const result = await checkDirectUrl(DIRECT_CLIP)
-      expect(result).toEqual({ url_status: STATUS_OK, media_type: 'audio', duration_ms: null })
+      expect(result).toEqual({ url_status: STATUS_OK, media_type: MEDIA_TYPE_AUDIO, duration_ms: null })
     })
 
     it('200 with a video content-type resolves to ok, media_type video', async () => {
@@ -56,7 +57,7 @@ describe('checkDirectUrl', () => {
         mockResponse({ ok: true, url: DIRECT_CLIP.canonical_url, contentType: 'video/mp4' }),
       )
       const result = await checkDirectUrl(DIRECT_CLIP)
-      expect(result).toEqual({ url_status: STATUS_OK, media_type: 'video', duration_ms: null })
+      expect(result).toEqual({ url_status: STATUS_OK, media_type: MEDIA_TYPE_VIDEO, duration_ms: null })
     })
 
     it('200 with no content-type resolves to ok, media_type unknown', async () => {
@@ -64,19 +65,19 @@ describe('checkDirectUrl', () => {
         mockResponse({ ok: true, url: DIRECT_CLIP.canonical_url, contentType: null }),
       )
       const result = await checkDirectUrl(DIRECT_CLIP)
-      expect(result).toEqual({ url_status: STATUS_OK, media_type: 'unknown', duration_ms: null })
+      expect(result).toEqual({ url_status: STATUS_OK, media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     })
 
     it('404 resolves to dead', async () => {
       vi.mocked(global.fetch).mockResolvedValue(mockResponse({ ok: false, status: 404 }))
       const result = await checkDirectUrl(DIRECT_CLIP)
-      expect(result).toEqual({ url_status: STATUS_DEAD, media_type: 'unknown', duration_ms: null })
+      expect(result).toEqual({ url_status: STATUS_DEAD, media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     })
 
     it('500 resolves to degraded (may be transient)', async () => {
       vi.mocked(global.fetch).mockResolvedValue(mockResponse({ ok: false, status: 500 }))
       const result = await checkDirectUrl(DIRECT_CLIP)
-      expect(result).toEqual({ url_status: STATUS_DEGRADED, media_type: 'unknown', duration_ms: null })
+      expect(result).toEqual({ url_status: STATUS_DEGRADED, media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     })
 
     it('a timeout resolves to degraded', async () => {
@@ -88,13 +89,13 @@ describe('checkDirectUrl', () => {
           }),
       )
       const result = await checkDirectUrl(DIRECT_CLIP, 10)
-      expect(result).toEqual({ url_status: STATUS_DEGRADED, media_type: 'unknown', duration_ms: null })
+      expect(result).toEqual({ url_status: STATUS_DEGRADED, media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     })
 
     it('a network error resolves to dead', async () => {
       vi.mocked(global.fetch).mockRejectedValue(new Error('getaddrinfo ENOTFOUND'))
       const result = await checkDirectUrl(DIRECT_CLIP)
-      expect(result).toEqual({ url_status: STATUS_DEAD, media_type: 'unknown', duration_ms: null })
+      expect(result).toEqual({ url_status: STATUS_DEAD, media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     })
   })
 
@@ -120,7 +121,7 @@ describe('checkDirectUrl', () => {
         }),
       )
       const result = await checkDirectUrl(DROPBOX_CLIP)
-      expect(result).toEqual({ url_status: STATUS_DEAD, media_type: 'unknown', duration_ms: null })
+      expect(result).toEqual({ url_status: STATUS_DEAD, media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     })
 
     it('a Dropbox 404/5xx still resolves the same way as any other direct host (untouched by the redirect-host check)', async () => {

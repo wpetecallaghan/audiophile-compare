@@ -1,5 +1,5 @@
 import type { DetectedClip, MediaType } from './detect-provider'
-import { isDropboxUrl } from './detect-provider'
+import { isDropboxUrl, MEDIA_TYPE_AUDIO, MEDIA_TYPE_VIDEO, MEDIA_TYPE_UNKNOWN } from './detect-provider'
 
 export type UrlStatus = 'ok' | 'degraded' | 'dead'
 
@@ -18,13 +18,12 @@ const USER_AGENT = 'AudiophileCompare-URLHealthCheck/1.0 (+https://audiophile-co
 export const STATUS_OK: UrlStatus = 'ok'
 export const STATUS_DEGRADED: UrlStatus = 'degraded'
 export const STATUS_DEAD: UrlStatus = 'dead'
-const MEDIA_TYPE_UNKNOWN = 'unknown'
 
 // Maps Content-Type header values to our media_type enum
 function resolveMediaType(contentType: string | null): MediaType {
   if (!contentType) return MEDIA_TYPE_UNKNOWN
-  if (contentType.startsWith('audio/')) return 'audio'
-  if (contentType.startsWith('video/')) return 'video'
+  if (contentType.startsWith('audio/')) return MEDIA_TYPE_AUDIO
+  if (contentType.startsWith('video/')) return MEDIA_TYPE_VIDEO
   return MEDIA_TYPE_UNKNOWN
 }
 

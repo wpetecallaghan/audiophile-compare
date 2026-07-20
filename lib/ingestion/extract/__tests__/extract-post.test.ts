@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { generateObject } from 'ai'
 import { checkDirectUrl } from '@/lib/clips/check-url'
+import { MEDIA_TYPE_AUDIO, MEDIA_TYPE_VIDEO, MEDIA_TYPE_UNKNOWN } from '@/lib/clips/detect-provider'
 import { extractPost, type PostClassification } from '../extract-post'
 import { buildCandidateIndex, saveCandidate } from '../candidate-index'
 import { TUNE_METHOD_TECHNIQUE_NAME } from '../../ingest-test-payload'
@@ -154,7 +155,7 @@ describe('extractPost', () => {
     it('flags dead_clip_url when a direct link fails its health check', async () => {
       vi.mocked(checkDirectUrl).mockResolvedValue({
         url_status: 'dead',
-        media_type: 'audio',
+        media_type: MEDIA_TYPE_AUDIO,
         duration_ms: null,
       })
       mockClassification(
@@ -231,7 +232,7 @@ describe('extractPost', () => {
       const pageUrl = 'https://www.dropbox.com/scl/fi/abc/clip.mov?rlkey=xyz&dl=0'
       vi.mocked(checkDirectUrl).mockResolvedValue({
         url_status: 'ok',
-        media_type: 'unknown',
+        media_type: MEDIA_TYPE_UNKNOWN,
         duration_ms: null,
       })
       mockClassification(
@@ -354,7 +355,7 @@ describe('extractPost', () => {
       // 'direct' — give them a healthy, real-media check so this test
       // stays focused on label decomposition, not clip-health (covered
       // separately below).
-      vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'ok', media_type: 'video', duration_ms: null })
+      vi.mocked(checkDirectUrl).mockResolvedValue({ url_status: 'ok', media_type: MEDIA_TYPE_VIDEO, duration_ms: null })
       const clipUrls = [
         'https://photos.app.goo.gl/1',
         'https://photos.app.goo.gl/2',

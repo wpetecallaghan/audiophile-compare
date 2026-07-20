@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import MediaPlayer, { type ClipData } from '../MediaPlayer'
+import {
+  PROVIDER_YOUTUBE,
+  PROVIDER_VIMEO,
+  PROVIDER_GOOGLE_DRIVE,
+  PROVIDER_DIRECT,
+  PROVIDER_UNKNOWN,
+  MEDIA_TYPE_AUDIO,
+  MEDIA_TYPE_VIDEO,
+  MEDIA_TYPE_UNKNOWN,
+} from '@/lib/clips/detect-provider'
 
 // @vitest-environment jsdom
 
@@ -29,8 +39,8 @@ const makeClip = (overrides: Partial<ClipData>): ClipData => ({
   id: 'test-id',
   label: 'A',
   source_url: 'https://example.com/clip.mov',
-  provider: 'direct',
-  media_type: 'video',
+  provider: PROVIDER_DIRECT,
+  media_type: MEDIA_TYPE_VIDEO,
   ...overrides,
 })
 
@@ -41,7 +51,7 @@ describe('MediaPlayer', () => {
   // confirmed, but the <video> element is mounted and attempting to load
   // it, not skipped outright the way a provider: 'unknown' clip is).
   it('mounts NativePlayer (not just a bare link) for a direct clip with media_type unknown', () => {
-    const clip = makeClip({ media_type: 'unknown' })
+    const clip = makeClip({ media_type: MEDIA_TYPE_UNKNOWN })
 
     render(<MediaPlayer clip={clip} onPlay={vi.fn()} />)
 
@@ -49,7 +59,7 @@ describe('MediaPlayer', () => {
   })
 
   it('defaults to a <video> element (not <audio>) for media_type unknown', () => {
-    const clip = makeClip({ media_type: 'unknown' })
+    const clip = makeClip({ media_type: MEDIA_TYPE_UNKNOWN })
 
     render(<MediaPlayer clip={clip} onPlay={vi.fn()} />)
 
@@ -58,7 +68,7 @@ describe('MediaPlayer', () => {
   })
 
   it('renders an <audio> element for a direct clip with media_type audio', () => {
-    const clip = makeClip({ media_type: 'audio' })
+    const clip = makeClip({ media_type: MEDIA_TYPE_AUDIO })
 
     render(<MediaPlayer clip={clip} onPlay={vi.fn()} />)
 
@@ -66,7 +76,7 @@ describe('MediaPlayer', () => {
   })
 
   it('renders a bare link for provider unknown (unparseable URL)', () => {
-    const clip = makeClip({ provider: 'unknown', media_type: 'unknown' })
+    const clip = makeClip({ provider: PROVIDER_UNKNOWN, media_type: MEDIA_TYPE_UNKNOWN })
 
     render(<MediaPlayer clip={clip} onPlay={vi.fn()} />)
 
@@ -99,7 +109,7 @@ describe('MediaPlayer', () => {
   // state to wait on, for every provider that attempts a real embed.
   describe('always shows a link to the original clip alongside the embed', () => {
     it('for a direct clip', () => {
-      const clip = makeClip({ provider: 'direct', source_url: 'https://example.com/clip.mov' })
+      const clip = makeClip({ provider: PROVIDER_DIRECT, source_url: 'https://example.com/clip.mov' })
       render(<MediaPlayer clip={clip} onPlay={vi.fn()} />)
 
       expect(document.querySelector('video')).not.toBeNull()
@@ -109,7 +119,7 @@ describe('MediaPlayer', () => {
 
     it('for a YouTube clip', () => {
       const clip = makeClip({
-        provider: 'youtube',
+        provider: PROVIDER_YOUTUBE,
         source_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         embed_id: 'dQw4w9WgXcQ',
       })
@@ -121,7 +131,7 @@ describe('MediaPlayer', () => {
 
     it('for a Vimeo clip', () => {
       const clip = makeClip({
-        provider: 'vimeo',
+        provider: PROVIDER_VIMEO,
         source_url: 'https://vimeo.com/123456789',
         embed_id: '123456789',
       })
@@ -133,7 +143,7 @@ describe('MediaPlayer', () => {
 
     it('for a Google Drive clip', () => {
       const clip = makeClip({
-        provider: 'google-drive',
+        provider: PROVIDER_GOOGLE_DRIVE,
         source_url: 'https://drive.google.com/file/d/abc123/view',
         embed_id: 'abc123',
       })
@@ -150,7 +160,7 @@ describe('MediaPlayer', () => {
   describe('lazy SDK mounting via ClipFacade', () => {
     it('renders a ClipFacade play button instead of the real iframe for a YouTube clip', () => {
       const clip = makeClip({
-        provider: 'youtube',
+        provider: PROVIDER_YOUTUBE,
         source_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         embed_id: 'dQw4w9WgXcQ',
       })
@@ -164,7 +174,7 @@ describe('MediaPlayer', () => {
       const user = userEvent.setup()
       const onPlay = vi.fn()
       const clip = makeClip({
-        provider: 'youtube',
+        provider: PROVIDER_YOUTUBE,
         source_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         embed_id: 'dQw4w9WgXcQ',
       })
@@ -181,7 +191,7 @@ describe('MediaPlayer', () => {
     it('renders a ClipFacade play button instead of the real iframe for a Vimeo clip, and mounts it on click', async () => {
       const user = userEvent.setup()
       const clip = makeClip({
-        provider: 'vimeo',
+        provider: PROVIDER_VIMEO,
         source_url: 'https://vimeo.com/123456789',
         embed_id: '123456789',
       })
@@ -197,7 +207,7 @@ describe('MediaPlayer', () => {
     it('renders a ClipFacade play button instead of the real iframe for a Google Drive clip, and mounts it on click', async () => {
       const user = userEvent.setup()
       const clip = makeClip({
-        provider: 'google-drive',
+        provider: PROVIDER_GOOGLE_DRIVE,
         source_url: 'https://drive.google.com/file/d/abc123/view',
         embed_id: 'abc123',
       })
@@ -213,7 +223,7 @@ describe('MediaPlayer', () => {
     })
 
     it('does not render a ClipFacade for a direct clip (out of scope)', () => {
-      const clip = makeClip({ provider: 'direct', media_type: 'video' })
+      const clip = makeClip({ provider: PROVIDER_DIRECT, media_type: MEDIA_TYPE_VIDEO })
       render(<MediaPlayer clip={clip} onPlay={vi.fn()} />)
 
       expect(screen.queryByRole('button', { name: /Play clip/ })).not.toBeInTheDocument()

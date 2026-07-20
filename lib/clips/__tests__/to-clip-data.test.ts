@@ -1,13 +1,22 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { toClipData } from '../to-clip-data'
+import {
+  PROVIDER_YOUTUBE,
+  PROVIDER_VIMEO,
+  PROVIDER_GOOGLE_DRIVE,
+  PROVIDER_DIRECT,
+  MEDIA_TYPE_AUDIO,
+  MEDIA_TYPE_VIDEO,
+  MEDIA_TYPE_UNKNOWN,
+} from '../detect-provider'
 
 const baseClip = {
   id: 'abc-123',
   label: 'A',
   source_url: '',
-  provider: 'direct',
-  media_type: 'audio',
+  provider: PROVIDER_DIRECT,
+  media_type: MEDIA_TYPE_AUDIO,
   url_status: 'ok',
 }
 
@@ -40,16 +49,16 @@ describe('toClipData', () => {
     expect(result.id).toBe('abc-123')
     expect(result.label).toBe('A')
     expect(result.source_url).toBe('https://example.com/track.mp3')
-    expect(result.provider).toBe('direct')
-    expect(result.media_type).toBe('audio')
+    expect(result.provider).toBe(PROVIDER_DIRECT)
+    expect(result.media_type).toBe(MEDIA_TYPE_AUDIO)
   })
 
   it('derives embed_id and canonical_url for a YouTube source_url', async () => {
     const result = await toClipData({
       ...baseClip,
       source_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      provider: 'youtube',
-      media_type: 'video',
+      provider: PROVIDER_YOUTUBE,
+      media_type: MEDIA_TYPE_VIDEO,
     })
     expect(result.embed_id).toBe('dQw4w9WgXcQ')
     expect(result.canonical_url).toBe('https://www.youtube.com/embed/dQw4w9WgXcQ')
@@ -62,8 +71,8 @@ describe('toClipData', () => {
     const result = await toClipData({
       ...baseClip,
       source_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      provider: 'youtube',
-      media_type: 'video',
+      provider: PROVIDER_YOUTUBE,
+      media_type: MEDIA_TYPE_VIDEO,
     })
     expect(result.thumbnail_url).toBe('https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg')
     expect(global.fetch).not.toHaveBeenCalled()
@@ -73,8 +82,8 @@ describe('toClipData', () => {
     const result = await toClipData({
       ...baseClip,
       source_url: 'https://vimeo.com/123456789',
-      provider: 'vimeo',
-      media_type: 'video',
+      provider: PROVIDER_VIMEO,
+      media_type: MEDIA_TYPE_VIDEO,
     })
     expect(result.embed_id).toBe('123456789')
     expect(result.canonical_url).toBe('https://player.vimeo.com/video/123456789')
@@ -91,8 +100,8 @@ describe('toClipData', () => {
     const result = await toClipData({
       ...baseClip,
       source_url: 'https://vimeo.com/123456789',
-      provider: 'vimeo',
-      media_type: 'video',
+      provider: PROVIDER_VIMEO,
+      media_type: MEDIA_TYPE_VIDEO,
     })
     expect(result.thumbnail_url).toBe('https://i.vimeocdn.com/video/123_640.jpg')
   })
@@ -101,8 +110,8 @@ describe('toClipData', () => {
     const result = await toClipData({
       ...baseClip,
       source_url: 'https://drive.google.com/file/d/1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl/view?usp=sharing',
-      provider: 'google-drive',
-      media_type: 'video',
+      provider: PROVIDER_GOOGLE_DRIVE,
+      media_type: MEDIA_TYPE_VIDEO,
     })
     expect(result.embed_id).toBe('1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl')
     expect(result.canonical_url).toBe(
@@ -116,8 +125,8 @@ describe('toClipData', () => {
     const result = await toClipData({
       ...baseClip,
       source_url: 'https://drive.google.com/file/d/1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl/view?usp=sharing',
-      provider: 'google-drive',
-      media_type: 'video',
+      provider: PROVIDER_GOOGLE_DRIVE,
+      media_type: MEDIA_TYPE_VIDEO,
     })
     expect(result.thumbnail_url).toBeNull()
   })
@@ -156,14 +165,14 @@ describe('toClipData — Google Photos resolution', () => {
     const result = await toClipData({
       ...baseClip,
       source_url: GOOGLE_PHOTOS_URL,
-      provider: 'direct',
-      media_type: 'unknown',
+      provider: PROVIDER_DIRECT,
+      media_type: MEDIA_TYPE_UNKNOWN,
     })
 
     expect(result.canonical_url).toBe(
       `/api/clips/google-photos-proxy?url=${encodeURIComponent(RESOLVED_VIDEO_URL)}`,
     )
-    expect(result.media_type).toBe('video')
+    expect(result.media_type).toBe(MEDIA_TYPE_VIDEO)
   })
 
   it('falls back to today\'s behavior when resolution fails', async () => {
@@ -172,20 +181,20 @@ describe('toClipData — Google Photos resolution', () => {
     const result = await toClipData({
       ...baseClip,
       source_url: GOOGLE_PHOTOS_URL,
-      provider: 'direct',
-      media_type: 'unknown',
+      provider: PROVIDER_DIRECT,
+      media_type: MEDIA_TYPE_UNKNOWN,
     })
 
     expect(result.canonical_url).toBe(GOOGLE_PHOTOS_URL)
-    expect(result.media_type).toBe('unknown')
+    expect(result.media_type).toBe(MEDIA_TYPE_UNKNOWN)
   })
 
   it('never calls fetch for a non-Google-Photos direct URL', async () => {
     await toClipData({
       ...baseClip,
       source_url: 'https://example.com/track.mp3',
-      provider: 'direct',
-      media_type: 'audio',
+      provider: PROVIDER_DIRECT,
+      media_type: MEDIA_TYPE_AUDIO,
     })
 
     expect(global.fetch).not.toHaveBeenCalled()

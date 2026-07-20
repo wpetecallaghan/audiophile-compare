@@ -1,6 +1,7 @@
 'use client'
 
 import { forwardRef, useImperativeHandle, useRef, useState, useEffect } from 'react'
+import { MEDIA_TYPE_AUDIO } from '@/lib/clips/detect-provider'
 
 // forwardRef and useImperativeHandle are how you expose methods from a child
 // component to a parent. The parent holds a ref; the child defines what that
@@ -69,7 +70,7 @@ const NativePlayer = forwardRef<PlayerHandle, Props>(function NativePlayer(
     onLoadedMetadata: () => setHasLoaded(true),
   }
 
-  return mediaType === 'audio' ? (
+  return mediaType === MEDIA_TYPE_AUDIO ? (
     <audio
       ref={elementRef as React.RefObject<HTMLAudioElement>}
       {...sharedProps}

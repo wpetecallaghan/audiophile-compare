@@ -1,4 +1,4 @@
-import { detectProvider } from '@/lib/clips/detect-provider'
+import { detectProvider, PROVIDER_YOUTUBE, PROVIDER_VIMEO } from '@/lib/clips/detect-provider'
 import type { ScrapedLink } from './parse-thread-page'
 
 // Public, unauthenticated oEmbed endpoints — no API key needed for either.
@@ -14,11 +14,11 @@ type OEmbedFields = { oembed_title?: string; oembed_author?: string }
 // enrichment, not a broken scrape.
 export async function fetchOEmbed(url: string): Promise<OEmbedFields> {
   const detected = detectProvider(url)
-  if (detected.provider !== 'youtube' && detected.provider !== 'vimeo') {
+  if (detected.provider !== PROVIDER_YOUTUBE && detected.provider !== PROVIDER_VIMEO) {
     return {}
   }
 
-  const endpoint = detected.provider === 'youtube' ? YOUTUBE_OEMBED : VIMEO_OEMBED
+  const endpoint = detected.provider === PROVIDER_YOUTUBE ? YOUTUBE_OEMBED : VIMEO_OEMBED
 
   try {
     const response = await fetch(`${endpoint}?url=${encodeURIComponent(url)}&format=json`)

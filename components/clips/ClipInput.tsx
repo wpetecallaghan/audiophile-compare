@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { TextInput } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
 import { STATUS_DEAD, STATUS_DEGRADED } from '@/lib/clips/check-url'
+import { MEDIA_TYPE_UNKNOWN } from '@/lib/clips/detect-provider'
 
 // Extracted in step 27 from StepClips.tsx once the "replace a dead clip's
 // URL" flow needed the exact same URL input + Verify button + inline
@@ -25,7 +26,7 @@ function VerificationBadge({ result }: { result: VerifiedClip }) {
   return (
     <FormMessage tone="success">
       {t('verified', { provider: result.provider })}
-      {result.media_type !== 'unknown' && t('verifiedMediaType', { mediaType: result.media_type })}
+      {result.media_type !== MEDIA_TYPE_UNKNOWN && t('verifiedMediaType', { mediaType: result.media_type })}
       {result.url_status === STATUS_DEGRADED && t('verifiedDegraded')}
     </FormMessage>
   )

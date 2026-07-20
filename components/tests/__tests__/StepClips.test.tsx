@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import StepClips from '../steps/StepClips'
 import type { Snapshot, TestDraft, VerifiedClip } from '@/lib/types/test-creation'
 import { STATUS_OK } from '@/lib/clips/check-url'
+import { PROVIDER_YOUTUBE, MEDIA_TYPE_VIDEO } from '@/lib/clips/detect-provider'
 
 // --- Fixtures ---
 
@@ -17,7 +18,7 @@ const SNAPSHOT_B: Snapshot = {
 }
 
 const VERIFIED: VerifiedClip = {
-  provider: 'youtube', media_type: 'video', url_status: STATUS_OK,
+  provider: PROVIDER_YOUTUBE, media_type: MEDIA_TYPE_VIDEO, url_status: STATUS_OK,
   canonical_url: 'https://youtube.com/watch?v=abc', embed_id: 'abc',
 }
 

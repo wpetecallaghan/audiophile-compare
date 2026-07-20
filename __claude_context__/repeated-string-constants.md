@@ -36,7 +36,7 @@ well-named default parameter (e.g. `timeoutMs = 5000`) already documents
 itself via its name — it doesn't also need a separate top-level constant
 duplicating the same value for no second call site.
 
-## Typed discriminated-union members get the same structural exemption
+## Typed discriminated-union members get the same structural exemption — until cross-file reuse shows up
 
 A string literal returned into a field with an explicit string-literal-union
 type (e.g. `provider: 'youtube'` where the field's type is
@@ -44,9 +44,33 @@ type (e.g. `provider: 'youtube'` where the field's type is
 its own named constant just because the same union member is returned from
 more than one branch of the same function. The compiler already provides
 the safety a constant would buy — a typo doesn't type-check — so a constant
-adds indirection without adding information. `lib/clips/detect-provider.ts`
-returns `media_type: 'unknown'` from three different branches and
-`provider: 'direct'` from two; neither needs extracting.
+adds indirection without adding information, **as long as the repetition
+stays inside the file that declares the union.**
+
+This exemption is not a permanent pass, though — it only holds until the
+same literal turns out to be repeated *outside* that file too. This
+project's own `ClipProvider`/`MediaType` (`lib/clips/detect-provider.ts`)
+went through exactly that: an earlier version of this doc cited
+`media_type: 'unknown'` (three branches) and `provider: 'direct'` (two
+branches) inside that one file as not needing extraction. That was true in
+isolation, but a codebase-wide search later found every member of both
+unions — `'youtube'`, `'vimeo'`, `'google-drive'`, `'direct'`, `'unknown'`,
+`'audio'`, `'video'` — independently re-typed as raw literals across ~25
+other files (build step 80), exactly the "repeats across multiple files →
+shared module" case below. At that point the single-file exemption no
+longer applied — cross-file reuse always takes precedence, regardless of
+whether the repeated value also happens to sit in a typed-union position.
+`detect-provider.ts` now exports one named constant per member
+(`PROVIDER_YOUTUBE`, `MEDIA_TYPE_UNKNOWN`, etc. — declared `as const` for
+literal typing, not the wider union type; see that file's own comment for
+why), the same pattern `check-url.ts`'s `STATUS_OK`/`STATUS_DEGRADED`/
+`STATUS_DEAD` already established for `UrlStatus`.
+
+The takeaway: this exemption describes a *symptom* (the compiler already
+catches typos in a typed-union position), not a *rule that overrides*
+cross-file duplication. Don't assume a union member is exempt just because
+it's typed — check whether it's also independently repeated elsewhere
+first.
 
 This exemption covers only *individual members* of an already-declared
 union returned inline. It does not cover the union *type declaration*

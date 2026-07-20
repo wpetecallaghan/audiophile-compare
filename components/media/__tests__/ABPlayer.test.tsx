@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ABPlayer from '../ABPlayer'
 import type { ClipData } from '../MediaPlayer'
+import { PROVIDER_DIRECT, PROVIDER_GOOGLE_DRIVE, MEDIA_TYPE_AUDIO } from '@/lib/clips/detect-provider'
 
 // Install testing library for React components
 // Run: npm install -D @testing-library/react @testing-library/user-event jsdom
@@ -15,8 +16,8 @@ const makeClip = (overrides: Partial<ClipData>): ClipData => ({
   id: 'test-id',
   label: 'A',
   source_url: 'https://example.com/audio.mp3',
-  provider: 'direct',
-  media_type: 'audio',
+  provider: PROVIDER_DIRECT,
+  media_type: MEDIA_TYPE_AUDIO,
   ...overrides,
 })
 
@@ -63,7 +64,7 @@ describe('ABPlayer', () => {
     const user = userEvent.setup()
     const clipA = makeClip({
       label: 'A',
-      provider: 'google-drive',
+      provider: PROVIDER_GOOGLE_DRIVE,
       embed_id: '1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl',
       source_url: 'https://drive.google.com/file/d/1tzyg-oj6k007AnVSTXmmauTtZcsvUpUl/view',
     })
@@ -88,13 +89,13 @@ describe('ABPlayer', () => {
     const user = userEvent.setup()
     const clipA = makeClip({
       label: 'A',
-      provider: 'google-drive',
+      provider: PROVIDER_GOOGLE_DRIVE,
       embed_id: 'clip-a-drive-id',
       source_url: 'https://drive.google.com/file/d/clip-a-drive-id/view',
     })
     const clipB = makeClip({
       label: 'B',
-      provider: 'google-drive',
+      provider: PROVIDER_GOOGLE_DRIVE,
       embed_id: 'clip-b-drive-id',
       source_url: 'https://drive.google.com/file/d/clip-b-drive-id/view',
     })

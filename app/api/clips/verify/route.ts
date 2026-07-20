@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { detectProvider } from '@/lib/clips/detect-provider'
+import { detectProvider, PROVIDER_DIRECT } from '@/lib/clips/detect-provider'
 import { checkDirectUrl, STATUS_OK } from '@/lib/clips/check-url'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
   const detected = detectProvider(url)
 
   // Step 2: for direct URLs, HEAD the server to confirm reachability and media type
-  if (detected.provider === 'direct') {
+  if (detected.provider === PROVIDER_DIRECT) {
     const checked = await checkDirectUrl(detected)
     return NextResponse.json({
       provider:      detected.provider,
