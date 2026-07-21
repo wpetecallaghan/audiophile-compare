@@ -25,7 +25,11 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
 
-  retries: process.env.CI ? 1 : 0,
+  // Bumped 1 → 2 (build step 84) — the 3 observed failures were all the
+  // same staging write→independent-read replication lag `waitForServerState`
+  // already documents, not a real regression signal, so a second retry is a
+  // reasonable safety net on top of that helper's own widened timeout.
+  retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? 'github' : 'html',
 
   use: {
