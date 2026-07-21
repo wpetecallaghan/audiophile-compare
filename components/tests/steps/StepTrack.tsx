@@ -9,6 +9,7 @@ import { FieldLabel } from '@/components/ui/FieldLabel'
 import { TextInput } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
 import { Callout } from '@/components/ui/Callout'
+import { Text } from '@/components/ui/Text'
 
 type Props = {
   draft: TestDraft
@@ -70,26 +71,26 @@ export default function StepTrack({ draft, onComplete }: Props) {
     <div className="space-y-6">
       <div>
         <Heading level={2}>Track</Heading>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <Text className="mt-1">
           Find the recording used in this test, or add it if it's not listed.
-        </p>
+        </Text>
       </div>
 
       {selected ? (
         <Callout tone="success" className="space-y-1">
           <p className="font-medium">{selected.artist} — {selected.title}</p>
           {selected.album && (
-            <p className="text-sm text-gray-600 dark:text-gray-300">{selected.album}</p>
+            <Text tone="body">{selected.album}</Text>
           )}
           {selected.passage_note && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 italic">{selected.passage_note}</p>
+            <Text className="italic">{selected.passage_note}</Text>
           )}
           <Button variant="secondary" onClick={() => setSelected(null)} className="mt-2">
             Change track
           </Button>
         </Callout>
       ) : creating ? (
-        <div className="space-y-4 rounded border dark:border-gray-700 p-4">
+        <div className="space-y-4 rounded border border-border p-4">
         <h3 className="font-medium text-sm">{t('addTrackHeading')}</h3>
           {[
             { label: t('artistLabel'), value: artist, set: setArtist },
@@ -108,7 +109,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
           <div>
             <FieldLabel>
               {t('passageNoteLabel')}
-              <span className="text-gray-500 dark:text-gray-400 font-normal ml-1">
+              <span className="text-muted font-normal ml-1">
                 (e.g. "Opening bars, track 3")
               </span>
             </FieldLabel>
@@ -136,20 +137,20 @@ export default function StepTrack({ draft, onComplete }: Props) {
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
-          {loading && <p className="text-sm text-gray-500 dark:text-gray-400">{t('searching')}</p>}
+          {loading && <Text>{t('searching')}</Text>}
           {results.length > 0 && (
-            <ul className="border dark:border-gray-700 rounded divide-y dark:divide-gray-700">
+            <ul className="border border-border rounded divide-y divide-border">
               {results.map(track => (
                 <li key={track.id}>
                   <button
                     onClick={() => setSelected(track)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm"
+                    className="w-full text-left px-4 py-3 hover:bg-hover-surface text-sm"
                   >
                     <span className="font-medium">{track.artist}</span>
                     {' — '}
                     {track.title}
                     {track.album && (
-                      <span className="text-gray-500 dark:text-gray-400 ml-1">({track.album})</span>
+                      <span className="text-muted ml-1">({track.album})</span>
                     )}
                   </button>
                 </li>
@@ -157,7 +158,7 @@ export default function StepTrack({ draft, onComplete }: Props) {
             </ul>
           )}
           {!loading && query.trim() && results.length === 0 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t('noResults')}</p>
+            <Text>{t('noResults')}</Text>
           )}
           <Button variant="secondary" onClick={() => setCreating(true)}>
             {t('addTrackLink')}

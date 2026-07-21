@@ -7,6 +7,7 @@ import type { VerifiedClip } from '@/lib/types/test-creation'
 import { Button } from '@/components/ui/Button'
 import { Callout } from '@/components/ui/Callout'
 import { FormMessage } from '@/components/ui/FormMessage'
+import { CONFIRM_TRIGGER_BUTTON_CLASSES } from '@/components/ui/ConfirmButton'
 import { ClipInput } from '@/components/clips/ClipInput'
 import { STATUS_DEAD } from '@/lib/clips/check-url'
 
@@ -99,7 +100,7 @@ export default function ReplaceClipUrlButton({ clipId, label }: Props) {
   return (
     <button
       onClick={() => setOpen(true)}
-      className="border border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-400 rounded px-4 py-2 text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20"
+      className={CONFIRM_TRIGGER_BUTTON_CLASSES}
     >
       {t('button', { label })}
     </button>

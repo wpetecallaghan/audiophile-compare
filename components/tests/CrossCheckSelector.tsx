@@ -9,6 +9,7 @@ import { Heading } from '@/components/ui/Heading'
 import { FieldLabel } from '@/components/ui/FieldLabel'
 import { Select } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
+import { Text } from '@/components/ui/Text'
 
 type Snapshot = {
   id: string
@@ -134,13 +135,13 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
 
   return (
     <section className="space-y-4">
-      <div className="pb-2 border-b border-gray-100 dark:border-gray-800">
+      <div className="pb-2 border-b border-divider">
         <Heading level={2}>{t('heading')}</Heading>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        <Text size="xs" className="mt-0.5">
           {t('description')}
           no new recording needed. Addresses the risk of successive improvements
           that are locally good but globally suboptimal.
-        </p>
+        </Text>
       </div>
 
       {/* Snapshot pickers */}
@@ -184,7 +185,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
 
       {/* Status / results */}
       {loading && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">Finding shared tracks…</p>
+        <Text>Finding shared tracks…</Text>
       )}
 
       {fetchError && <FormMessage tone="error">{fetchError}</FormMessage>}
@@ -192,9 +193,9 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
       {results !== null && !loading && (
         <>
           {results.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <Text>
               {t('noSharedTracks')}
-            </p>
+            </Text>
           ) : (
             <div className="space-y-2">
               {createError && <FormMessage tone="error">{createError}</FormMessage>}
@@ -202,7 +203,7 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
               {results.map(item => (
                 <div
                   key={item.trackId}
-                  className="flex items-center justify-between gap-4 rounded border border-gray-100 dark:border-gray-800 px-4 py-3"
+                  className="flex items-center justify-between gap-4 rounded border border-divider px-4 py-3"
                 >
                   {/* Track info */}
                   <div className="space-y-0.5 min-w-0">
@@ -212,17 +213,17 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                         : item.trackId}
                     </p>
                     {item.track?.album && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <Text size="xs" className="truncate">
                         {item.track.album}
-                      </p>
+                      </Text>
                     )}
                     <div className="flex gap-2 mt-1">
-                      <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded px-1.5 py-0.5">
+                      <Text as="span" size="xs" className="bg-divider rounded px-1.5 py-0.5">
                         A: {item.clipForSnapshotA.provider} / {item.clipForSnapshotA.media_type}
-                      </span>
-                      <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded px-1.5 py-0.5">
+                      </Text>
+                      <Text as="span" size="xs" className="bg-divider rounded px-1.5 py-0.5">
                         B: {item.clipForSnapshotB.provider} / {item.clipForSnapshotB.media_type}
-                      </span>
+                      </Text>
                     </div>
                   </div>
 

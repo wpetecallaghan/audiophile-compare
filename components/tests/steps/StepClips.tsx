@@ -5,6 +5,7 @@ import type { VerifiedClip, TestDraft } from '@/lib/types/test-creation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
+import { Text } from '@/components/ui/Text'
 import { ClipInput } from '@/components/clips/ClipInput'
 import { STATUS_DEAD } from '@/lib/clips/check-url'
 
@@ -54,9 +55,9 @@ export default function StepClips({ draft, onComplete }: Props) {
     <div className="space-y-6">
       <div>
         <Heading level={2}>{t('heading')}</Heading>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <Text className="mt-1">
           {t('description')}
-        </p>
+        </Text>
       </div>
 
       <ClipInput
@@ -79,9 +80,9 @@ export default function StepClips({ draft, onComplete }: Props) {
 
       <div className="rounded border p-4 space-y-2">
         <p className="text-sm font-medium">{t('beforeQuestion', { snapshot: firstSnapshotName })}</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <Text>
           {t('beforeDescription')}
-        </p>
+        </Text>
         <div className="flex gap-4 mt-2">
           {(['A', 'B'] as const).map(side => (
             <label key={side} className="flex items-center gap-2 text-sm cursor-pointer">

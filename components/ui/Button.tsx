@@ -12,9 +12,9 @@ export const buttonVariants = cva('rounded font-medium disabled:opacity-40', {
   variants: {
     variant: {
       primary:
-        'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-200',
+        'bg-ink text-ink-foreground hover:bg-gray-800 dark:hover:bg-gray-200',
       secondary:
-        'border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800',
+        'border border-border hover:bg-hover-surface',
     },
     size: {
       standard: 'px-4 py-2 text-sm',

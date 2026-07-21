@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation'
 import { Link } from '@/components/ui/Link'
 import { Callout } from '@/components/ui/Callout'
 import ABPlayer from '@/components/media/ABPlayer'
+import { ClipLabel } from '@/components/media/ClipLabel'
 import RevealButton from '@/components/tests/RevealButton'
 import DeleteTestButton from '@/components/tests/DeleteTestButton'
 import ReplaceClipUrlButton from '@/components/tests/ReplaceClipUrlButton'
@@ -326,22 +327,22 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
           on the raw clip row, independent of the mapping. Uses the
           effective (override-aware) status, not the raw cron value. */}
       {effA === STATUS_DEAD && (
-        <Callout tone="warning" className="text-sm text-amber-800 dark:text-amber-200">
+        <Callout tone="warning" className="text-sm">
           {t('clipHealth.deadWarning', { label: 'A' })}
         </Callout>
       )}
       {effA === STATUS_DEGRADED && (
-        <Callout tone="info" className="text-sm text-blue-800 dark:text-blue-200">
+        <Callout tone="info" className="text-sm">
           {t('clipHealth.degradedWarning', { label: 'A' })}
         </Callout>
       )}
       {effB === STATUS_DEAD && (
-        <Callout tone="warning" className="text-sm text-amber-800 dark:text-amber-200">
+        <Callout tone="warning" className="text-sm">
           {t('clipHealth.deadWarning', { label: 'B' })}
         </Callout>
       )}
       {effB === STATUS_DEGRADED && (
-        <Callout tone="info" className="text-sm text-blue-800 dark:text-blue-200">
+        <Callout tone="info" className="text-sm">
           {t('clipHealth.degradedWarning', { label: 'B' })}
         </Callout>
       )}
@@ -398,7 +399,7 @@ export default async function TestDetailPage({ params, searchParams }: Props) {
         />
       )}
       {!user && !isRevealed && !hasDeadClip && (
-        <Callout tone="neutral" className="p-4 sm:p-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        <Callout tone="neutral" className="p-4 sm:p-6 text-center text-sm text-muted">
           <Link href="/login">{t('signIn')}</Link>
           {' '}{t('signInToVote')}
         </Callout>
@@ -586,7 +587,7 @@ function ClipPlayerFallback({
 function ClipSlotFallback({ label, loadingLabel }: { label: string; loadingLabel: string }) {
   return (
     <div className="space-y-2 min-w-0">
-      <h2 className="text-sm font-semibold uppercase tracking-wide">{label}</h2>
+      <ClipLabel>{label}</ClipLabel>
       <div
         className="relative w-full max-w-full aspect-video overflow-hidden rounded flex items-center justify-center bg-gray-100 dark:bg-gray-800"
         role="status"

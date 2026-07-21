@@ -2,6 +2,7 @@ import type { TallyResult } from '@/lib/votes/compute-tally'
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
 import { Callout } from '@/components/ui/Callout'
+import { Text } from '@/components/ui/Text'
 
 type Props = {
   tally: TallyResult
@@ -27,15 +28,15 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
       <Heading level={2}>{t('heading')}</Heading>
 
       {ownVoteOnly && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t('ownVoteOnlyNote')}</p>
+        <Text>{t('ownVoteOnlyNote')}</Text>
       )}
 
       {!hasAnyVotes && (
-        <p className="text-sm text-gray-500 dark:text-gray-400">{t('noVotes')}</p>
+        <Text>{t('noVotes')}</Text>
       )}
 
       {divergent && (
-        <Callout tone="warning" className="px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">
+        <Callout tone="warning" className="px-3 py-2.5 text-sm">
           {t('divergentWarning')}
         </Callout>
       )}
@@ -47,9 +48,9 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
             <div key={r.techniqueId} className="space-y-2">
               <div className="flex justify-between items-baseline">
                 <span className="text-sm font-medium">{r.techniqueName}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <Text as="span" size="xs">
                   {r.total} {r.total === 1 ? 'vote' : 'votes'}
-                </span>
+                </Text>
               </div>
 
               {(
@@ -69,9 +70,9 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
                 ] as const
               ).map(({ clipId, label, percent }) => (
                 <div key={clipId} className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 w-12 text-right shrink-0">
+                  <Text as="span" size="xs" className="w-12 text-right shrink-0">
                     {label}
-                  </span>
+                  </Text>
                   <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                     <div
                       className={`h-full rounded-full ${
@@ -82,16 +83,16 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
                       style={{ width: `${percent}%` }}
                     />
                   </div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400 w-7 text-right shrink-0">
+                  <Text as="span" size="xs" className="w-7 text-right shrink-0">
                     {percent}%
-                  </span>
+                  </Text>
                 </div>
               ))}
 
               {r.observations.length > 0 && (
                 <ul className="space-y-1 pt-1">
                   {r.observations.map((obs, i) => (
-                    <li key={i} className="text-sm text-gray-600 dark:text-gray-300">
+                    <li key={i} className="text-sm text-body">
                       <span className="font-medium">
                         {obs.chosenClipId === clipAId ? tMapping('clipALabel') : tMapping('clipBLabel')}
                       </span>
@@ -116,18 +117,18 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
           </h3>
           <ul className="space-y-2">
             {others.map((vote, i) => (
-              <li key={i} className="text-sm text-gray-600 dark:text-gray-300">
+              <li key={i} className="text-sm text-body">
                 <span className="font-medium">
                   {vote.chosenClipId === clipAId ? tMapping('clipALabel') : tMapping('clipBLabel')}
                 </span>
                 {' — '}
                 {vote.description}
                 {vote.observation && (
-                  <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5 ml-2">
+                  <Text as="span" size="xs" className="block mt-0.5 ml-2">
                     {vote.observation}
                     {' '}
                     {t('observationAuthor', { name: vote.voterName ?? tTests('anonymous') })}
-                  </span>
+                  </Text>
                 )}
               </li>
             ))}

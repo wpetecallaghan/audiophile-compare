@@ -78,8 +78,9 @@ describe('FooterNavLink', () => {
   // (app/globals.css) instead of the enabled Link's own muted gray —
   // composited to a similarly-toned mid-gray as the enabled state either
   // way. Fixed by starting the disabled button from the exact same
-  // `text-gray-500 dark:text-gray-400` the enabled Link uses, so dimming
-  // it actually reads as "this control, grayed out."
+  // `text-muted` token (build step 83; was the literal `text-gray-500
+  // dark:text-gray-400` pair) the enabled Link uses, so dimming it
+  // actually reads as "this control, grayed out."
   it('starts the disabled button from the same base gray as the enabled link, before dimming it', () => {
     render(
       <FooterNavLink href={null} aria-label="Previous test">
@@ -88,7 +89,6 @@ describe('FooterNavLink', () => {
     )
 
     const button = screen.getByRole('button', { name: 'Previous test' })
-    expect(button.className).toContain('text-gray-500')
-    expect(button.className).toContain('dark:text-gray-400')
+    expect(button.className).toContain('text-muted')
   })
 })

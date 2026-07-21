@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import ForgotPasswordForm from '@/components/ForgotPasswordForm'
 import { AuthShell } from '@/components/ui/AuthShell'
+import { Text } from '@/components/ui/Text'
 import { getTranslations } from 'next-intl/server'
 
 export default async function ForgotPasswordPage() {
@@ -9,11 +10,11 @@ export default async function ForgotPasswordPage() {
   return (
     <AuthShell heading={t('forgotPasswordHeading')}>
       <ForgotPasswordForm />
-      <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+      <Text size="xs" className="text-center">
         <Link href="/login" className="hover:underline">
           {t('backToSignIn')}
         </Link>
-      </p>
+      </Text>
     </AuthShell>
   )
 }

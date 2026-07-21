@@ -134,6 +134,12 @@ export type PlayerHandle = {
 
 **Rules:**
 - Pages always render `<ABPlayer clipA={...} clipB={...} />`. Never import `MediaPlayer` or individual player components directly from a page.
+- The "Clip A"/"Clip B" slot heading is `<ClipLabel>` (`components/media/ClipLabel.tsx`,
+  build step 83) — extracted once a third caller (`app/tests/[id]/page.tsx`'s
+  own `ClipSlotFallback`, the Suspense loading fallback for the same slot)
+  needed the identical `text-sm font-semibold uppercase tracking-wide` `<h2>`
+  `ABPlayer` already had. Both callers render `<ClipLabel>Clip A</ClipLabel>` /
+  `<ClipLabel>Clip B</ClipLabel>` instead of hand-copying the heading markup.
 - `ABPlayer` also takes optional `hideClipA`/`hideClipB` (step 28) — skips
   that slot (heading + player) entirely. Used by `app/tests/[id]/page.tsx`
   once revealed, for a clip whose player would be `UnknownPlayer` (see
@@ -578,11 +584,11 @@ are now real components (`components/ui/Button.tsx`, `Badge.tsx`, built on
 `class-variance-authority` — see `docs/dependencies.md`) specifically because
 hand-copying the same class string into 15+ files is how the drift this step
 cleaned up happened in the first place. Border roles below aren't (yet)
-componentized — a convention to follow by hand — but don't introduce new
-shades or one-off combinations for those either. Type scale and text color
-roles **are** componentized as of build step 52 — see `Text` in §13 — but
-the roles themselves are described here first since `Text` is just their
-concrete implementation.
+componentized into a shared UI component — a convention to follow by hand —
+but as of build step 83 their *color* is a single-sourced semantic token,
+not a literal shade. Type scale and text color roles **are** componentized
+as of build step 52 — see `Text` in §13 — but the roles themselves are
+described here first since `Text` is just their concrete implementation.
 
 **Type scale:** `text-xs` (metadata/badges/timestamps), `text-sm` (body,
 inputs, buttons, nav), `text-base sm:text-lg font-semibold` (h2 section
@@ -590,17 +596,55 @@ headings — always this exact pair, never plain `text-lg` or plain
 `text-base`), `text-xl sm:text-2xl font-semibold` (h1 page headings).
 
 **Text color roles:** primary = default/inherit (or `gray-900`/`gray-100`
-dark for emphasis); muted/secondary = `text-gray-500 dark:text-gray-400`
-(metadata, labels, timestamps) = `<Text tone="muted">` (the default tone);
-readable secondary body copy (About-page-style prose, not metadata) =
-`text-gray-600 dark:text-gray-300` = `<Text tone="body">` — a deliberate
-second, higher-contrast tier, not a mistake if you see both. Error messages:
-`text-red-600 dark:text-red-400`. Never leave a light-mode-only or
-dark-mode-only color unpaired — always specify both, since `darkMode: 'media'`
-(see `tailwind.config.ts`) means both render for real users.
+dark for emphasis); muted/secondary = `text-muted` (metadata, labels,
+timestamps) = `<Text tone="muted">` (the default tone); readable secondary
+body copy (About-page-style prose, not metadata) = `text-body` = `<Text
+tone="body">` — a deliberate second, higher-contrast tier, not a mistake if
+you see both. Error messages: `text-danger`. Never leave a light-mode-only
+or dark-mode-only color unpaired when introducing a *new* raw shade — but
+prefer reaching for an existing semantic token first (see below) since the
+token itself already carries both.
 
-**Border roles:** exactly two — default (`border-gray-200 dark:border-gray-700`)
-and subtle/divider (`border-gray-100 dark:border-gray-800`).
+**Semantic color tokens (build step 83).** Every color role proven to
+repeat across 2+ files got a CSS variable in `app/globals.css` (`:root` +
+its `@media (prefers-color-scheme: dark)` override — same mechanism
+`--background`/`--foreground` already used) and a matching
+`theme.extend.colors` entry in `tailwind.config.ts`, so it renders as an
+ordinary-looking utility class with **no `dark:` variant needed anywhere**
+— the variable itself flips at the OS-level media query. Changing what a
+role means going forward is a two-line edit in `globals.css`, not an
+N-file hunt.
+
+| Token class | Role | Light / dark shade it replaced |
+|---|---|---|
+| `text-muted` | metadata/labels/timestamps | gray-500 / gray-400 |
+| `text-body` | secondary body prose | gray-600 / gray-300 |
+| `border-border` | default border | gray-200 / gray-700 |
+| `border-divider` | subtle/divider border | gray-100 / gray-800 |
+| `bg-ink` / `text-ink-foreground` | primary button bg + its own text | black / white ↔ white / black |
+| `text-danger` | error text | red-600 / red-400 |
+| `text-status-win` / `text-status-loss` | win/loss text (Badge + elsewhere) | green-700/300, red-700/300 |
+| `border-warning` / `bg-warning-bg` / `text-warning-foreground` | `Callout` warning tone | amber 200/700, 50/900, 800/200 |
+| `border-info` / `bg-info-bg` / `text-info-foreground` | `Callout` info tone | blue 200/700, 50/900, 800/200 |
+| `bg-divider` | small chip/pill backgrounds (build step 84) | gray-100 / gray-800 — same shade as `border-divider`, reused rather than adding a near-duplicate token |
+| `hover-surface` | hover background on bordered rows/cards/buttons (build step 84) | gray-50 / gray-800 |
+| `link` | inline text-link color (build step 84) | blue-600, previously unpaired with no dark-mode value at all — a real bug, not just a missing token |
+
+**Never hand-write a literal `gray-`/`red-`/`green-`/`amber-`/`blue-`/`black`/`white`
+shade for one of the roles above — use its token.** A one-off color that
+doesn't match any role (used exactly once, no proven second caller) stays a
+plain literal until a second occurrence shows up — same "don't over-apply"
+convention as `repeated-string-constants.md`. Build step 84 found four more
+roles this way on a second, deeper audit (`bg-divider`'s chip reuse,
+`hover-surface`, `link`, and reusing `border-border`/`divide-border` in
+place of a bare `border`/`divide-y` that relied on Tailwind's own implicit
+default gray-200 in light mode) — a good reminder that "no proven second
+caller yet" is a snapshot, not a permanent exemption; re-check when editing
+a file that has one of these patterns.
+
+**Border roles:** exactly two — default (`border-border`) and
+subtle/divider (`border-divider`). Still hand-applied per call site (no
+shared component wraps either), but never write the literal gray shade.
 
 **Status badges — use `<Badge status="..." />` (`components/ui/Badge.tsx`),
 never raw `bg-*/text-*` classes:**
@@ -608,8 +652,10 @@ never raw `bg-*/text-*` classes:**
 import { Badge } from '@/components/ui/Badge'
 <Badge status="win">Win</Badge>   {/* status: win | loss | draw | blind | revealed | broken | imported */}
 ```
-The color pairing for each status (e.g. `bg-green-100 text-green-700
-dark:bg-green-900/40 dark:text-green-300` for `win`) lives in exactly one
+The color pairing for each status (e.g. `bg-green-100 text-status-win
+dark:bg-green-900/40` for `win` — the text half is the shared
+`status-win`/`status-loss` token, build step 83, since `SnapshotSection.tsx`
+independently needed the identical win/loss text color) lives in exactly one
 place, `badgeVariants` inside `Badge.tsx`. Need a new status? Add a variant
 there — don't invent a `bg-*`/`text-*` pair at the call site. `broken`
 (step 27, orange — distinct from every other status so it never gets
@@ -775,11 +821,17 @@ import { FormMessage } from '@/components/ui/FormMessage'
 ```tsx
 import { Callout } from '@/components/ui/Callout'
 <Callout tone="warning">...</Callout>   {/* tone: warning | success | info | neutral */}
-<Callout tone="warning" className="px-3 py-2.5 text-sm text-amber-800 dark:text-amber-200">...</Callout>
+<Callout tone="warning" className="px-3 py-2.5 text-sm">...</Callout>
 ```
 Padding/text-size that differs per instance (e.g. `TallyDisplay.tsx`'s
 tighter `px-3 py-2.5`) is a `className` override, not a variant — same
-reasoning as `Link`'s `card` variant.
+reasoning as `Link`'s `card` variant. `warning`/`info` tones set their own
+text color (`text-warning-foreground`/`text-info-foreground`, build step
+83) — don't re-add a `text-amber-*`/`text-blue-*` className on top the way
+7 call sites independently did before this was centralized. `success`/
+`neutral` don't set a text color yet — no proven second caller needing one;
+add it to `calloutVariants` the same way if one shows up, rather than
+hand-copying a color at the call site.
 
 **Two-step confirm/cancel actions — use `<ConfirmButton />`
 (`components/ui/ConfirmButton.tsx`), not a hand-rolled `confirming` state +
@@ -806,7 +858,15 @@ async function handleDelete() {
 ```
 Extracted in step 26 from `RevealButton.tsx`'s original click → inline
 confirm/cancel pattern once `DeleteTestButton.tsx`, `SnapshotSection.tsx`,
-and `DeleteSystemButton.tsx` needed the exact same interaction. `onConfirm`
+and `DeleteSystemButton.tsx` needed the exact same interaction. Its idle-
+trigger button's classes are exported as `CONFIRM_TRIGGER_BUTTON_CLASSES`
+(build step 83) and reused verbatim by `ReplaceClipUrlButton.tsx` — a
+different, simpler amber "needs attention" action that doesn't use
+`ConfirmButton`'s own confirm/cancel state machine, but had hand-copied the
+identical class string before this was deduplicated. This is a distinct
+amber shade family (400/600 border) from `Callout`'s `warning` tone
+(200/700 border) — don't merge the two, they're deliberately different
+intensities. `onConfirm`
 owns the actual `fetch` call and what happens after: return `{ error }` to
 show an inline `FormMessage` and stay on the confirm step, or navigate/
 `router.refresh()` and return nothing when the action succeeded (the

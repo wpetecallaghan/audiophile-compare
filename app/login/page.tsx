@@ -3,6 +3,7 @@ import LoginWithPasswordForm from '@/components/LoginWithPasswordForm'
 import OAuthButtons from '@/components/OAuthButtons'
 import { AuthShell } from '@/components/ui/AuthShell'
 import { Divider } from '@/components/ui/Divider'
+import { Text } from '@/components/ui/Text'
 import { getTranslations } from 'next-intl/server'
 
 export default async function LoginPage({
@@ -19,18 +20,17 @@ export default async function LoginPage({
       <Divider label={t('orSignInWithEmail')} />
       <div className="space-y-4">
         <LoginWithPasswordForm redirectTo={params.redirectTo} />
-        <Link
-          href="/forgot-password"
-          className="block text-xs text-gray-500 dark:text-gray-400 hover:underline"
-        >
-          {t('forgotPasswordLink')}
-        </Link>
+        <Text as="span" size="xs" className="block">
+          <Link href="/forgot-password" className="hover:underline">
+            {t('forgotPasswordLink')}
+          </Link>
+        </Text>
       </div>
-      <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+      <Text size="xs" className="text-center">
         <Link href="/register" className="hover:underline">
           {t('registerLink')}
         </Link>
-      </p>
+      </Text>
     </AuthShell>
   )
 }

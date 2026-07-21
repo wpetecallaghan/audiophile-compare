@@ -69,7 +69,7 @@ export default function ChangePasswordForm({ autoOpen = false }: { autoOpen?: bo
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-sm text-blue-600 hover:underline"
+        className="text-sm text-link hover:underline"
       >
         {t('changePasswordHeading')}
       </button>

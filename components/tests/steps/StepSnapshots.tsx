@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Heading } from '@/components/ui/Heading'
 import { TextInput, TextArea } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
+import { Text } from '@/components/ui/Text'
 
 type Props = {
   draft: TestDraft
@@ -95,17 +96,17 @@ function SnapshotSelector({
     <div className="space-y-2">
       <p className="text-sm font-medium">{label}</p>
       {systems.map(system => (
-        <div key={system.id} className="border dark:border-gray-700 rounded p-3 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <div key={system.id} className="border border-border rounded p-3 space-y-2">
+          <Text size="xs" className="font-semibold uppercase tracking-wide">
             {system.name}
-          </p>
+          </Text>
 
           {/* Existing snapshot radio options */}
           {system.system_snapshots.map(snap => (
             <label
               key={snap.id}
               className={`flex items-start gap-3 cursor-pointer rounded p-2 text-sm
-                ${snap.id === exclude ? 'opacity-30 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}
+                ${snap.id === exclude ? 'opacity-30 cursor-not-allowed' : 'hover:bg-hover-surface'}
                 ${selected?.id === snap.id ? 'bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-300 dark:ring-blue-700 rounded' : ''}
               `}
             >
@@ -121,7 +122,7 @@ function SnapshotSelector({
               <div>
                 <span className="font-medium">v{snap.version} — {snap.label}</span>
                 {snap.notes && (
-                  <p className="text-gray-500 dark:text-gray-400 mt-0.5">{snap.notes}</p>
+                  <Text className="mt-0.5">{snap.notes}</Text>
                 )}
               </div>
             </label>
@@ -129,8 +130,8 @@ function SnapshotSelector({
 
           {/* Inline mini-form or add button */}
           {addingForSystemId === system.id ? (
-            <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-gray-800 mt-1">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">New snapshot</p>
+            <div className="space-y-2 pt-2 border-t border-divider mt-1">
+              <Text size="xs" className="font-medium">New snapshot</Text>
               <TextInput
                 type="text"
                 placeholder="Label (e.g. After — Furutech cable)"
@@ -146,9 +147,9 @@ function SnapshotSelector({
                 rows={2}
               />
               {createError && <FormMessage tone="error">{createError}</FormMessage>}
-              <p className="text-xs text-gray-500 dark:text-gray-400">
+              <Text size="xs">
                 Components can be filled in on the Systems page after creation.
-              </p>
+              </Text>
               <div className="flex items-center gap-3">
                 <Button
                   type="button"
@@ -243,8 +244,8 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
   }
 
   const addSystemTrigger = addingSystem ? (
-    <div className="space-y-2 rounded border border-gray-200 dark:border-gray-700 p-3">
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400">New system</p>
+    <div className="space-y-2 rounded border border-border p-3">
+      <Text size="xs" className="font-medium">New system</Text>
       <TextInput
         type="text"
         placeholder="System name"
@@ -290,16 +291,16 @@ export default function StepSnapshots({ draft, systems, onComplete, onSnapshotCr
     <div className="space-y-6">
       <div>
         <Heading level={2}>Systems</Heading>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <Text className="mt-1">
           {t('description')}
-        </p>
+        </Text>
       </div>
 
       {noSystems ? (
         <div className="space-y-3">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <Text>
             You have no systems yet. Add one below to continue.
-          </p>
+          </Text>
           {addSystemTrigger}
         </div>
       ) : (

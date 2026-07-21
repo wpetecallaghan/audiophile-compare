@@ -70,7 +70,7 @@ export default function AddSnapshotForm({ systemId }: Props) {
   }
 
   return (
-    <div className="space-y-3 rounded border border-gray-200 dark:border-gray-700 p-4">
+    <div className="space-y-3 rounded border border-border p-4">
       <p className="text-sm font-medium">{t('newHeading')}</p>
       <TextInput
         type="text"

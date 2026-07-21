@@ -8,7 +8,7 @@ import { cn } from './cn'
 const formMessageVariants = cva('text-sm', {
   variants: {
     tone: {
-      error: 'text-red-600 dark:text-red-400',
+      error: 'text-danger',
       success: 'text-green-600 dark:text-green-400',
     },
   },

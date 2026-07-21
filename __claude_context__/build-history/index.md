@@ -97,3 +97,5 @@ storage, mobile app) see `deferred-features.md`. Forum-ingestion steps 30, 31,
 | 80 | Export a named constant for every `ClipProvider`/`MediaType` union member (matches `STATUS_*`'s existing `UrlStatus` precedent) | [80-clip-provider-media-type-constants.md](80-clip-provider-media-type-constants.md) |
 | 81 | Remove magic-link login (password + Google OAuth unaffected) | [81-remove-magic-link-login.md](81-remove-magic-link-login.md) |
 | 82 | Login: Google + password on one view (no tabs), forgot-password split to its own page, `AuthShell`/`Divider` built | [82-login-single-view-authshell-divider.md](82-login-single-view-authshell-divider.md) |
+| 83 | Fix hardcoded-color drift; add a semantic color-token layer (`ClipLabel`, `CONFIRM_TRIGGER_BUTTON_CLASSES`, `globals.css` tokens) | [83-semantic-color-tokens.md](83-semantic-color-tokens.md) |
+| 84 | Second color audit — 4 more tokens (`bg-divider` reuse, `hover-surface`, `link`, explicit `border-border`/`divide-border`); `EditForumLinkButton`/`UnknownPlayer` converged onto `Button`/`Link` | [84-second-color-audit.md](84-second-color-audit.md) |

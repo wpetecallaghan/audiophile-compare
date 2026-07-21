@@ -10,7 +10,7 @@ import { cn } from './cn'
 // border-gray-200 + no focus ring) was a bug, not a tier — see
 // build-history.md step 22.
 export const fieldVariants = cva(
-  'w-full rounded border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-blue-500',
+  'w-full rounded border border-border dark:bg-gray-800 dark:text-gray-100 focus:outline-none focus:ring-blue-500',
   {
     variants: {
       size: {

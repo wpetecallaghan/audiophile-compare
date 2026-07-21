@@ -80,11 +80,8 @@ export default function EditForumLinkButton({ testId, currentLink }: Props) {
   }
 
   return (
-    <button
-      onClick={() => setOpen(true)}
-      className="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
-    >
+    <Button variant="secondary" onClick={() => setOpen(true)}>
       {currentLink ? t('editButton') : t('addButton')}
-    </button>
+    </Button>
   )
 }

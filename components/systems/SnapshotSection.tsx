@@ -10,6 +10,7 @@ import { FieldLabel } from '@/components/ui/FieldLabel'
 import { TextInput, TextArea } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
 import { ConfirmButton } from '@/components/ui/ConfirmButton'
+import { Text } from '@/components/ui/Text'
 
 type ComponentDisplay = {
   role?: string
@@ -170,12 +171,12 @@ export default function SnapshotSection({
     <section className="space-y-4">
       {editing ? (
         /* Edit mode */
-        <div className="space-y-4 pb-2 border-b border-gray-100 dark:border-gray-800">
+        <div className="space-y-4 pb-2 border-b border-divider">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
+            <Text as="span" size="xs" className="font-mono bg-divider px-1.5 py-0.5 rounded">
               v{snapshot.version}
-            </span>
-            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Editing snapshot</p>
+            </Text>
+            <Text size="xs" className="font-medium">Editing snapshot</Text>
           </div>
 
           <div className="space-y-3">
@@ -207,7 +208,7 @@ export default function SnapshotSection({
             </div>
 
             <div className="space-y-2">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-300">{t('componentsLabel')}</p>
+              <Text size="xs" tone="body" className="font-medium">{t('componentsLabel')}</Text>
               {componentRows.map((row, i) => (
                 <div
                   key={i}
@@ -285,12 +286,12 @@ export default function SnapshotSection({
         </div>
       ) : (
         /* Display mode */
-        <div className="flex items-start justify-between gap-4 pb-2 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-start justify-between gap-4 pb-2 border-b border-divider">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 rounded">
+              <Text as="span" size="xs" className="font-mono bg-divider px-1.5 py-0.5 rounded">
                 v{snapshot.version}
-              </span>
+              </Text>
               <Heading level={2}>{snapshot.label}</Heading>
               {isOwner && (
                 <Button type="button" variant="secondary" size="compact" onClick={handleEdit}>
@@ -299,18 +300,18 @@ export default function SnapshotSection({
               )}
             </div>
             {snapshot.notes && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">{snapshot.notes}</p>
+              <Text size="xs">{snapshot.notes}</Text>
             )}
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <Text size="xs">
               {new Date(snapshot.created_at).toLocaleDateString(locale)}
-            </p>
+            </Text>
           </div>
 
           {hasRevealedTests && (
             <div className="shrink-0 flex gap-3 text-xs font-medium">
-              {wins > 0 && <span className="text-green-700 dark:text-green-300">{wins}W</span>}
-              {losses > 0 && <span className="text-red-700 dark:text-red-300">{losses}L</span>}
-              {draws > 0 && <span className="text-gray-500 dark:text-gray-400">{draws}D</span>}
+              {wins > 0 && <span className="text-status-win">{wins}W</span>}
+              {losses > 0 && <span className="text-status-loss">{losses}L</span>}
+              {draws > 0 && <Text as="span" size="xs">{draws}D</Text>}
             </div>
           )}
         </div>
@@ -333,10 +334,10 @@ export default function SnapshotSection({
       {!editing && snapshot.components && snapshot.components.length > 0 && (
         <ul className="space-y-0.5">
           {snapshot.components.map((c, i) => (
-            <li key={i} className="text-xs text-gray-500 dark:text-gray-400">
-              <span className="text-gray-500 dark:text-gray-400 w-20 inline-block">{c.role}</span>
+            <li key={i} className="text-xs text-muted">
+              <Text as="span" size="xs" className="w-20 inline-block">{c.role}</Text>
               {c.make} {c.model}
-              {c.notes && <span className="text-gray-500 dark:text-gray-400"> — {c.notes}</span>}
+              {c.notes && <Text as="span" size="xs"> — {c.notes}</Text>}
             </li>
           ))}
         </ul>

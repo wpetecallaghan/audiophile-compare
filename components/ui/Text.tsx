@@ -15,8 +15,8 @@ const textVariants = cva('', {
       sm: 'text-sm',
     },
     tone: {
-      muted: 'text-gray-500 dark:text-gray-400',
-      body: 'text-gray-600 dark:text-gray-300',
+      muted: 'text-muted',
+      body: 'text-body',
     },
   },
   defaultVariants: {

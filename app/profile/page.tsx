@@ -41,7 +41,7 @@ export default async function ProfilePage({
         <ProfileForm initialDisplayName={profile?.display_name ?? ''} />
       </Section>
 
-      <hr className="border-gray-100 dark:border-gray-800" />
+      <hr className="border-divider" />
 
       {/* Change email */}
       <Section>
@@ -49,7 +49,7 @@ export default async function ProfilePage({
         <ChangeEmailForm />
       </Section>
 
-      <hr className="border-gray-100 dark:border-gray-800" />
+      <hr className="border-divider" />
 
       {/* Change password */}
       <Section>
@@ -58,7 +58,7 @@ export default async function ProfilePage({
 
       {isAdmin && (
         <>
-          <hr className="border-gray-100 dark:border-gray-800" />
+          <hr className="border-divider" />
 
           {/* Admin — build step 41. Link labels reuse each admin page's own
               heading string rather than duplicating the copy, so they can

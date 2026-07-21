@@ -5,9 +5,9 @@
 export function Divider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
-      <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
-      <div className="flex-1 border-t border-gray-200 dark:border-gray-700" />
+      <div className="flex-1 border-t border-border" />
+      <span className="text-xs text-muted">{label}</span>
+      <div className="flex-1 border-t border-border" />
     </div>
   )
 }

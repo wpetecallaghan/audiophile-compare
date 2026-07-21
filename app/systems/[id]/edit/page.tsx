@@ -32,7 +32,7 @@ export default async function EditSystemPage({ params }: Props) {
 
   return (
     <PageShell maxWidth="4xl">
-      <nav className="text-xs text-gray-500 dark:text-gray-400">
+      <nav className="text-xs text-muted">
         <Link href="/systems" className="hover:underline">{t('heading')}</Link>
         {' / '}
         <Link href={`/systems/${id}`} className="hover:underline">{system.name}</Link>

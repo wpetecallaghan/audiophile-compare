@@ -9,12 +9,55 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Semantic color tokens (build step 83) — each role's literal Tailwind
+     shade lives here once instead of being hand-copied across every
+     cva component that needs it. See components.md §12. */
+  --muted: #6b7280;              /* gray-500 */
+  --body: #4b5563;               /* gray-600 */
+  --border: #e5e7eb;             /* gray-200 */
+  --divider: #f3f4f6;            /* gray-100 */
+  --ink: #000000;
+  --ink-foreground: #ffffff;
+  --danger: #dc2626;             /* red-600 */
+  --status-win: #15803d;         /* green-700 */
+  --status-loss: #b91c1c;        /* red-700 */
+  --warning: #fde68a;            /* amber-200 */
+  --warning-bg: #fffbeb;         /* amber-50 */
+  --warning-foreground: #92400e; /* amber-800 */
+  --info: #bfdbfe;               /* blue-200 */
+  --info-bg: #eff6ff;            /* blue-50 */
+  --info-foreground: #1e40af;    /* blue-800 */
+
+  /* Added build step 84, once a second follow-up audit found these two
+     also independently repeated across 2+ files. */
+  --hover-surface: #f9fafb;      /* gray-50 */
+  --link: #2563eb;               /* blue-600 */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+
+    --muted: #9ca3af;              /* gray-400 */
+    --body: #d1d5db;               /* gray-300 */
+    --border: #374151;             /* gray-700 */
+    --divider: #1f2937;            /* gray-800 */
+    --ink: #ffffff;
+    --ink-foreground: #000000;
+    --danger: #f87171;             /* red-400 */
+    --status-win: #86efac;         /* green-300 */
+    --status-loss: #fca5a5;        /* red-300 */
+    --warning: #b45309;            /* amber-700 */
+    --warning-bg: #20130b;         /* amber-900 at 20% over the dark page background */
+    --warning-foreground: #fde68a; /* amber-200 */
+    --info: #1d4ed8;               /* blue-700 */
+    --info-bg: #0e1424;            /* blue-900 at 20% over the dark page background */
+    --info-foreground: #bfdbfe;    /* blue-200 */
+
+    --hover-surface: #1f2937;      /* gray-800 */
+    --link: #60a5fa;               /* blue-400 */
   }
 }
 

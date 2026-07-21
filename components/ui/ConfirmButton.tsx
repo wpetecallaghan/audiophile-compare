@@ -10,6 +10,15 @@ import { FormMessage } from './FormMessage'
 // once a second and third caller (test/snapshot/system delete) needed the
 // exact same interaction — see components.md §12 and build-history.md
 // step 26.
+
+// The idle-trigger button below is also reused verbatim by
+// ReplaceClipUrlButton.tsx (a different, simpler amber "needs attention"
+// action that doesn't use ConfirmButton's own confirm/cancel state
+// machine) — exported so both stay in sync instead of hand-copying the
+// class string a second time (build step 83).
+export const CONFIRM_TRIGGER_BUTTON_CLASSES =
+  'border border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-400 rounded px-4 py-2 text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20'
+
 type Props = {
   label: string
   confirmHeading: string
@@ -55,7 +64,7 @@ export function ConfirmButton({
         <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
           {confirmHeading}
         </p>
-        <p className="text-sm text-amber-800 dark:text-amber-200">
+        <p className="text-sm">
           {confirmWarning}
         </p>
         {error && <FormMessage tone="error">{error}</FormMessage>}
@@ -78,7 +87,7 @@ export function ConfirmButton({
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="border border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-400 rounded px-4 py-2 text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20"
+      className={CONFIRM_TRIGGER_BUTTON_CLASSES}
     >
       {label}
     </button>

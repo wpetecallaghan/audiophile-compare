@@ -3,6 +3,7 @@ import RegisterForm from '@/components/RegisterForm'
 import OAuthButtons from '@/components/OAuthButtons'
 import { AuthShell } from '@/components/ui/AuthShell'
 import { Divider } from '@/components/ui/Divider'
+import { Text } from '@/components/ui/Text'
 import { getTranslations } from 'next-intl/server'
 
 export default async function RegisterPage() {
@@ -13,11 +14,11 @@ export default async function RegisterPage() {
       <OAuthButtons />
       <Divider label={t('orRegisterWithEmail')} />
       <RegisterForm />
-      <p className="text-center text-xs text-gray-500 dark:text-gray-400">
+      <Text size="xs" className="text-center">
         <Link href="/login" className="hover:underline">
           {t('backToSignIn')}
         </Link>
-      </p>
+      </Text>
     </AuthShell>
   )
 }

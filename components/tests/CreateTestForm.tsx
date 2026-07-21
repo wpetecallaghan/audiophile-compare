@@ -63,12 +63,12 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
         {STEPS.map((label, i) => (
           <div key={i} className="flex items-center">
             <div className={`flex items-center gap-2 text-sm
-              ${i === step ? 'font-semibold text-black dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}
+              ${i === step ? 'font-semibold text-ink' : 'text-muted'}`}
             >
               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs
-                ${i < step  ? 'bg-black text-white dark:bg-white dark:text-black' : ''}
-                ${i === step ? 'ring-2 ring-black dark:ring-white text-black dark:text-white' : ''}
-                ${i > step  ? 'ring-1 ring-gray-300 dark:ring-gray-600 text-gray-500 dark:text-gray-400' : ''}
+                ${i < step  ? 'bg-ink text-ink-foreground' : ''}
+                ${i === step ? 'ring-2 ring-ink text-ink' : ''}
+                ${i > step  ? 'ring-1 ring-gray-300 dark:ring-gray-600 text-muted' : ''}
               `}>
                 {i < step ? '✓' : i + 1}
               </span>
@@ -76,7 +76,7 @@ export default function CreateTestForm({ systems: initialSystems }: Props) {
             </div>
             {i < STEP_COUNT - 1 && (
               <div className={`h-px w-6 sm:w-12 mx-2
-                ${i < step ? 'bg-black dark:bg-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                ${i < step ? 'bg-ink' : 'bg-border'}`}
               />
             )}
           </div>

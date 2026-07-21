@@ -170,7 +170,7 @@ export default async function SystemDetailPage({ params }: Props) {
     <PageShell maxWidth="4xl">
 
       {/* Breadcrumb */}
-      <nav className="text-xs text-gray-500 dark:text-gray-400">
+      <nav className="text-xs text-muted">
         <NextLink href="/systems" className="hover:underline">Systems</NextLink>
         {' / '}
         <span>{system.name}</span>

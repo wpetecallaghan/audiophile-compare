@@ -26,9 +26,9 @@ const VIEW_TRANSITION_FALLBACK_MS = 1500
 export const linkVariants = cva('transition active:opacity-60', {
   variants: {
     variant: {
-      nav: 'text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100',
-      card: 'rounded border border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800',
-      inline: 'text-blue-600 hover:underline',
+      nav: 'text-sm text-muted hover:text-gray-900 dark:hover:text-gray-100',
+      card: 'rounded border border-border px-3 sm:px-4 py-3 hover:bg-hover-surface',
+      inline: 'text-link hover:underline',
     },
     // Only meaningful for variant="inline" (see compoundVariants below) — a
     // plain className size override wouldn't reliably win against the

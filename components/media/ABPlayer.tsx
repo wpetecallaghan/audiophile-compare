@@ -3,6 +3,7 @@
 import { useRef } from 'react'
 import MediaPlayer, { type ClipData } from './MediaPlayer'
 import type { PlayerHandle } from './players/NativePlayer'
+import { ClipLabel } from './ClipLabel'
 
 type Props = {
   clipA: ClipData
@@ -34,9 +35,7 @@ export default function ABPlayer({ clipA, clipB, hideClipA = false, hideClipB = 
     <div className="grid grid-cols-1 gap-4 sm:gap-6 w-full max-w-full">
       {!hideClipA && (
         <div className="space-y-2 min-w-0">
-          <h2 className="text-sm font-semibold uppercase tracking-wide">
-            Clip A
-          </h2>
+          <ClipLabel>Clip A</ClipLabel>
           <MediaPlayer
             ref={playerARef}
             clip={clipA}
@@ -46,9 +45,7 @@ export default function ABPlayer({ clipA, clipB, hideClipA = false, hideClipB = 
       )}
       {!hideClipB && (
         <div className="space-y-2 min-w-0">
-          <h2 className="text-sm font-semibold uppercase tracking-wide">
-            Clip B
-          </h2>
+          <ClipLabel>Clip B</ClipLabel>
           <MediaPlayer
             ref={playerBRef}
             clip={clipB}

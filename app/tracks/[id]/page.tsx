@@ -81,7 +81,7 @@ export default async function TrackDetailPage({ params }: Props) {
   return (
     <PageShell maxWidth="4xl">
       {/* Breadcrumb */}
-      <nav className="text-xs text-gray-500 dark:text-gray-400">
+      <nav className="text-xs text-muted">
         <NextLink href={TRACKS_LIST_HREF} className="hover:underline">
           Tracks
         </NextLink>

@@ -37,7 +37,7 @@ export default async function VersionPage() {
       <dl className="space-y-3">
         {rows.map(({ label, value }) => (
           <div key={label} className="space-y-0.5">
-            <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-muted">
               {label}
             </dt>
             <dd className="text-sm break-words whitespace-pre-wrap">

@@ -9,6 +9,7 @@ import { TextInput, TextArea } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
 import { Button } from '@/components/ui/Button'
 import { Callout } from '@/components/ui/Callout'
+import { Text } from '@/components/ui/Text'
 
 export type Technique = {
   id: string
@@ -128,7 +129,7 @@ export default function VoteForm({
 
   if (hasDeadClip) {
     return (
-      <Callout tone="warning" className="text-sm text-amber-800 dark:text-amber-200">
+      <Callout tone="warning" className="text-sm">
         {tr('blockedByDeadClip')}
       </Callout>
     )
@@ -140,9 +141,9 @@ export default function VoteForm({
         <Heading level={2}>
           {isUpdate ? tr('updateHeading') : tr('castHeading')}
         </Heading>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+        <Text className="mt-0.5">
           {tr('subheading')}
-        </p>
+        </Text>
       </div>
 
       {techniques.map(t => {
@@ -150,13 +151,13 @@ export default function VoteForm({
         return (
           <div
             key={t.id}
-            className="rounded border border-gray-200 dark:border-gray-700 p-3 sm:p-4 space-y-3"
+            className="rounded border border-border p-3 sm:p-4 space-y-3"
           >
             {/* Technique header + A/B radio */}
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-sm font-medium">{t.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t.description}</p>
+                <Text size="xs">{t.description}</Text>
               </div>
               <div className="flex gap-4 shrink-0">
                 {(['A', 'B'] as const).map(label => {
@@ -185,7 +186,7 @@ export default function VoteForm({
               <div>
                 <FieldLabel tone="muted" htmlFor={`other-desc-${t.id}`}>
                   Describe your criterion{' '}
-                  <span className="text-red-600 dark:text-red-400">*</span>
+                  <span className="text-danger">*</span>
                 </FieldLabel>
                 <TextInput
                   id={`other-desc-${t.id}`}
@@ -205,7 +206,7 @@ export default function VoteForm({
               <div>
                 <FieldLabel tone="muted" htmlFor={`observation-${t.id}`}>
                   Observation{' '}
-                  <span className="text-gray-500 dark:text-gray-400">(optional)</span>
+                  <span className="text-muted">(optional)</span>
                 </FieldLabel>
                 <TextArea
                   id={`observation-${t.id}`}

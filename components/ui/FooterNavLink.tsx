@@ -50,7 +50,7 @@ export function FooterNavLink({ href, 'aria-label': ariaLabel, children }: Props
         type="button"
         disabled
         aria-label={ariaLabel}
-        className="flex items-center justify-center w-11 h-11 rounded-full text-gray-500 dark:text-gray-400 disabled:opacity-40"
+        className="flex items-center justify-center w-11 h-11 rounded-full text-muted disabled:opacity-40"
       >
         {children}
       </button>
@@ -62,7 +62,7 @@ export function FooterNavLink({ href, 'aria-label': ariaLabel, children }: Props
       href={href}
       variant="nav"
       aria-label={ariaLabel}
-      className="flex items-center justify-center w-11 h-11 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+      className="flex items-center justify-center w-11 h-11 rounded-full hover:bg-divider"
     >
       {children}
     </Link>

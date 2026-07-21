@@ -9,7 +9,7 @@ const fieldLabelVariants = cva('block', {
   variants: {
     tone: {
       standard: 'text-sm font-medium mb-1',
-      muted: 'text-xs text-gray-500 dark:text-gray-400 mb-1',
+      muted: 'text-xs text-muted mb-1',
     },
   },
   defaultVariants: {
