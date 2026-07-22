@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import NextLink from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getRequestUser } from '@/lib/auth/get-request-user'
 import { Link } from '@/components/ui/Link'
@@ -159,9 +160,9 @@ async function FeedContent({ page }: { page: number }) {
         title={t('heading')}
         subtitle={t('subheading')}
         actions={user && (
-          <Link href="/tests/new" className={buttonVariants({ size: 'compact' })}>
+          <NextLink href="/tests/new" className={buttonVariants({ size: 'compact' })}>
             {t('newTestButton')}
-          </Link>
+          </NextLink>
         )}
       />
 

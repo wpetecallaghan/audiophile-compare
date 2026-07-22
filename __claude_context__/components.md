@@ -712,8 +712,10 @@ import { Button, buttonVariants } from '@/components/ui/Button'
 <Button size="compact" onClick={...}>+ Add snapshot</Button>      {/* inline/header actions */}
 
 {/* Non-<button> elements styled as a button (e.g. a Next.js <Link>) use the
-    exported variant function directly instead of wrapping in <Button>: */}
-<Link href="/systems" className={buttonVariants({ variant: 'secondary' })}>Cancel</Link>
+    exported variant function directly instead of wrapping in <Button> —
+    and must use plain next/link, not the custom @/components/ui/Link: */}
+import NextLink from 'next/link'
+<NextLink href="/systems" className={buttonVariants({ variant: 'secondary' })}>Cancel</NextLink>
 ```
 Two roles (`primary` default / `secondary`) × two size tiers (`standard`
 default / `compact`, for inline/header actions) — that's the full matrix, see
@@ -725,6 +727,20 @@ This was a real bug found via manual dark-mode screenshot verification, not
 code review — visual changes need an actual rendered check, not just a
 class-name audit, which is exactly why this is now a component instead of
 copy-pasted classes: get the pairing right once, everywhere inherits it.
+
+**Never wrap `buttonVariants` around the custom `@/components/ui/Link`
+component** (`components/ui/Link.tsx`) — always use plain `next/link`
+(aliased `NextLink`) instead, as above. `Link` always applies its own
+`linkVariants` first, and its default `variant="inline"` sets `text-link
+hover:underline` (a blue token). `cn()` doesn't dedupe conflicting Tailwind
+utilities the way `tailwind-merge` would (see `Link.tsx`'s own `size` prop
+comment for the same caveat), so a button styled this way ends up carrying
+both `text-link` and the button's own `text-ink-foreground` at once, with
+which one visually wins down to Tailwind's internal stylesheet order rather
+than intent — a real bug (blue, low-contrast button text in both themes),
+found on `app/page.tsx`'s "+ New test" button, not hypothetical. `app/systems/page.tsx`,
+`app/systems/[id]/page.tsx`, `ProfileForm.tsx`, and `EditSystemForm.tsx` all
+show the correct `NextLink` pattern.
 
 Reserve unstyled/underlined links for real page-to-page navigation
 (breadcrumbs, pagination, CTAs to `/login`/`/register`) — not in-place

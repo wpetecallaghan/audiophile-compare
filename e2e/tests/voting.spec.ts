@@ -162,6 +162,22 @@ test.describe('Voting flow', () => {
 
     await context.close()
   })
+
+  // Real reported bug: the button used the custom `Link` component
+  // (@/components/ui/Link) instead of plain next/link, so its default
+  // linkVariants `text-link` (blue) collided with buttonVariants's own
+  // `text-ink-foreground` — poor contrast against the black/white button
+  // background in both themes. Fixed in app/page.tsx by switching to
+  // NextLink, matching every other button-styled link in the app (see
+  // components.md §12). This asserts the root cause directly rather than
+  // computed color, which this suite has no existing pattern for.
+  test('the "+ New test" button on the feed uses monochrome button styling, not link-blue text', async ({ page }) => {
+    await page.goto('/')
+    const newTestButton = page.getByRole(ROLE.link, { name: m.feed.newTestButton })
+    await expect(newTestButton).toBeVisible()
+    await expect(newTestButton).not.toHaveClass(/text-link/)
+    await expect(newTestButton).toHaveClass(/bg-ink/)
+  })
 })
 
 test.describe('Forum discussion link (build step 46)', () => {
