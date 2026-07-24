@@ -2,6 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { revalidateTag } from 'next/cache'
+import {
+  HTTP_CONFLICT,
+  HTTP_FORBIDDEN,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 export async function POST(
   request: NextRequest,
@@ -12,7 +19,7 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   // Ownership check — never trust the client
@@ -23,15 +30,15 @@ export async function POST(
     .single()
 
   if (!test) {
-    return NextResponse.json({ error: 'Test not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Test not found' }, { status: HTTP_NOT_FOUND })
   }
 
   if (test.creator_id !== user.id) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    return NextResponse.json({ error: 'Forbidden' }, { status: HTTP_FORBIDDEN })
   }
 
   if (test.status === 'revealed') {
-    return NextResponse.json({ error: 'Already revealed' }, { status: 409 })
+    return NextResponse.json({ error: 'Already revealed' }, { status: HTTP_CONFLICT })
   }
 
   const { error } = await supabase
@@ -43,7 +50,7 @@ export async function POST(
     .eq('id', id)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   // step 75 — status/revealed_at are part of the cached test-core data.

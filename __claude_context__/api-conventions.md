@@ -48,13 +48,14 @@ Never import `lib/supabase/admin.ts` from any `'use client'` file or code that c
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { HTTP_UNAUTHORIZED } from '@/lib/api/http-status'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   // ... handler logic
@@ -63,6 +64,8 @@ export async function POST(request: NextRequest) {
 
 **Ownership check — always query the DB; never trust a client-supplied user ID:**
 ```typescript
+import { HTTP_FORBIDDEN } from '@/lib/api/http-status'
+
 const { data: test } = await supabase
   .from('tests')
   .select('creator_id')
@@ -70,7 +73,7 @@ const { data: test } = await supabase
   .single()
 
 if (!test || test.creator_id !== user.id) {
-  return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  return NextResponse.json({ error: 'Forbidden' }, { status: HTTP_FORBIDDEN })
 }
 ```
 
@@ -90,14 +93,19 @@ export async function GET(
 ## 3. Standard response format
 
 ```typescript
+import { HTTP_OK, HTTP_CREATED, HTTP_BAD_REQUEST } from '@/lib/api/http-status'
+
 // Success — named field matching the resource, not a generic 'data' wrapper
-return NextResponse.json({ snapshot }, { status: 201 })  // POST — created
-return NextResponse.json({ snapshot }, { status: 200 })  // PATCH — updated
-return NextResponse.json({ tests },    { status: 200 })  // GET — list
+return NextResponse.json({ snapshot }, { status: HTTP_CREATED })  // POST — created
+return NextResponse.json({ snapshot }, { status: HTTP_OK })       // PATCH — updated
+return NextResponse.json({ tests },    { status: HTTP_OK })       // GET — list
 
 // Error — consistent shape; no 'code' field used in this project
-return NextResponse.json({ error: 'Descriptive message' }, { status: 400 })
-// Status codes: 400 | 401 | 403 | 404 | 500
+return NextResponse.json({ error: 'Descriptive message' }, { status: HTTP_BAD_REQUEST })
+// Status codes: always the named constants in lib/api/http-status.ts
+// (HTTP_BAD_REQUEST, HTTP_UNAUTHORIZED, HTTP_FORBIDDEN, HTTP_NOT_FOUND,
+// HTTP_CONFLICT, HTTP_INTERNAL_SERVER_ERROR, HTTP_BAD_GATEWAY, ...) —
+// never a bare numeric literal.
 ```
 
 **Never leak sensitive fields — use explicit column selection:**
@@ -164,9 +172,11 @@ a vote (`VoteForm`, `POST /api/votes`) requires `user` to be non-null.
 ### Rule 4 — only the creator can reveal a test
 
 ```typescript
+import { HTTP_FORBIDDEN } from '@/lib/api/http-status'
+
 // In POST /api/tests/[id]/reveal:
 if (test.creator_id !== user.id) {
-  return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  return NextResponse.json({ error: 'Forbidden' }, { status: HTTP_FORBIDDEN })
 }
 await supabase
   .from('tests')
@@ -265,12 +275,14 @@ session, distinct from the forum-ingestion pipeline's server-to-server
 callers below.
 
 ```typescript
+import { HTTP_UNAUTHORIZED, HTTP_NOT_FOUND } from '@/lib/api/http-status'
+
 const { data: { user } } = await supabase.auth.getUser()
 if (!user) redirect('/login?redirectTo=...')          // page — safety net, middleware already covers this
-// or: return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })  // route
+// or: return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })  // route
 
 if (!isAdminEmail(user.email)) notFound()              // page — 404, not 403: don't confirm
-// or: return NextResponse.json({ error: 'Not found' }, { status: 404 })     // route — this route exists to a non-admin
+// or: return NextResponse.json({ error: 'Not found' }, { status: HTTP_NOT_FOUND })         // route — this route exists to a non-admin
 ```
 
 Four real callers: `app/version/page.tsx` (read-only deployment info),

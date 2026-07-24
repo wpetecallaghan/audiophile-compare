@@ -5,6 +5,12 @@ import { STATUS_OK, STATUS_DEAD } from '@/lib/clips/check-url'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { revalidateTag } from 'next/cache'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -36,26 +42,26 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   // 404, not 403 — same reasoning as /version, erase-user-data, and
   // claim: don't confirm this route's existence to a non-admin.
   if (!isAdminEmail(user.email)) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: HTTP_NOT_FOUND })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   const parsedBody = body as { override?: unknown }
 
   if (!('override' in parsedBody)) {
-    return NextResponse.json({ error: 'override is required' }, { status: 400 })
+    return NextResponse.json({ error: 'override is required' }, { status: HTTP_BAD_REQUEST })
   }
 
   const { override } = parsedBody
@@ -63,7 +69,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   if (override !== null && override !== STATUS_OK && override !== STATUS_DEAD) {
     return NextResponse.json(
       { error: `override must be '${STATUS_OK}', '${STATUS_DEAD}', or null` },
-      { status: 400 },
+      { status: HTTP_BAD_REQUEST },
     )
   }
 
@@ -81,7 +87,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: 'Failed to update clip' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update clip' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   // The admin client bypasses RLS entirely, so a missing row here can
@@ -89,7 +95,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   // PATCH /api/clips/[id], there's no ownership ambiguity to fold into a
   // generic 500.
   if (!updated) {
-    return NextResponse.json({ error: 'Clip not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Clip not found' }, { status: HTTP_NOT_FOUND })
   }
 
   // step 75 — this clip's row is part of its parent test's cached core

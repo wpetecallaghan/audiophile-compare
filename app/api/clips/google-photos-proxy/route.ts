@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { GOOGLE_PHOTOS_CDN_HOSTNAME, BROWSER_USER_AGENT } from '@/lib/clips/resolve-google-photos'
+import { HTTP_BAD_GATEWAY, HTTP_BAD_REQUEST } from '@/lib/api/http-status'
 
 const UPSTREAM_FETCH_FAILED = 'Upstream fetch failed'
 
@@ -21,18 +22,18 @@ const UPSTREAM_FETCH_FAILED = 'Upstream fetch failed'
 export async function GET(request: NextRequest) {
   const target = request.nextUrl.searchParams.get('url')
   if (!target) {
-    return NextResponse.json({ error: 'url is required' }, { status: 400 })
+    return NextResponse.json({ error: 'url is required' }, { status: HTTP_BAD_REQUEST })
   }
 
   let parsed: URL
   try {
     parsed = new URL(target)
   } catch {
-    return NextResponse.json({ error: 'Invalid url' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid url' }, { status: HTTP_BAD_REQUEST })
   }
 
   if (parsed.protocol !== 'https:' || parsed.hostname !== GOOGLE_PHOTOS_CDN_HOSTNAME) {
-    return NextResponse.json({ error: 'Unsupported host' }, { status: 400 })
+    return NextResponse.json({ error: 'Unsupported host' }, { status: HTTP_BAD_REQUEST })
   }
 
   // Forward the browser's Range header so seeking/scrubbing works — the
@@ -49,11 +50,11 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch {
-    return NextResponse.json({ error: UPSTREAM_FETCH_FAILED }, { status: 502 })
+    return NextResponse.json({ error: UPSTREAM_FETCH_FAILED }, { status: HTTP_BAD_GATEWAY })
   }
 
   if (!upstream.ok || !upstream.body) {
-    return NextResponse.json({ error: UPSTREAM_FETCH_FAILED }, { status: 502 })
+    return NextResponse.json({ error: UPSTREAM_FETCH_FAILED }, { status: HTTP_BAD_GATEWAY })
   }
 
   const headers = new Headers()

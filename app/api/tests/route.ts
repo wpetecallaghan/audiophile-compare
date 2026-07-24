@@ -4,6 +4,13 @@ import type { NextRequest } from 'next/server'
 import { isValidForumLink } from '@/lib/tests/validate-forum-link'
 import { STATUS_OK } from '@/lib/clips/check-url'
 import type { ClipProvider, MediaType } from '@/lib/clips/detect-provider'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CREATED,
+  HTTP_FORBIDDEN,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 type ClipInput = {
   source_url: string
@@ -29,14 +36,14 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   const {
@@ -54,14 +61,14 @@ export async function POST(request: NextRequest) {
   if (!title?.trim() || !track_id || !snapshot_a_id || !snapshot_b_id) {
     return NextResponse.json(
       { error: 'title, track_id, snapshot_a_id, snapshot_b_id are required' },
-      { status: 400 }
+      { status: HTTP_BAD_REQUEST }
     )
   }
 
   if (!clip_a?.source_url || !clip_b?.source_url) {
     return NextResponse.json(
       { error: 'clip_a and clip_b are required' },
-      { status: 400 }
+      { status: HTTP_BAD_REQUEST }
     )
   }
 
@@ -69,7 +76,7 @@ export async function POST(request: NextRequest) {
   if (trimmedForumLink && !isValidForumLink(trimmedForumLink)) {
     return NextResponse.json(
       { error: 'forum_link must be a valid http(s) URL' },
-      { status: 400 }
+      { status: HTTP_BAD_REQUEST }
     )
   }
 
@@ -91,7 +98,7 @@ export async function POST(request: NextRequest) {
   if (!ownedIds.includes(snapshot_a_id) || !ownedIds.includes(snapshot_b_id)) {
     return NextResponse.json(
       { error: 'One or both snapshots do not belong to you' },
-      { status: 403 }
+      { status: HTTP_FORBIDDEN }
     )
   }
 
@@ -113,7 +120,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (testError || !test) {
-    return NextResponse.json({ error: 'Failed to create test' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create test' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   // 2. Insert both clips
@@ -144,7 +151,7 @@ export async function POST(request: NextRequest) {
   if (clipsError || !clips || clips.length !== 2) {
     // Clean up the orphaned test row
     await supabase.from('tests').delete().eq('id', test.id)
-    return NextResponse.json({ error: 'Failed to create clips' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create clips' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   const clipA = clips.find(c => c.label === 'A')!
@@ -163,8 +170,8 @@ export async function POST(request: NextRequest) {
     // Clean up both clips and the test
     await supabase.from('clips').delete().eq('test_id', test.id)
     await supabase.from('tests').delete().eq('id', test.id)
-    return NextResponse.json({ error: 'Failed to record clip mapping' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to record clip mapping' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
-  return NextResponse.json({ testId: test.id }, { status: 201 })
+  return NextResponse.json({ testId: test.id }, { status: HTTP_CREATED })
 }

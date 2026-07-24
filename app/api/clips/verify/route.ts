@@ -3,6 +3,7 @@ import { detectProvider, PROVIDER_DIRECT } from '@/lib/clips/detect-provider'
 import { checkDirectUrl, STATUS_OK } from '@/lib/clips/check-url'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { HTTP_BAD_REQUEST, HTTP_UNAUTHORIZED } from '@/lib/api/http-status'
 
 export async function POST(request: NextRequest) {
   // Auth check — clip verification requires login per your spec
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   // Parse and validate the request body
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   // Type narrowing — TypeScript doesn't know the shape of `body` at runtime,
@@ -29,13 +30,13 @@ export async function POST(request: NextRequest) {
     body === null ||
     typeof (body as Record<string, unknown>).url !== 'string'
   ) {
-    return NextResponse.json({ error: 'url is required' }, { status: 400 })
+    return NextResponse.json({ error: 'url is required' }, { status: HTTP_BAD_REQUEST })
   }
 
   const { url } = body as { url: string }
 
   if (!url.trim()) {
-    return NextResponse.json({ error: 'url must not be empty' }, { status: 400 })
+    return NextResponse.json({ error: 'url must not be empty' }, { status: HTTP_BAD_REQUEST })
   }
 
   // Step 1: detect provider from URL shape alone

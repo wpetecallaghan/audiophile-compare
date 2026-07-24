@@ -3,6 +3,14 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { STATUS_DEAD, type UrlStatus } from '@/lib/clips/check-url'
 import { effectiveUrlStatus } from '@/lib/clips/effective-url-status'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CONFLICT,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 type VoteInput = {
   technique_id: string
@@ -16,14 +24,14 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   const { test_id, votes } = body as { test_id?: string; votes?: VoteInput[] }
@@ -31,7 +39,7 @@ export async function POST(request: NextRequest) {
   if (!test_id || !Array.isArray(votes) || votes.length === 0) {
     return NextResponse.json(
       { error: 'test_id and a non-empty votes array are required' },
-      { status: 400 },
+      { status: HTTP_BAD_REQUEST },
     )
   }
 
@@ -43,13 +51,13 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (!test) {
-    return NextResponse.json({ error: 'Test not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Test not found' }, { status: HTTP_NOT_FOUND })
   }
 
   if (test.status === 'revealed') {
     return NextResponse.json(
       { error: 'Cannot vote on a revealed test' },
-      { status: 409 },
+      { status: HTTP_CONFLICT },
     )
   }
 
@@ -64,7 +72,7 @@ export async function POST(request: NextRequest) {
   if (!clips || clips.length !== chosenClipIds.length) {
     return NextResponse.json(
       { error: 'One or more clip IDs are invalid for this test' },
-      { status: 400 },
+      { status: HTTP_BAD_REQUEST },
     )
   }
 
@@ -74,7 +82,7 @@ export async function POST(request: NextRequest) {
   if (clips.some(c => effectiveUrlStatus(c.url_status as UrlStatus, c.admin_override as UrlStatus | null) === STATUS_DEAD)) {
     return NextResponse.json(
       { error: 'One or more chosen clips are currently unreachable' },
-      { status: 409 },
+      { status: HTTP_CONFLICT },
     )
   }
 
@@ -91,7 +99,7 @@ export async function POST(request: NextRequest) {
   if (!activeTechniques || activeTechniques.length !== techniqueIds.length) {
     return NextResponse.json(
       { error: 'One or more techniques are not currently active' },
-      { status: 400 },
+      { status: HTTP_BAD_REQUEST },
     )
   }
 
@@ -110,8 +118,8 @@ export async function POST(request: NextRequest) {
     .upsert(rows, { onConflict: 'test_id,user_id,technique_id' })
 
   if (error) {
-    return NextResponse.json({ error: 'Failed to save votes' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to save votes' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
-  return NextResponse.json({ success: true }, { status: 200 })
+  return NextResponse.json({ success: true }, { status: HTTP_OK })
 }

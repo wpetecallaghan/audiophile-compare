@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import StepSnapshots from '../steps/StepSnapshots'
 import type { SystemWithSnapshots, Snapshot, TestDraft } from '@/lib/types/test-creation'
+import { HTTP_CREATED, HTTP_NOT_FOUND, HTTP_BAD_REQUEST } from '@/lib/api/http-status'
 
 // --- Fixtures ---
 
@@ -227,7 +228,7 @@ describe('StepSnapshots', () => {
       const user = userEvent.setup()
       const mockOnSnapshotCreated = vi.fn()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: 201 }),
+        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: HTTP_CREATED }),
       )
       renderStep([SYSTEM], { onSnapshotCreated: mockOnSnapshotCreated })
 
@@ -245,7 +246,7 @@ describe('StepSnapshots', () => {
     it('POSTs to the correct URL with label and notes in the body', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: 201 }),
+        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: HTTP_CREATED }),
       )
       renderStep([SYSTEM])
 
@@ -271,7 +272,7 @@ describe('StepSnapshots', () => {
     it('hides the mini-form and restores the add link after successful creation', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: 201 }),
+        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: HTTP_CREATED }),
       )
       renderStep([SYSTEM])
 
@@ -294,7 +295,7 @@ describe('StepSnapshots', () => {
     it('shows the server error message and keeps the form open on a failed API response', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ error: 'Not found' }), { status: 404 }),
+        new Response(JSON.stringify({ error: 'Not found' }), { status: HTTP_NOT_FOUND }),
       )
       renderStep([SYSTEM])
 
@@ -350,7 +351,7 @@ describe('StepSnapshots', () => {
     it('enables Continue after inline creation auto-selects one side with the other already chosen', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: 201 }),
+        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: HTTP_CREATED }),
       )
       renderStep([SYSTEM])
 
@@ -454,7 +455,7 @@ describe('StepSnapshots', () => {
       mockFetch.mockResolvedValue(
         new Response(
           JSON.stringify({ system: { id: NEW_SYSTEM.id, name: NEW_SYSTEM.name, description: null } }),
-          { status: 201 },
+          { status: HTTP_CREATED },
         ),
       )
       renderStep([SYSTEM])
@@ -482,7 +483,7 @@ describe('StepSnapshots', () => {
       mockFetch.mockResolvedValue(
         new Response(
           JSON.stringify({ system: { id: NEW_SYSTEM.id, name: NEW_SYSTEM.name, description: null } }),
-          { status: 201 },
+          { status: HTTP_CREATED },
         ),
       )
       renderStep([SYSTEM], { onSystemCreated: mockOnSystemCreated })
@@ -506,7 +507,7 @@ describe('StepSnapshots', () => {
       mockFetch.mockResolvedValue(
         new Response(
           JSON.stringify({ system: { id: NEW_SYSTEM.id, name: NEW_SYSTEM.name, description: null } }),
-          { status: 201 },
+          { status: HTTP_CREATED },
         ),
       )
       renderStep([SYSTEM])
@@ -526,7 +527,7 @@ describe('StepSnapshots', () => {
     it('shows the server error and keeps the form open on a failed API response', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ error: 'name is required' }), { status: 400 }),
+        new Response(JSON.stringify({ error: 'name is required' }), { status: HTTP_BAD_REQUEST }),
       )
       renderStep([SYSTEM])
 

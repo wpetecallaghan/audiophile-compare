@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import CreateSystemForm from '../CreateSystemForm'
+import { HTTP_CREATED, HTTP_BAD_REQUEST, HTTP_INTERNAL_SERVER_ERROR } from '@/lib/api/http-status'
 
 // --- Mocks ---
 
@@ -81,7 +82,7 @@ describe('CreateSystemForm', () => {
     it('POSTs to /api/systems with trimmed name and description', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ system: NEW_SYSTEM }), { status: 201 }),
+        new Response(JSON.stringify({ system: NEW_SYSTEM }), { status: HTTP_CREATED }),
       )
       render(<CreateSystemForm />)
 
@@ -104,7 +105,7 @@ describe('CreateSystemForm', () => {
     it('redirects to the new system detail page on success', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ system: NEW_SYSTEM }), { status: 201 }),
+        new Response(JSON.stringify({ system: NEW_SYSTEM }), { status: HTTP_CREATED }),
       )
       render(<CreateSystemForm />)
 
@@ -119,7 +120,7 @@ describe('CreateSystemForm', () => {
     it('shows server error message and keeps the form open on API failure', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ error: 'name is required' }), { status: 400 }),
+        new Response(JSON.stringify({ error: 'name is required' }), { status: HTTP_BAD_REQUEST }),
       )
       render(<CreateSystemForm />)
 
@@ -135,7 +136,7 @@ describe('CreateSystemForm', () => {
     it('shows a fallback error message when the API response has no error field', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({}), { status: 500 }),
+        new Response(JSON.stringify({}), { status: HTTP_INTERNAL_SERVER_ERROR }),
       )
       render(<CreateSystemForm />)
 
@@ -174,7 +175,7 @@ describe('CreateSystemForm', () => {
       expect(screen.getByRole('button', { name: 'Creating…' })).toBeDisabled()
 
       // Clean up
-      resolve!(new Response(JSON.stringify({ system: NEW_SYSTEM }), { status: 201 }))
+      resolve!(new Response(JSON.stringify({ system: NEW_SYSTEM }), { status: HTTP_CREATED }))
     })
   })
 

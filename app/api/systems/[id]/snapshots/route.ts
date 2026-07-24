@@ -1,6 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CREATED,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -17,7 +24,7 @@ export async function POST(request: NextRequest, { params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   // Verify ownership — return 404 to avoid leaking system existence
@@ -28,20 +35,20 @@ export async function POST(request: NextRequest, { params }: Props) {
     .single()
 
   if (!system || system.owner_id !== user.id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: HTTP_NOT_FOUND })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   const { label, notes } = body as { label?: string; notes?: string }
 
   if (!label?.trim()) {
-    return NextResponse.json({ error: 'label is required' }, { status: 400 })
+    return NextResponse.json({ error: 'label is required' }, { status: HTTP_BAD_REQUEST })
   }
 
   // Compute next version — read MAX(version) and add 1
@@ -67,8 +74,8 @@ export async function POST(request: NextRequest, { params }: Props) {
     .single()
 
   if (error || !snapshot) {
-    return NextResponse.json({ error: 'Failed to create snapshot' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create snapshot' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
-  return NextResponse.json({ snapshot }, { status: 201 })
+  return NextResponse.json({ snapshot }, { status: HTTP_CREATED })
 }

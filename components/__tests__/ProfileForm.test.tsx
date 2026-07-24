@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import ProfileForm from '../ProfileForm'
+import { HTTP_OK, HTTP_INTERNAL_SERVER_ERROR } from '@/lib/api/http-status'
 
 // --- Mocks ---
 
@@ -81,7 +82,7 @@ describe('ProfileForm', () => {
     it('PATCHes to /api/profile with trimmed display_name', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ user: { display_name: 'Pete' } }), { status: 200 }),
+        new Response(JSON.stringify({ user: { display_name: 'Pete' } }), { status: HTTP_OK }),
       )
       render(<ProfileForm initialDisplayName=" Pete " />)
 
@@ -102,7 +103,7 @@ describe('ProfileForm', () => {
     it('shows "Display name updated." on success', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ user: { display_name: 'Pete' } }), { status: 200 }),
+        new Response(JSON.stringify({ user: { display_name: 'Pete' } }), { status: HTTP_OK }),
       )
       render(<ProfileForm initialDisplayName="Pete" />)
 
@@ -116,7 +117,7 @@ describe('ProfileForm', () => {
     it('clears the success message when the input is changed after a save', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ user: { display_name: 'Pete' } }), { status: 200 }),
+        new Response(JSON.stringify({ user: { display_name: 'Pete' } }), { status: HTTP_OK }),
       )
       render(<ProfileForm initialDisplayName="Pete" />)
 
@@ -133,7 +134,7 @@ describe('ProfileForm', () => {
     it('shows server error and keeps the form open on API failure', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ error: 'Failed to update profile' }), { status: 500 }),
+        new Response(JSON.stringify({ error: 'Failed to update profile' }), { status: HTTP_INTERNAL_SERVER_ERROR }),
       )
       render(<ProfileForm initialDisplayName="Pete" />)
 
@@ -148,7 +149,7 @@ describe('ProfileForm', () => {
     it('shows a fallback error when the API response has no error field', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({}), { status: 500 }),
+        new Response(JSON.stringify({}), { status: HTTP_INTERNAL_SERVER_ERROR }),
       )
       render(<ProfileForm initialDisplayName="Pete" />)
 
@@ -182,7 +183,7 @@ describe('ProfileForm', () => {
       expect(screen.getByRole('button', { name: 'Saving\u2026' })).toBeDisabled()
 
       // Clean up
-      resolve!(new Response(JSON.stringify({ user: { display_name: 'Pete' } }), { status: 200 }))
+      resolve!(new Response(JSON.stringify({ user: { display_name: 'Pete' } }), { status: HTTP_OK }))
     })
   })
 })

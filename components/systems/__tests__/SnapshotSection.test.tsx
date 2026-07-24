@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import SnapshotSection from '../SnapshotSection'
+import { HTTP_OK, HTTP_BAD_REQUEST, HTTP_CONFLICT } from '@/lib/api/http-status'
 
 // --- Mocks ---
 
@@ -274,7 +275,7 @@ describe('SnapshotSection', () => {
     it('PATCHes to the correct URL', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: SNAPSHOT }), { status: 200 }),
+        new Response(JSON.stringify({ snapshot: SNAPSHOT }), { status: HTTP_OK }),
       )
       renderSection({ snapshot: SNAPSHOT })
 
@@ -292,7 +293,7 @@ describe('SnapshotSection', () => {
     it('sends null for notes when the notes field is cleared', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: SNAPSHOT }), { status: 200 }),
+        new Response(JSON.stringify({ snapshot: SNAPSHOT }), { status: HTTP_OK }),
       )
       renderSection({ snapshot: SNAPSHOT })
 
@@ -311,7 +312,7 @@ describe('SnapshotSection', () => {
     it('calls router.refresh() and closes edit mode on success', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: SNAPSHOT }), { status: 200 }),
+        new Response(JSON.stringify({ snapshot: SNAPSHOT }), { status: HTTP_OK }),
       )
       renderSection({ snapshot: SNAPSHOT })
 
@@ -331,7 +332,7 @@ describe('SnapshotSection', () => {
       mockFetch.mockResolvedValue(
         new Response(
           JSON.stringify({ error: 'label must not be empty' }),
-          { status: 400 },
+          { status: HTTP_BAD_REQUEST },
         ),
       )
       renderSection({ snapshot: SNAPSHOT })
@@ -393,7 +394,7 @@ describe('SnapshotSection', () => {
 
     it('DELETEs to the correct URL and refreshes on confirm', async () => {
       const user = userEvent.setup()
-      mockFetch.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+      mockFetch.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: HTTP_OK }))
       renderSection({ testCount: 0 })
 
       await user.click(screen.getByRole('button', { name: /^delete$/i }))
@@ -413,7 +414,7 @@ describe('SnapshotSection', () => {
       mockFetch.mockResolvedValue(
         new Response(
           JSON.stringify({ error: 'This snapshot is used by a test and can no longer be deleted' }),
-          { status: 409 },
+          { status: HTTP_CONFLICT },
         ),
       )
       renderSection({ testCount: 0 })

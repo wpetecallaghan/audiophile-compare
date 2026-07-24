@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import VoteForm from '../VoteForm'
 import type { Technique, ExistingVote } from '../VoteForm'
+import { HTTP_OK, HTTP_CONFLICT } from '@/lib/api/http-status'
 
 // --- Mocks ---
 
@@ -207,7 +208,7 @@ describe('VoteForm', () => {
     it('calls fetch with only the voted techniques in the payload', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ success: true }), { status: 200 }),
+        new Response(JSON.stringify({ success: true }), { status: HTTP_OK }),
       )
       renderForm()
 
@@ -233,7 +234,7 @@ describe('VoteForm', () => {
     it('includes the observation when provided', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ success: true }), { status: 200 }),
+        new Response(JSON.stringify({ success: true }), { status: HTTP_OK }),
       )
       renderForm()
 
@@ -256,7 +257,7 @@ describe('VoteForm', () => {
     it('calls router.refresh() on successful submission', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ success: true }), { status: 200 }),
+        new Response(JSON.stringify({ success: true }), { status: HTTP_OK }),
       )
       renderForm()
 
@@ -273,7 +274,7 @@ describe('VoteForm', () => {
       mockFetch.mockResolvedValue(
         new Response(
           JSON.stringify({ error: 'Cannot vote on a revealed test' }),
-          { status: 409 },
+          { status: HTTP_CONFLICT },
         ),
       )
       renderForm()

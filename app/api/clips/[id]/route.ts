@@ -2,6 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { revalidateTag } from 'next/cache'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CONFLICT,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -22,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   // Verify ownership via the clip's parent test — return 404 to avoid
@@ -38,7 +45,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
     : null
 
   if (!clip || !test || test.creator_id !== user.id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: HTTP_NOT_FOUND })
   }
 
   const { count } = await supabase
@@ -49,7 +56,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   if ((count ?? 0) > 0) {
     return NextResponse.json(
       { error: 'This test has votes and its clips can no longer be replaced' },
-      { status: 409 },
+      { status: HTTP_CONFLICT },
     )
   }
 
@@ -57,7 +64,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   const { source_url, provider, media_type, url_status } = body as {
@@ -70,7 +77,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   if (!source_url?.trim() || !provider || !media_type || !url_status) {
     return NextResponse.json(
       { error: 'source_url, provider, media_type, and url_status are required' },
-      { status: 400 },
+      { status: HTTP_BAD_REQUEST },
     )
   }
 
@@ -91,7 +98,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
     .single()
 
   if (error || !updated) {
-    return NextResponse.json({ error: 'Failed to update clip' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update clip' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   // step 75 — this clip's row is part of its parent test's cached core

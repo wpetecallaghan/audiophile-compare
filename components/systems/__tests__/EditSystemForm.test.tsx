@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import EditSystemForm from '../EditSystemForm'
+import { HTTP_OK, HTTP_NOT_FOUND, HTTP_INTERNAL_SERVER_ERROR } from '@/lib/api/http-status'
 
 // --- Mocks ---
 
@@ -119,7 +120,7 @@ describe('EditSystemForm', () => {
     it('PATCHes to /api/systems/[id] with trimmed name and description', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ system: UPDATED_SYSTEM }), { status: 200 }),
+        new Response(JSON.stringify({ system: UPDATED_SYSTEM }), { status: HTTP_OK }),
       )
       render(
         <EditSystemForm
@@ -148,7 +149,7 @@ describe('EditSystemForm', () => {
     it('redirects to the system detail page on success', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ system: UPDATED_SYSTEM }), { status: 200 }),
+        new Response(JSON.stringify({ system: UPDATED_SYSTEM }), { status: HTTP_OK }),
       )
       render(
         <EditSystemForm
@@ -168,7 +169,7 @@ describe('EditSystemForm', () => {
     it('shows server error message and keeps the form open on API failure', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ error: 'Not found' }), { status: 404 }),
+        new Response(JSON.stringify({ error: 'Not found' }), { status: HTTP_NOT_FOUND }),
       )
       render(
         <EditSystemForm
@@ -189,7 +190,7 @@ describe('EditSystemForm', () => {
     it('shows a fallback error message when the API response has no error field', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({}), { status: 500 }),
+        new Response(JSON.stringify({}), { status: HTTP_INTERNAL_SERVER_ERROR }),
       )
       render(
         <EditSystemForm
@@ -243,7 +244,7 @@ describe('EditSystemForm', () => {
       expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled()
 
       // Clean up
-      resolve!(new Response(JSON.stringify({ system: UPDATED_SYSTEM }), { status: 200 }))
+      resolve!(new Response(JSON.stringify({ system: UPDATED_SYSTEM }), { status: HTTP_OK }))
     })
   })
 

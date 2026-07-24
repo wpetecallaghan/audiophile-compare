@@ -4,6 +4,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createPlaceholderAuthor } from '@/lib/ingestion/create-placeholder-author'
 import { validateIngestPayload, resolveTestTitle, type IngestAuthor } from '@/lib/ingestion/ingest-test-payload'
 import { detectProvider } from '@/lib/clips/detect-provider'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CREATED,
+  HTTP_FORBIDDEN,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_OK,
+} from '@/lib/api/http-status'
 
 // Only one forum is in scope today — add a `source` field to IngestPayload
 // only if/when a second forum is actually being ingested (see
@@ -45,19 +52,19 @@ async function resolveVoterIds(voters: IngestAuthor[]): Promise<Map<string, stri
 export async function POST(request: NextRequest) {
   const secret = request.headers.get('x-ingest-secret')
   if (!process.env.INGEST_SECRET || secret !== process.env.INGEST_SECRET) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    return NextResponse.json({ error: 'Forbidden' }, { status: HTTP_FORBIDDEN })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   const result = validateIngestPayload(body)
   if (!result.valid) {
-    return NextResponse.json({ error: result.error }, { status: 400 })
+    return NextResponse.json({ error: result.error }, { status: HTTP_BAD_REQUEST })
   }
 
   const payload = result.payload
@@ -108,7 +115,7 @@ export async function POST(request: NextRequest) {
   })
 
   if (error || !data) {
-    return NextResponse.json({ error: error?.message ?? 'Ingest failed' }, { status: 500 })
+    return NextResponse.json({ error: error?.message ?? 'Ingest failed' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   const { test_id: testId, already_imported: alreadyImported } = data as {
@@ -116,5 +123,5 @@ export async function POST(request: NextRequest) {
     already_imported: boolean
   }
 
-  return NextResponse.json({ testId, alreadyImported }, { status: alreadyImported ? 200 : 201 })
+  return NextResponse.json({ testId, alreadyImported }, { status: alreadyImported ? HTTP_OK : HTTP_CREATED })
 }

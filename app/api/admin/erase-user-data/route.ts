@@ -3,6 +3,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isAdminEmail } from '@/lib/admin/is-admin-email'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 // POST /api/admin/erase-user-data
 //
@@ -34,20 +40,20 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   // 404, not 403 — same reasoning as /version: don't confirm this route's
   // existence/purpose to a non-admin.
   if (!isAdminEmail(user.email)) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: HTTP_NOT_FOUND })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   const { userId, scope, preview } = body as RequestBody
@@ -55,7 +61,7 @@ export async function POST(request: NextRequest) {
   if (!userId || !scope || !VALID_SCOPES.includes(scope)) {
     return NextResponse.json(
       { error: 'userId and a valid scope (votes|content|full) are required' },
-      { status: 400 },
+      { status: HTTP_BAD_REQUEST },
     )
   }
 
@@ -79,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json(
         { error: `erase_user_votes failed: ${error.message}`, partial: result },
-        { status: 500 },
+        { status: HTTP_INTERNAL_SERVER_ERROR },
       )
     }
     result.votes = data
@@ -90,7 +96,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json(
         { error: `erase_user_content failed: ${error.message}`, partial: result },
-        { status: 500 },
+        { status: HTTP_INTERNAL_SERVER_ERROR },
       )
     }
     result.content = data
@@ -101,7 +107,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       return NextResponse.json(
         { error: `erase_user_account failed: ${error.message}`, partial: result },
-        { status: 500 },
+        { status: HTTP_INTERNAL_SERVER_ERROR },
       )
     }
     result.account = data
@@ -116,7 +122,7 @@ export async function POST(request: NextRequest) {
     if (authError) {
       return NextResponse.json(
         { error: `auth user deletion failed: ${authError.message}`, partial: result },
-        { status: 500 },
+        { status: HTTP_INTERNAL_SERVER_ERROR },
       )
     }
     result.authDeleted = true

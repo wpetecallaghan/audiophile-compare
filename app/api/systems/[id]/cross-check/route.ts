@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { findSharedClips } from '@/lib/clips/find-shared-clips'
 import type { TestWithClips } from '@/lib/clips/find-shared-clips'
+import { HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_UNAUTHORIZED } from '@/lib/api/http-status'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest, { params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   // Verify the user owns this system — return 404 to avoid leaking existence
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest, { params }: Props) {
     .single()
 
   if (!system || system.owner_id !== user.id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: HTTP_NOT_FOUND })
   }
 
   const { searchParams } = new URL(request.url)
@@ -39,14 +40,14 @@ export async function GET(request: NextRequest, { params }: Props) {
   if (!snapshotAId || !snapshotBId) {
     return NextResponse.json(
       { error: 'snapshot_a_id and snapshot_b_id are required' },
-      { status: 400 },
+      { status: HTTP_BAD_REQUEST },
     )
   }
 
   if (snapshotAId === snapshotBId) {
     return NextResponse.json(
       { error: 'snapshot_a_id and snapshot_b_id must be different' },
-      { status: 400 },
+      { status: HTTP_BAD_REQUEST },
     )
   }
 
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest, { params }: Props) {
   if (!snapshots || snapshots.length !== 2) {
     return NextResponse.json(
       { error: 'One or both snapshots do not belong to this system' },
-      { status: 400 },
+      { status: HTTP_BAD_REQUEST },
     )
   }
 

@@ -19,15 +19,23 @@ isn't obvious from the digit alone.
 
 ## Numbers need one extra check strings don't: same reason, not same digits
 
-Two occurrences of `500` can be completely unrelated — an HTTP `5xx`
-classification threshold and a route's own `{ status: 500 }` response are
-both "500" but mean different things and change independently. Extracting
-a shared constant across coincidentally-equal, semantically-unrelated
-numbers is a correctness/readability regression, not an improvement — it
-implies a connection that doesn't exist. Only extract when the *same
-value is repeated because it's the same value* (e.g. one page size used in
-both the query `.range()` call and the "next page" check), not because two
-unrelated numbers happen to match.
+Two occurrences of the same number can still be completely unrelated — e.g.
+a `timeoutMs = 5000` default and an unrelated page-size constant that
+happens to also be `5000` mean different things and change independently.
+Extracting a shared constant across coincidentally-equal, semantically-
+unrelated numbers is a correctness/readability regression, not an
+improvement — it implies a connection that doesn't exist. Only extract when
+the *same value is repeated because it's the same value* (e.g. one page
+size used in both the query `.range()` call and the "next page" check),
+not because two unrelated numbers happen to match.
+
+HTTP status codes are the deliberate *exception* here, not an example of
+unrelated same-digit numbers: every numeric HTTP status literal in a
+`NextResponse.json({...}, { status: N })` call has exactly one meaning —
+the response's own HTTP status — so per the shared-module rule below
+they're all centralized in `lib/api/http-status.ts` (`HTTP_OK`,
+`HTTP_BAD_REQUEST`, `HTTP_UNAUTHORIZED`, etc.), not treated as a per-
+occurrence "is this the same reason" judgment call.
 
 Structural numbers — `0`/`1`/`-1` in loop bounds, array indices, ordinary
 arithmetic — aren't "magic numbers" in the sense this rule cares about;
@@ -87,7 +95,8 @@ its owning module, import it everywhere else.
 - **Repeats across multiple files** → a shared module. In `e2e/tests/`, that's
   `e2e/helpers/constants.ts` — already holds `E2E_PREFIX` and `ROLE`
   (`{ button, link, heading }`, deduplicating dozens of `getByRole('button', ...)`
-  style calls across every spec file).
+  style calls across every spec file). For HTTP status codes across
+  `app/api/**/route.ts` and their tests, that's `lib/api/http-status.ts`.
 
 ## Don't over-apply
 

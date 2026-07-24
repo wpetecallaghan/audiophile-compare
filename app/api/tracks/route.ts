@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CREATED,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 // GET /api/tracks?q=searchterm
 export async function GET(request: NextRequest) {
@@ -8,7 +14,7 @@ export async function GET(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   const q = request.nextUrl.searchParams.get('q') ?? ''
@@ -27,7 +33,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   return NextResponse.json({ tracks: data })
@@ -39,14 +45,14 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   const { artist, title, album, passage_note } =
@@ -55,7 +61,7 @@ export async function POST(request: NextRequest) {
   if (!artist?.trim() || !title?.trim()) {
     return NextResponse.json(
       { error: 'artist and title are required' },
-      { status: 400 }
+      { status: HTTP_BAD_REQUEST }
     )
   }
 
@@ -72,8 +78,8 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
-  return NextResponse.json({ track: data }, { status: 201 })
+  return NextResponse.json({ track: data }, { status: HTTP_CREATED })
 }

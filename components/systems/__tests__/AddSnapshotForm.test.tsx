@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import AddSnapshotForm from '../AddSnapshotForm'
+import { HTTP_CREATED, HTTP_BAD_REQUEST, HTTP_INTERNAL_SERVER_ERROR } from '@/lib/api/http-status'
 
 // --- Mocks ---
 
@@ -138,7 +139,7 @@ describe('AddSnapshotForm', () => {
     it('POSTs to the correct URL with trimmed label and notes', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: 201 }),
+        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: HTTP_CREATED }),
       )
       render(<AddSnapshotForm systemId={SYSTEM_ID} />)
 
@@ -162,7 +163,7 @@ describe('AddSnapshotForm', () => {
     it('calls router.refresh() on success', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: 201 }),
+        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: HTTP_CREATED }),
       )
       render(<AddSnapshotForm systemId={SYSTEM_ID} />)
 
@@ -178,7 +179,7 @@ describe('AddSnapshotForm', () => {
     it('hides the form and restores the trigger button after success', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: 201 }),
+        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: HTTP_CREATED }),
       )
       render(<AddSnapshotForm systemId={SYSTEM_ID} />)
 
@@ -201,7 +202,7 @@ describe('AddSnapshotForm', () => {
       mockFetch.mockResolvedValue(
         new Response(
           JSON.stringify({ error: 'Label is required' }),
-          { status: 400 },
+          { status: HTTP_BAD_REQUEST },
         ),
       )
       render(<AddSnapshotForm systemId={SYSTEM_ID} />)
@@ -220,7 +221,7 @@ describe('AddSnapshotForm', () => {
     it('shows a fallback error when the API response has no error field', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({}), { status: 500 }),
+        new Response(JSON.stringify({}), { status: HTTP_INTERNAL_SERVER_ERROR }),
       )
       render(<AddSnapshotForm systemId={SYSTEM_ID} />)
 
@@ -251,7 +252,7 @@ describe('AddSnapshotForm', () => {
     it('omits notes from the request body when notes field is empty', async () => {
       const user = userEvent.setup()
       mockFetch.mockResolvedValue(
-        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: 201 }),
+        new Response(JSON.stringify({ snapshot: NEW_SNAP }), { status: HTTP_CREATED }),
       )
       render(<AddSnapshotForm systemId={SYSTEM_ID} />)
 

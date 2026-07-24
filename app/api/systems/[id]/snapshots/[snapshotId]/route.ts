@@ -1,6 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CONFLICT,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_NOT_FOUND,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 type Props = {
   params: Promise<{ id: string; snapshotId: string }>
@@ -16,7 +24,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   // Verify ownership of the parent system
@@ -27,7 +35,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
     .single()
 
   if (!system || system.owner_id !== user.id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: HTTP_NOT_FOUND })
   }
 
   // Verify the snapshot belongs to this system
@@ -39,14 +47,14 @@ export async function PATCH(request: NextRequest, { params }: Props) {
     .single()
 
   if (!existing) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: HTTP_NOT_FOUND })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   const { label, notes, components } = body as {
@@ -56,7 +64,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   }
 
   if (label !== undefined && !label.trim()) {
-    return NextResponse.json({ error: 'label must not be empty' }, { status: 400 })
+    return NextResponse.json({ error: 'label must not be empty' }, { status: HTTP_BAD_REQUEST })
   }
 
   const updates: Record<string, unknown> = {}
@@ -67,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: Props) {
   if (components !== undefined) updates.components = components
 
   if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+    return NextResponse.json({ error: 'No fields to update' }, { status: HTTP_BAD_REQUEST })
   }
 
   const { data: snapshot, error } = await supabase
@@ -78,10 +86,10 @@ export async function PATCH(request: NextRequest, { params }: Props) {
     .single()
 
   if (error || !snapshot) {
-    return NextResponse.json({ error: 'Failed to update snapshot' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update snapshot' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
-  return NextResponse.json({ snapshot }, { status: 200 })
+  return NextResponse.json({ snapshot }, { status: HTTP_OK })
 }
 
 // DELETE /api/systems/[id]/snapshots/[snapshotId]
@@ -96,7 +104,7 @@ export async function DELETE(request: NextRequest, { params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   // Verify ownership of the parent system
@@ -107,7 +115,7 @@ export async function DELETE(request: NextRequest, { params }: Props) {
     .single()
 
   if (!system || system.owner_id !== user.id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: HTTP_NOT_FOUND })
   }
 
   // Verify the snapshot belongs to this system
@@ -119,7 +127,7 @@ export async function DELETE(request: NextRequest, { params }: Props) {
     .single()
 
   if (!existing) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: HTTP_NOT_FOUND })
   }
 
   const { count } = await supabase
@@ -130,7 +138,7 @@ export async function DELETE(request: NextRequest, { params }: Props) {
   if ((count ?? 0) > 0) {
     return NextResponse.json(
       { error: 'This snapshot is used by a test and can no longer be deleted' },
-      { status: 409 },
+      { status: HTTP_CONFLICT },
     )
   }
 
@@ -140,7 +148,7 @@ export async function DELETE(request: NextRequest, { params }: Props) {
     .eq('id', snapshotId)
 
   if (error) {
-    return NextResponse.json({ error: 'Failed to delete snapshot' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete snapshot' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   return NextResponse.json({ ok: true })

@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { POST } from '../route'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { IngestPayload } from '@/lib/ingestion/ingest-test-payload'
+import { HTTP_CREATED, HTTP_FORBIDDEN, HTTP_OK } from '@/lib/api/http-status'
 
 // Hits real staging Supabase — see vitest.integration.config.ts and
 // testing.md §11. Requires NEXT_PUBLIC_SUPABASE_URL and
@@ -111,7 +112,7 @@ describe('POST /api/internal/ingest (integration)', () => {
       }),
     )
 
-    expect(status).toBe(201)
+    expect(status).toBe(HTTP_CREATED)
     expect(body.alreadyImported).toBe(false)
     testIds.push(body.testId)
 
@@ -139,12 +140,12 @@ describe('POST /api/internal/ingest (integration)', () => {
 
   it('is a no-op when re-run with the same source_ref', async () => {
     const first = await callIngest(payload({ source_ref: SOURCE_REF_IDEMPOTENCY }))
-    expect(first.status).toBe(201)
+    expect(first.status).toBe(HTTP_CREATED)
     testIds.push(first.body.testId)
 
     const { status, body } = await callIngest(payload({ source_ref: SOURCE_REF_IDEMPOTENCY }))
 
-    expect(status).toBe(200)
+    expect(status).toBe(HTTP_OK)
     expect(body.alreadyImported).toBe(true)
     expect(body.testId).toBe(first.body.testId)
   })
@@ -272,6 +273,6 @@ describe('POST /api/internal/ingest (integration)', () => {
       body: JSON.stringify(payload({ source_ref: 'lejonklou-forum:e2e-integration-test:unauthorised' })),
     })
     const response = await POST(request)
-    expect(response.status).toBe(403)
+    expect(response.status).toBe(HTTP_FORBIDDEN)
   })
 })

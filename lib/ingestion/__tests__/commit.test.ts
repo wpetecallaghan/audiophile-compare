@@ -5,6 +5,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { commitCandidate, commitEnvironment } from '../commit'
 import { writeCandidate, findExistingCandidate, type Candidate } from '../extract/candidate'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CREATED,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_OK,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 const BASE_URL = 'https://staging.example.com'
 const SECRET = 'test-secret'
@@ -42,7 +49,7 @@ describe('commitCandidate', () => {
 
   it('POSTs the candidate payload with the ingest secret header', async () => {
     vi.mocked(global.fetch).mockResolvedValue(
-      jsonResponse({ testId: 'test-1', alreadyImported: false }, 201),
+      jsonResponse({ testId: 'test-1', alreadyImported: false }, HTTP_CREATED),
     )
 
     const c = candidate('t:post-1:pair-1')
@@ -60,7 +67,7 @@ describe('commitCandidate', () => {
 
   it('returns testId/alreadyImported on a 201 (new) response', async () => {
     vi.mocked(global.fetch).mockResolvedValue(
-      jsonResponse({ testId: 'test-1', alreadyImported: false }, 201),
+      jsonResponse({ testId: 'test-1', alreadyImported: false }, HTTP_CREATED),
     )
 
     await expect(commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))).resolves.toEqual({
@@ -71,7 +78,7 @@ describe('commitCandidate', () => {
 
   it('treats a 200 alreadyImported response as success, not an error', async () => {
     vi.mocked(global.fetch).mockResolvedValue(
-      jsonResponse({ testId: 'test-1', alreadyImported: true }, 200),
+      jsonResponse({ testId: 'test-1', alreadyImported: true }, HTTP_OK),
     )
 
     await expect(commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))).resolves.toEqual({
@@ -81,7 +88,7 @@ describe('commitCandidate', () => {
   })
 
   it('returns the real error message on a non-2xx response', async () => {
-    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ error: 'source_ref is required' }, 400))
+    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ error: 'source_ref is required' }, HTTP_BAD_REQUEST))
 
     await expect(commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))).resolves.toEqual({
       error: 'source_ref is required',
@@ -89,7 +96,7 @@ describe('commitCandidate', () => {
   })
 
   it('falls back to an HTTP status message when a non-2xx response has no error field', async () => {
-    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({}, 500))
+    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({}, HTTP_INTERNAL_SERVER_ERROR))
 
     await expect(commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))).resolves.toEqual({
       error: 'HTTP 500',
@@ -98,7 +105,7 @@ describe('commitCandidate', () => {
 
   it('stringifies a non-string error field rather than returning the useless "[object Object]" — found for real against a Vercel-protected staging URL', async () => {
     vi.mocked(global.fetch).mockResolvedValue(
-      jsonResponse({ error: { code: 'NOT_AUTHENTICATED', message: 'Deployment protected' } }, 401),
+      jsonResponse({ error: { code: 'NOT_AUTHENTICATED', message: 'Deployment protected' } }, HTTP_UNAUTHORIZED),
     )
 
     const result = await commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))
@@ -110,7 +117,7 @@ describe('commitCandidate', () => {
 
   it('never sends the protection-bypass header when VERCEL_AUTOMATION_BYPASS_SECRET is unset', async () => {
     vi.mocked(global.fetch).mockResolvedValue(
-      jsonResponse({ testId: 'test-1', alreadyImported: false }, 201),
+      jsonResponse({ testId: 'test-1', alreadyImported: false }, HTTP_CREATED),
     )
 
     await commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))
@@ -122,7 +129,7 @@ describe('commitCandidate', () => {
   it('sends the Vercel protection-bypass header when VERCEL_AUTOMATION_BYPASS_SECRET is set — same header the E2E suite already uses for a protected staging URL', async () => {
     process.env.VERCEL_AUTOMATION_BYPASS_SECRET = 'bypass-secret'
     vi.mocked(global.fetch).mockResolvedValue(
-      jsonResponse({ testId: 'test-1', alreadyImported: false }, 201),
+      jsonResponse({ testId: 'test-1', alreadyImported: false }, HTTP_CREATED),
     )
 
     await commitCandidate(BASE_URL, SECRET, candidate('t:post-1:pair-1'))
@@ -146,7 +153,7 @@ describe('commitCandidate', () => {
   it('returns an error result instead of throwing when the response body is not valid JSON', async () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
-      status: 401,
+      status: HTTP_UNAUTHORIZED,
       json: async () => {
         throw new SyntaxError('Unexpected token < in JSON')
       },
@@ -174,7 +181,7 @@ describe('commitEnvironment', () => {
   it('staging reads only from approved/ and moves successes to ingested/staging/, resolving the nested path correctly', async () => {
     await writeCandidate(baseDir, 'approved', candidate('t:post-1:pair-1'))
     await writeCandidate(baseDir, 'ready', candidate('t:post-2:pair-1')) // must be ignored
-    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ testId: 'test-1', alreadyImported: false }, 201))
+    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ testId: 'test-1', alreadyImported: false }, HTTP_CREATED))
 
     const result = await commitEnvironment(baseDir, BASE_URL, SECRET, 'staging')
 
@@ -191,7 +198,7 @@ describe('commitEnvironment', () => {
   it('production reads only from ingested/staging/, never approved/, even when approved/ still has entries', async () => {
     await writeCandidate(baseDir, 'approved', candidate('t:post-1:pair-1')) // must be ignored
     await writeCandidate(baseDir, 'ingested_staging', candidate('t:post-2:pair-1'))
-    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ testId: 'test-2', alreadyImported: false }, 201))
+    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ testId: 'test-2', alreadyImported: false }, HTTP_CREATED))
 
     const result = await commitEnvironment(baseDir, BASE_URL, SECRET, 'production')
 
@@ -207,7 +214,7 @@ describe('commitEnvironment', () => {
 
   it('leaves a failed candidate in its source folder with the error appended to notes, never issues', async () => {
     await writeCandidate(baseDir, 'approved', candidate('t:post-1:pair-1'))
-    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ error: 'ingest failed' }, 500))
+    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ error: 'ingest failed' }, HTTP_INTERNAL_SERVER_ERROR))
 
     const result = await commitEnvironment(baseDir, BASE_URL, SECRET, 'staging')
 
@@ -222,10 +229,10 @@ describe('commitEnvironment', () => {
 
   it('retries a previously-failed candidate on the next run rather than losing it', async () => {
     await writeCandidate(baseDir, 'approved', candidate('t:post-1:pair-1'))
-    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ error: 'ingest failed' }, 500))
+    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ error: 'ingest failed' }, HTTP_INTERNAL_SERVER_ERROR))
     await commitEnvironment(baseDir, BASE_URL, SECRET, 'staging')
 
-    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ testId: 'test-1', alreadyImported: false }, 201))
+    vi.mocked(global.fetch).mockResolvedValue(jsonResponse({ testId: 'test-1', alreadyImported: false }, HTTP_CREATED))
     const result = await commitEnvironment(baseDir, BASE_URL, SECRET, 'staging')
 
     expect(result).toEqual({ committed: 1, failed: 0 })
@@ -247,7 +254,7 @@ describe('commitEnvironment', () => {
     await writeCandidate(baseDir, 'approved', candidate('t:post-2:pair-1'))
     vi.mocked(global.fetch)
       .mockRejectedValueOnce(new Error('fetch failed'))
-      .mockResolvedValueOnce(jsonResponse({ testId: 'test-2', alreadyImported: false }, 201))
+      .mockResolvedValueOnce(jsonResponse({ testId: 'test-2', alreadyImported: false }, HTTP_CREATED))
 
     const result = await commitEnvironment(baseDir, BASE_URL, SECRET, 'staging')
 

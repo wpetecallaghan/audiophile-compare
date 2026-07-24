@@ -6,6 +6,7 @@ import type { ClipProvider } from '@/lib/clips/detect-provider'
 import { checkDirectUrl } from '@/lib/clips/check-url'
 import type { UrlStatus } from '@/lib/clips/check-url'
 import { nextUrlStatus } from '@/lib/clips/next-url-status'
+import { HTTP_INTERNAL_SERVER_ERROR, HTTP_OK, HTTP_UNAUTHORIZED } from '@/lib/api/http-status'
 
 // GET /api/cron/check-urls
 //
@@ -20,7 +21,7 @@ import { nextUrlStatus } from '@/lib/clips/next-url-status'
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   const supabase = createAdminClient()
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     .in('provider', CHECKED_PROVIDERS)
 
   if (error) {
-    return NextResponse.json({ error: 'Failed to fetch clips' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch clips' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   let checked = 0
@@ -77,5 +78,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ checked, updated }, { status: 200 })
+  return NextResponse.json({ checked, updated }, { status: HTTP_OK })
 }

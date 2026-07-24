@@ -170,6 +170,8 @@ components/
       StepPublish.tsx
 
 lib/
+  api/
+    http-status.ts                          ← Named HTTP status constants (HTTP_OK, HTTP_NOT_FOUND, ...) — used by every app/api/**/route.ts instead of bare numeric literals
   supabase/
     server.ts                               ← createClient() for server components + API routes
     client.ts                               ← createClient() for browser components

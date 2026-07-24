@@ -3,6 +3,14 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { STATUS_OK } from '@/lib/clips/check-url'
 import { PROVIDER_UNKNOWN, MEDIA_TYPE_UNKNOWN } from '@/lib/clips/detect-provider'
+import {
+  HTTP_BAD_REQUEST,
+  HTTP_CONFLICT,
+  HTTP_CREATED,
+  HTTP_FORBIDDEN,
+  HTTP_INTERNAL_SERVER_ERROR,
+  HTTP_UNAUTHORIZED,
+} from '@/lib/api/http-status'
 
 type CrossCheckBody = {
   track_id: string
@@ -31,14 +39,14 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorised' }, { status: HTTP_UNAUTHORIZED })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: HTTP_BAD_REQUEST })
   }
 
   const {
@@ -58,13 +66,13 @@ export async function POST(request: NextRequest) {
     !track_id || !snapshot_a_id || !snapshot_b_id || !title?.trim() ||
     !clip_a_source_url || !clip_b_source_url
   ) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    return NextResponse.json({ error: 'Missing required fields' }, { status: HTTP_BAD_REQUEST })
   }
 
   if (snapshot_a_id === snapshot_b_id) {
     return NextResponse.json(
       { error: 'snapshot_a_id and snapshot_b_id must be different' },
-      { status: 400 },
+      { status: HTTP_BAD_REQUEST },
     )
   }
 
@@ -84,7 +92,7 @@ export async function POST(request: NextRequest) {
   if (!ownedIds.includes(snapshot_a_id) || !ownedIds.includes(snapshot_b_id)) {
     return NextResponse.json(
       { error: 'One or both snapshots do not belong to you' },
-      { status: 403 },
+      { status: HTTP_FORBIDDEN },
     )
   }
 
@@ -109,7 +117,7 @@ export async function POST(request: NextRequest) {
   if (existingAB || existingBA) {
     return NextResponse.json(
       { error: 'A test already exists for this track and snapshot combination' },
-      { status: 409 },
+      { status: HTTP_CONFLICT },
     )
   }
 
@@ -137,7 +145,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (testError || !test) {
-    return NextResponse.json({ error: 'Failed to create test' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create test' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   // 2. Insert both clips, reusing the source URLs from existing recordings
@@ -165,7 +173,7 @@ export async function POST(request: NextRequest) {
 
   if (clipsError || !clips || clips.length !== 2) {
     await supabase.from('tests').delete().eq('id', test.id)
-    return NextResponse.json({ error: 'Failed to create clips' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create clips' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
   const clipA = clips.find(c => c.label === 'A')!
@@ -183,8 +191,8 @@ export async function POST(request: NextRequest) {
   if (mappingError) {
     await supabase.from('clips').delete().eq('test_id', test.id)
     await supabase.from('tests').delete().eq('id', test.id)
-    return NextResponse.json({ error: 'Failed to create clip mapping' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to create clip mapping' }, { status: HTTP_INTERNAL_SERVER_ERROR })
   }
 
-  return NextResponse.json({ testId: test.id }, { status: 201 })
+  return NextResponse.json({ testId: test.id }, { status: HTTP_CREATED })
 }

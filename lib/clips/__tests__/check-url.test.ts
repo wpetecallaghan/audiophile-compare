@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { checkDirectUrl, STATUS_OK, STATUS_DEGRADED, STATUS_DEAD } from '../check-url'
 import type { DetectedClip } from '../detect-provider'
 import { PROVIDER_DIRECT, MEDIA_TYPE_AUDIO, MEDIA_TYPE_VIDEO, MEDIA_TYPE_UNKNOWN } from '../detect-provider'
+import { HTTP_OK, HTTP_NOT_FOUND, HTTP_INTERNAL_SERVER_ERROR } from '@/lib/api/http-status'
 
 const DIRECT_CLIP: DetectedClip = {
   provider: PROVIDER_DIRECT,
@@ -26,7 +27,7 @@ function mockResponse(overrides: {
 }): Response {
   return {
     ok: overrides.ok,
-    status: overrides.status ?? (overrides.ok ? 200 : 404),
+    status: overrides.status ?? (overrides.ok ? HTTP_OK : HTTP_NOT_FOUND),
     url: overrides.url ?? '',
     headers: { get: () => overrides.contentType ?? null },
   } as unknown as Response
@@ -69,13 +70,13 @@ describe('checkDirectUrl', () => {
     })
 
     it('404 resolves to dead', async () => {
-      vi.mocked(global.fetch).mockResolvedValue(mockResponse({ ok: false, status: 404 }))
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse({ ok: false, status: HTTP_NOT_FOUND }))
       const result = await checkDirectUrl(DIRECT_CLIP)
       expect(result).toEqual({ url_status: STATUS_DEAD, media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     })
 
     it('500 resolves to degraded (may be transient)', async () => {
-      vi.mocked(global.fetch).mockResolvedValue(mockResponse({ ok: false, status: 500 }))
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse({ ok: false, status: HTTP_INTERNAL_SERVER_ERROR }))
       const result = await checkDirectUrl(DIRECT_CLIP)
       expect(result).toEqual({ url_status: STATUS_DEGRADED, media_type: MEDIA_TYPE_UNKNOWN, duration_ms: null })
     })
@@ -125,7 +126,7 @@ describe('checkDirectUrl', () => {
     })
 
     it('a Dropbox 404/5xx still resolves the same way as any other direct host (untouched by the redirect-host check)', async () => {
-      vi.mocked(global.fetch).mockResolvedValue(mockResponse({ ok: false, status: 404 }))
+      vi.mocked(global.fetch).mockResolvedValue(mockResponse({ ok: false, status: HTTP_NOT_FOUND }))
       const result = await checkDirectUrl(DROPBOX_CLIP)
       expect(result.url_status).toBe(STATUS_DEAD)
     })
