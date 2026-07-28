@@ -48,7 +48,7 @@ export default function MappingBadge({
               href={clipAUnsupportedUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 text-blue-700 dark:text-blue-300 underline"
+              className="ml-2 text-link underline"
             >
               {tTests('openClipLink')}
             </a>
@@ -64,7 +64,7 @@ export default function MappingBadge({
               href={clipBUnsupportedUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 text-blue-700 dark:text-blue-300 underline"
+              className="ml-2 text-link underline"
             >
               {tTests('openClipLink')}
             </a>

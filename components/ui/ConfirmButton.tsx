@@ -17,7 +17,7 @@ import { FormMessage } from './FormMessage'
 // machine) — exported so both stay in sync instead of hand-copying the
 // class string a second time (build step 83).
 export const CONFIRM_TRIGGER_BUTTON_CLASSES =
-  'border border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-400 rounded px-4 py-2 text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20'
+  'border border-amber-400 dark:border-amber-600 text-amber-700 dark:text-amber-400 rounded px-4 py-2 text-sm font-medium hover:bg-warning-bg'
 
 type Props = {
   label: string

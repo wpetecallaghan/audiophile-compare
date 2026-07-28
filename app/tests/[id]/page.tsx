@@ -592,7 +592,7 @@ function ClipSlotFallback({ label, loadingLabel }: { label: string; loadingLabel
         className="relative w-full max-w-full aspect-video overflow-hidden rounded flex items-center justify-center bg-gray-100 dark:bg-gray-800"
         role="status"
       >
-        <SpinnerIcon className="h-6 w-6 animate-spin text-gray-400" />
+        <SpinnerIcon className="h-6 w-6 animate-spin text-muted" />
         <span className="sr-only">{loadingLabel}</span>
       </div>
     </div>

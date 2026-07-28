@@ -107,7 +107,7 @@ function SnapshotSelector({
               key={snap.id}
               className={`flex items-start gap-3 cursor-pointer rounded p-2 text-sm
                 ${snap.id === exclude ? 'opacity-30 cursor-not-allowed' : 'hover:bg-hover-surface'}
-                ${selected?.id === snap.id ? 'bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-300 dark:ring-blue-700 rounded' : ''}
+                ${selected?.id === snap.id ? 'bg-info-bg ring-1 ring-blue-300 dark:ring-blue-700 rounded' : ''}
               `}
             >
               <input

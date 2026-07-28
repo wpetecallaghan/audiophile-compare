@@ -8,7 +8,7 @@ description: >
 
 # Audiophile Compare — Known Issues (open)
 
-## Firefox-only dev-server reload loop (open, unresolved — 2026-07-13)
+## Firefox-only dev-server reload loop (open, unresolved — 2026-07-13, re-investigated 2026-07-28)
 
 **Symptom:** `next dev` (Turbopack) home page enters a rapid, self-sustaining
 full-page reload loop — every ~150–350ms, indefinitely — when opened in
@@ -51,6 +51,38 @@ so it shouldn't apply).
 - **Turbopack dev-server self-triggered rebuild loop** — watched
   `.next/dev/cache/turbopack/` for file-write activity during an active
   reload burst; zero writes. The server itself is idle; it isn't restarting.
+- **The `next` 16.0–16.2.10 middleware/proxy-bypass CVE (GHSA-6gpp-xcg3-4w24,
+  Turbopack + App Router + single-locale)** — this project matches that
+  affected shape exactly (Turbopack, App Router, next-intl fixed to `en`),
+  and it upgraded through the fixing version (16.2.9 → 16.2.12) for
+  unrelated npm-audit reasons, making this a natural hypothesis. Re-tested
+  2026-07-28: still reproduces on 16.2.12 (55 reloads/15s on `localhost`).
+  Every captured document response during the loop was a clean `200` with
+  no `Location` header; `middleware.ts`'s only redirect branch
+  (`isProtectedPath && !user`) never covers `/`. Unrelated to this bug.
+- **HMR/WebSocket client code changing between Next versions** — byte-diffed
+  every HMR/reconnect-relevant client file (`web-socket.js`, `shared.js`,
+  `hot-reloader-app.js`, `turbopack-hot-reloader-common.js`,
+  `get-socket-url.js`, both CJS/ESM) between the 16.2.9 and 16.2.12 npm
+  tarballs — identical. Also re-verified the "side effect not cause"
+  conclusion with real timestamps this time (not just absent console text):
+  the new `request-document` for `/` fires in the same tick as, and
+  *before*, the `ChunkLoadError`/WS-interrupted messages, i.e. the browser
+  cancels in-flight requests because a navigation is already underway, not
+  the reverse.
+- **Supabase auth-client internals** (`@supabase/auth-js`/`ssr`/
+  `supabase-js`, versions 0.12.3/2.110.9) — the original app-code grep
+  (2026-07-13) only covered `app/`/`components/`/`lib/`, never
+  `node_modules`. Grepped `auth-js`'s `GoTrueClient` directly: every
+  `window.location.assign(...)` call site sits inside explicit
+  user-triggered flows (OAuth sign-in, SSO/identity-linking, reauth) —
+  none reachable from a plain page load with no callback params
+  (`_initialize()` skips `_getSessionFromURL` entirely in that case).
+  `_onVisibilityChanged` and the cross-tab `BroadcastChannel` handler only
+  call `_recoverAndRefresh`/`_notifyAllSubscribers` — never a navigation.
+  Live-tested logged-in vs. logged-out in Firefox: identical reload
+  cadence and count in both states, including with **zero** Supabase
+  cookies present. Auth state is not a variable in this bug.
 
 **What's confirmed:**
 - Requires JavaScript (proven above).

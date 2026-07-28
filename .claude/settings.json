@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // empty'); if [ -n \"$f\" ]; then grep -nE '\\b(200|201|400|401|403|404|409|500)\\b' \"$f\" 2>/dev/null | grep -v 'HTTP_STATUS' | head -5; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm test -- --run 2>&1 | tail -20"
+          }
+        ]
+      }
+    ]
+  }
+}

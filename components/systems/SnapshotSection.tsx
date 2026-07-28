@@ -250,7 +250,7 @@ export default function SnapshotSection({
                     type="button"
                     onClick={() => removeComponentRow(i)}
                     aria-label={t('removeComponentAriaLabel', { n: i + 1 })}
-                    className="text-gray-500 dark:text-gray-400 hover:text-red-500 text-xs px-1"
+                    className="text-muted hover:text-red-500 text-xs px-1"
                   >
                     ×
                   </button>

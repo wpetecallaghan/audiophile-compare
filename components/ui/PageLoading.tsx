@@ -16,7 +16,7 @@ export async function PageLoading({ maxWidth, spacing }: PageLoadingProps) {
   return (
     <PageShell maxWidth={maxWidth} spacing={spacing}>
       <div className="flex justify-center py-12" role="status">
-        <SpinnerIcon className="h-6 w-6 animate-spin text-gray-400" />
+        <SpinnerIcon className="h-6 w-6 animate-spin text-muted" />
         <span className="sr-only">{t('loading')}</span>
       </div>
     </PageShell>
