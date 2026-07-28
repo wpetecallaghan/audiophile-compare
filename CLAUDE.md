@@ -63,6 +63,10 @@ Before writing a plan, enumerate ALL entry points and call sites for the thing b
 - When adding a constant, grep the whole repo for other instances of the same literal and migrate them in the same pass — partial migrations have required a second audit.
 - See `repeated-string-constants.md` for detailed guidance when writing or reviewing code that repeats a string or numeric literal.
 
+### Full-Surface Audits
+
+When asked to migrate or standardize a pattern across the codebase, enumerate ALL matching files with a grep/ripgrep sweep first, present the complete file list, then migrate. Do not report completion until a second grep confirms zero remaining occurrences.
+
 ### Prefer Deterministic Designs Over Timing Races
 
 Avoid timeout-based fallbacks, arbitrary delays, and "wait N ms then assume" logic. Prefer event/callback-driven designs (e.g. link-by-default, upgrade on successful load) and state that lives outside unmounting components.
