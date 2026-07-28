@@ -66,3 +66,5 @@ See [docs/skills-vs-context.md](docs/skills-vs-context.md) for why this project
 uses a `CLAUDE.md`-routed context directory instead of Claude Code's built-in
 Skill system (`.claude/skills/`).
 
+New to Claude Code on this repo? Paste [ONBOARDING.md](ONBOARDING.md) into Claude for a guided walkthrough.
+
