@@ -1,4 +1,17 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit *)",
+      "Bash(npx vitest run *)",
+      "Bash(npm test *)",
+      "Bash(set -a)",
+      "Bash(set +a)",
+      "Bash(source .env.local)",
+      "Bash(npx lighthouse *)",
+      "Bash(npm run lint)",
+      "Bash(npx eslint *)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
