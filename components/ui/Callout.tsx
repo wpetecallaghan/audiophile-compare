@@ -19,7 +19,7 @@ const calloutVariants = cva('rounded border p-4', {
       warning: 'border-warning bg-warning-bg text-warning-foreground',
       success: 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20',
       info: 'border-info bg-info-bg text-info-foreground',
-      neutral: 'border-border bg-gray-50 dark:bg-gray-800',
+      neutral: 'border-border bg-hover-surface',
     },
   },
 })

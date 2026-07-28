@@ -7,6 +7,7 @@ import { Heading } from '@/components/ui/Heading'
 import { PageShell } from '@/components/ui/PageShell'
 import { RowCard } from '@/components/ui/RowCard'
 import { Text } from '@/components/ui/Text'
+import { MUTED_CAPTION_CLASSES } from '@/components/ui/class-names'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 import { STATUS_DEAD, type UrlStatus } from '@/lib/clips/check-url'
 import { effectiveUrlStatus } from '@/lib/clips/effective-url-status'
@@ -81,7 +82,7 @@ export default async function TrackDetailPage({ params }: Props) {
   return (
     <PageShell maxWidth="4xl">
       {/* Breadcrumb */}
-      <nav className="text-xs text-muted">
+      <nav className={MUTED_CAPTION_CLASSES}>
         <NextLink href={TRACKS_LIST_HREF} className="hover:underline">
           Tracks
         </NextLink>

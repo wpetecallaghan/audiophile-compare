@@ -32,6 +32,7 @@ import AdminClipOverrideControl from '@/components/tests/AdminClipOverrideContro
 import { isAdminEmail } from '@/lib/admin/is-admin-email'
 import { FEED_PAGE_SIZE } from '@/lib/tests/feed-page-size'
 import { ChevronsLeftIcon, ChevronLeftIcon, ChevronRightIcon, ChevronsRightIcon, ListIcon, SpinnerIcon } from '@/components/ui/icons'
+import { SPINNER_CLASSES } from '@/components/ui/class-names'
 import { FooterPortal } from '@/components/ui/FooterPortal'
 import { FooterNavLink } from '@/components/ui/FooterNavLink'
 import { getAdjacentIds } from '@/lib/nav/get-adjacent-ids'
@@ -589,10 +590,10 @@ function ClipSlotFallback({ label, loadingLabel }: { label: string; loadingLabel
     <div className="space-y-2 min-w-0">
       <ClipLabel>{label}</ClipLabel>
       <div
-        className="relative w-full max-w-full aspect-video overflow-hidden rounded flex items-center justify-center bg-gray-100 dark:bg-gray-800"
+        className="relative w-full max-w-full aspect-video overflow-hidden rounded flex items-center justify-center bg-divider"
         role="status"
       >
-        <SpinnerIcon className="h-6 w-6 animate-spin text-muted" />
+        <SpinnerIcon className={SPINNER_CLASSES} />
         <span className="sr-only">{loadingLabel}</span>
       </div>
     </div>

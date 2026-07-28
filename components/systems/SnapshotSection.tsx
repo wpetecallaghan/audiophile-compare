@@ -11,6 +11,9 @@ import { TextInput, TextArea } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
 import { ConfirmButton } from '@/components/ui/ConfirmButton'
 import { Text } from '@/components/ui/Text'
+import { MUTED_CAPTION_CLASSES } from '@/components/ui/class-names'
+
+const VERSION_CHIP_CLASSES = 'font-mono bg-divider px-1.5 py-0.5 rounded'
 
 type ComponentDisplay = {
   role?: string
@@ -173,7 +176,7 @@ export default function SnapshotSection({
         /* Edit mode */
         <div className="space-y-4 pb-2 border-b border-divider">
           <div className="flex items-center gap-2">
-            <Text as="span" size="xs" className="font-mono bg-divider px-1.5 py-0.5 rounded">
+            <Text as="span" size="xs" className={VERSION_CHIP_CLASSES}>
               v{snapshot.version}
             </Text>
             <Text size="xs" className="font-medium">Editing snapshot</Text>
@@ -289,7 +292,7 @@ export default function SnapshotSection({
         <div className="flex items-start justify-between gap-4 pb-2 border-b border-divider">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <Text as="span" size="xs" className="font-mono bg-divider px-1.5 py-0.5 rounded">
+              <Text as="span" size="xs" className={VERSION_CHIP_CLASSES}>
                 v{snapshot.version}
               </Text>
               <Heading level={2}>{snapshot.label}</Heading>
@@ -334,7 +337,7 @@ export default function SnapshotSection({
       {!editing && snapshot.components && snapshot.components.length > 0 && (
         <ul className="space-y-0.5">
           {snapshot.components.map((c, i) => (
-            <li key={i} className="text-xs text-muted">
+            <li key={i} className={MUTED_CAPTION_CLASSES}>
               <Text as="span" size="xs" className="w-20 inline-block">{c.role}</Text>
               {c.make} {c.model}
               {c.notes && <Text as="span" size="xs"> — {c.notes}</Text>}

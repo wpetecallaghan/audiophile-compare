@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 import { PageShell } from './PageShell'
 import { SpinnerIcon } from './icons'
+import { SPINNER_CLASSES } from './class-names'
 
 type PageLoadingProps = {
   maxWidth: '2xl' | '4xl'
@@ -16,7 +17,7 @@ export async function PageLoading({ maxWidth, spacing }: PageLoadingProps) {
   return (
     <PageShell maxWidth={maxWidth} spacing={spacing}>
       <div className="flex justify-center py-12" role="status">
-        <SpinnerIcon className="h-6 w-6 animate-spin text-muted" />
+        <SpinnerIcon className={SPINNER_CLASSES} />
         <span className="sr-only">{t('loading')}</span>
       </div>
     </PageShell>

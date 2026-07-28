@@ -2,6 +2,9 @@ import { useTranslations } from 'next-intl'
 import { Callout } from '@/components/ui/Callout'
 import { formatOneSnapshot, type SnapshotSummary } from '@/lib/tests/format-snapshot-line'
 
+const CLIP_LINK_CLASSES = 'ml-2 text-link underline'
+const SNAPSHOT_TEXT_CLASSES = 'text-xs text-blue-700/80 dark:text-blue-300/80 mt-0.5'
+
 type Props = {
   // Set to the clip's source_url when that clip can't be embedded
   // (see lib/clips/is-unsupported.ts) — turns this clip's slot into a
@@ -48,13 +51,13 @@ export default function MappingBadge({
               href={clipAUnsupportedUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 text-link underline"
+              className={CLIP_LINK_CLASSES}
             >
               {tTests('openClipLink')}
             </a>
           )}
           {snapshotAText && (
-            <p className="text-xs text-blue-700/80 dark:text-blue-300/80 mt-0.5">{snapshotAText}</p>
+            <p className={SNAPSHOT_TEXT_CLASSES}>{snapshotAText}</p>
           )}
         </div>
         <div>
@@ -64,13 +67,13 @@ export default function MappingBadge({
               href={clipBUnsupportedUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 text-link underline"
+              className={CLIP_LINK_CLASSES}
             >
               {tTests('openClipLink')}
             </a>
           )}
           {snapshotBText && (
-            <p className="text-xs text-blue-700/80 dark:text-blue-300/80 mt-0.5">{snapshotBText}</p>
+            <p className={SNAPSHOT_TEXT_CLASSES}>{snapshotBText}</p>
           )}
         </div>
       </div>

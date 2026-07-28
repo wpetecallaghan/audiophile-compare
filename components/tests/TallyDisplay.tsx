@@ -4,6 +4,8 @@ import { Heading } from '@/components/ui/Heading'
 import { Callout } from '@/components/ui/Callout'
 import { Text } from '@/components/ui/Text'
 
+const OBSERVATION_TEXT_CLASSES = 'text-sm text-body'
+
 type Props = {
   tally: TallyResult
   clipAId: string
@@ -92,7 +94,7 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
               {r.observations.length > 0 && (
                 <ul className="space-y-1 pt-1">
                   {r.observations.map((obs, i) => (
-                    <li key={i} className="text-sm text-body">
+                    <li key={i} className={OBSERVATION_TEXT_CLASSES}>
                       <span className="font-medium">
                         {obs.chosenClipId === clipAId ? tMapping('clipALabel') : tMapping('clipBLabel')}
                       </span>
@@ -117,7 +119,7 @@ export default async function TallyDisplay({ tally, clipAId, clipBId, ownVoteOnl
           </h3>
           <ul className="space-y-2">
             {others.map((vote, i) => (
-              <li key={i} className="text-sm text-body">
+              <li key={i} className={OBSERVATION_TEXT_CLASSES}>
                 <span className="font-medium">
                   {vote.chosenClipId === clipAId ? tMapping('clipALabel') : tMapping('clipBLabel')}
                 </span>

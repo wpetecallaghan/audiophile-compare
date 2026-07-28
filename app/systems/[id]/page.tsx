@@ -13,6 +13,7 @@ import { PageShell } from '@/components/ui/PageShell'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { RowCard } from '@/components/ui/RowCard'
 import { Text } from '@/components/ui/Text'
+import { MUTED_CAPTION_CLASSES } from '@/components/ui/class-names'
 import { getTranslations } from 'next-intl/server'
 import { getRequestLocale } from '@/lib/dates/get-request-locale'
 import { STATUS_DEAD, type UrlStatus } from '@/lib/clips/check-url'
@@ -170,7 +171,7 @@ export default async function SystemDetailPage({ params }: Props) {
     <PageShell maxWidth="4xl">
 
       {/* Breadcrumb */}
-      <nav className="text-xs text-muted">
+      <nav className={MUTED_CAPTION_CLASSES}>
         <NextLink href="/systems" className="hover:underline">Systems</NextLink>
         {' / '}
         <span>{system.name}</span>

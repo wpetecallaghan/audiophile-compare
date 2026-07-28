@@ -11,6 +11,8 @@ import { Select } from '@/components/ui/TextField'
 import { FormMessage } from '@/components/ui/FormMessage'
 import { Text } from '@/components/ui/Text'
 
+const PROVIDER_CHIP_CLASSES = 'bg-divider rounded px-1.5 py-0.5'
+
 type Snapshot = {
   id: string
   version: number
@@ -218,10 +220,10 @@ export default function CrossCheckSelector({ systemId, snapshots }: Props) {
                       </Text>
                     )}
                     <div className="flex gap-2 mt-1">
-                      <Text as="span" size="xs" className="bg-divider rounded px-1.5 py-0.5">
+                      <Text as="span" size="xs" className={PROVIDER_CHIP_CLASSES}>
                         A: {item.clipForSnapshotA.provider} / {item.clipForSnapshotA.media_type}
                       </Text>
-                      <Text as="span" size="xs" className="bg-divider rounded px-1.5 py-0.5">
+                      <Text as="span" size="xs" className={PROVIDER_CHIP_CLASSES}>
                         B: {item.clipForSnapshotB.provider} / {item.clipForSnapshotB.media_type}
                       </Text>
                     </div>

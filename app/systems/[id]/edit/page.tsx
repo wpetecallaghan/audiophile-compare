@@ -5,6 +5,7 @@ import EditSystemForm from '@/components/systems/EditSystemForm'
 import { getTranslations } from 'next-intl/server'
 import { Heading } from '@/components/ui/Heading'
 import { PageShell } from '@/components/ui/PageShell'
+import { MUTED_CAPTION_CLASSES } from '@/components/ui/class-names'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -32,7 +33,7 @@ export default async function EditSystemPage({ params }: Props) {
 
   return (
     <PageShell maxWidth="4xl">
-      <nav className="text-xs text-muted">
+      <nav className={MUTED_CAPTION_CLASSES}>
         <Link href="/systems" className="hover:underline">{t('heading')}</Link>
         {' / '}
         <Link href={`/systems/${id}`} className="hover:underline">{system.name}</Link>
