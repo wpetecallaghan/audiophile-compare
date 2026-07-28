@@ -8,7 +8,7 @@ description: >
 
 # Audiophile Compare — Known Issues (open)
 
-## Firefox-only dev-server reload loop (open, unresolved — 2026-07-13, re-investigated 2026-07-28)
+## Firefox-only dev-server reload loop (open — root cause found 2026-07-28, no safe app-side fix; see build-history step 87)
 
 **Symptom:** `next dev` (Turbopack) home page enters a rapid, self-sustaining
 full-page reload loop — every ~150–350ms, indefinitely — when opened in
@@ -84,16 +84,91 @@ so it shouldn't apply).
   cadence and count in both states, including with **zero** Supabase
   cookies present. Auth state is not a variable in this bug.
 
+## ROOT CAUSE FOUND (2026-07-28) — see build-history/87-firefox-devtools-reload-root-cause.md
+
+**The 2026-07-13 "not `reload()`/`assign()`/`replace()`" conclusion below was a
+false negative, now corrected.** The original monkeypatch
+(`window.location.reload = fn` via `addInitScript`) never actually took
+effect: `Object.getOwnPropertyDescriptor(window.location, 'reload')` is
+`{writable:false, configurable:false}` in Firefox, so a plain (sloppy-mode)
+reassignment silently no-ops instead of throwing — there was no signal that
+the patch had failed, so "none fired across 40+ cycles" was measuring an
+override that was never installed, not evidence `reload()` wasn't being
+called.
+
+**Actual root cause:** `node_modules/next/dist/compiled/next-devtools/index.js`
+— Next.js's own dev-mode devtools overlay bundle, never examined before —
+contains two `window.location.reload()` calls. One is gated behind an
+explicit "restart dev server" flow (never triggered here — zero requests to
+its polling endpoint were ever observed). The other is inside a handler
+whose only *gated* part is an incidental Cookie-Store-API cookie write; the
+`window.location.reload()` itself fires unconditionally whenever that
+handler runs. Confirmed causally with two independent tests: blocking the
+`next-devtools` chunk entirely dropped navigations from 67/12s to 1/12s;
+serving a byte-patched copy of the *same* file with only its two
+`reload()` calls neutralized (rest of the ~700KB bundle untouched, confirmed
+via byte-length delta) dropped it to 2/12s. This is Next.js's own shipped
+code, not application code, and it's dev-only — consistent with every
+prior finding that ruled out this codebase's own source, and with the bug
+never affecting production.
+
+Related, closed upstream bug: **vercel/next.js#94634** ("infinite refresh
+loop... Firefox... PPR... reproduces on 16.2.7 & 16.2.9, not 16.2.6") — same
+next-devtools/Firefox-reload mechanism class, different exact trigger (that
+report requires PPR/Cache Components; this app uses neither — confirmed no
+`experimental.ppr`/`'use cache'` anywhere). Corroborates this is a known bug
+*pattern* in Next's own devtools code, not something unique to this app.
+Also checked (and ruled out as a lead) `vercel/next.js#88234`, a closed,
+unrelated next-devtools console-error loop that happened to mention a
+`NEXT_DEVTOOLS_DISABLED` env var — see remediation attempts below.
+
+**Remediations attempted and why each failed (do not re-attempt):**
+1. **`devIndicators: false`** in `next.config.mjs` — tested live with a full
+   dev-server restart. The `next-devtools` chunk still loads and the loop
+   still happens (135 nav/12s, if anything worse). This option only hides
+   the visual position-indicator badge; it doesn't gate the overlay's
+   mount/effect logic at all.
+2. **`turbopack.resolveAlias`** pointing `next/dist/compiled/next-devtools`
+   at the existing `next/dist/next-devtools/dev-overlay.shim.js` — tested
+   live. That shim is *not* a safe no-op; it's an intentional
+   "unreachable code" guard meant only for server-only import paths, and its
+   `renderAppDevOverlay`/`dispatcher` calls unconditionally `throw`.
+   Aliasing the client bundle to it made things worse (252 nav/12s) plus a
+   new console error: `"Next DevTools: Can't render in this environment.
+   This is a bug in Next.js"`.
+3. **`NEXT_DEVTOOLS_DISABLED` env var** — mentioned in #88234 as an
+   attempted (if ineffective, for *that* bug) disable flag. Grepped the
+   entire installed `next` package (16.2.12): not referenced anywhere.
+   Doesn't exist in this version; can't be tested or relied on.
+4. **A custom compatible shim** — considered, not attempted: would require
+   reverse-engineering next-devtools' private, non-semver-guaranteed
+   dispatcher/render API surface. Fragile by construction (likely to break
+   on any future `next` bump), disproportionate effort for a dev-only
+   cosmetic bug that already has a working, zero-cost workaround.
+
+**Conclusion: no safe, maintainable app-side fix exists in this Next.js
+version.** Every avenue that would actually touch the bug requires either
+editing `next`'s own compiled code (not ours to safely alter — reverted by
+any reinstall/update) or reverse-engineering an explicitly-private internal
+API. Not filed upstream (a deliberate choice, not an oversight) — #94634
+already gives Vercel's devtools team a live, related repro.
+
+---
+
+**Original 2026-07-13 findings (kept for the historical investigation
+trail — the "not reload/assign/replace" line item is superseded above,
+the rest still stands as-is):**
+
 **What's confirmed:**
 - Requires JavaScript (proven above).
-- Not `reload()`/`assign()`/`replace()` (proven above) — by elimination,
-  must be a `location.href = ...` write somewhere.
 - Firefox refused to let this be intercepted: attempting to redefine
   `Location`'s `href` accessor throws `can't redefine non-configurable
   property "href"`. This is a genuine Firefox-vs-Chromium difference and is
   *why* this reproduces in Firefox specifically and why the exact call site
   couldn't be captured via automation (Playwright has no CDP-equivalent
-  stack-trace hook for Firefox).
+  stack-trace hook for Firefox) — **now moot**: the call site was found
+  directly by enumerating loaded scripts and testing causally, without
+  needing to intercept the property at all (see root cause above).
 - Every cycle, a fresh `ws://.../_next/webpack-hmr?id=<random>` connection
   opens and is aborted (`NS_BINDING_ABORTED` / "interrupted while the page
   was loading"), and the HMR client's own async script chunk frequently
@@ -117,11 +192,11 @@ Trace** tab. Firefox's Netmonitor captures the initiating JS call stack per
 request even though the `href` property itself can't be intercepted
 programmatically.
 
-**Current workaround:** use Chrome or Safari for local dev on this machine.
-The app itself is not implicated — server, middleware, and all app-level
-navigation code were checked and cleared. This reads as a Firefox↔
-Turbopack-dev-server interaction issue (possibly specific to this Firefox
-version), not a bug in this codebase.
+**Current workaround (unchanged, still correct):** use Chrome or Safari for
+local dev on this machine. The app itself is not implicated — confirmed
+twice now, in increasing detail. This is a Firefox↔`next-devtools`
+interaction bug inside Next.js's own compiled code (see root cause above),
+not a bug in this codebase.
 
 **Diagnostic artifacts (not retained):** two Firefox HAR captures
 (`localhost` and `127.0.0.1` runs) and a console-export log were used
